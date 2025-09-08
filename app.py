@@ -1,11 +1,16 @@
 import tkinter as tk
 from tkinter import ttk
+from storage import Database
 
 class App(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
         self.master = master
         # self.master.protocol("WM_DELETE_WINDOW", self.on_app_close)
+        self.db = Database()
+        self.db.connect()
+        self.players_data = self.db.read_data()
+
         self.create_styling()
         self.create_layout()
         self.frames = {}
@@ -69,13 +74,68 @@ class App(tk.Frame):
 class TournamentsPage(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
+        # self.controller = controller
         ttk.Label(self, text="Tournaments Page", font=("Arial", 14)).pack(pady=20)
 
 
 class PlayersPage(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
+        self.controller = controller
         ttk.Label(self, text="Players Page", font=("Arial", 14)).pack(pady=20)
+
+        self.build_search_view()
+
+    def build_search_view(self):
+        form_frame = ttk.Frame(self)
+        form_frame.pack(pady=10)
+
+        ttk.Label(form_frame, text="Search players:").grid(row=0, column=0, padx=5, pady=2, sticky="e")
+        self.search_field = ttk.Entry(form_frame, width=20)
+        self.search_field.grid(row=0, column=1, padx=5, pady=2)
+
+        self.search_field.bind("<KeyRelease>", self.search_players)
+
+        rmv_search_btn = ttk.Button(form_frame, text="Clear", command=self.remove_search)
+        rmv_search_btn.grid(row=1, column=3, columnspan=1, pady=10)
+        # remove remove search button
+        # adding real time searching properly
+        # for now have to search full word instead of showing part of it
+
+        self.results_frame = ttk.Frame(self)
+        self.results_frame.pack(fill="both", expand=True)
+
+        self.show_results(self.controller.db.read_data())
+
+    def clear_results(self):
+        for widget in self.results_frame.winfo_children():
+            widget.destroy()
+
+    def show_results(self, results):
+        self.clear_results()
+        if not results:
+            ttk.Label(self.results_frame, text="No players found.").pack(pady=10)
+            return
+
+        for row in results:
+            row_frame = ttk.Frame(self.results_frame)
+            row_frame.pack(fill="x", pady=2)
+
+            ttk.Label(row_frame, text=row[1], width=20, anchor="w").pack(side="left")
+            ttk.Label(row_frame, text=row[2], width=20, anchor="w").pack(side="left")
+            ttk.Label(row_frame, text=row[3], width=5, anchor="w").pack(side="left")
+
+    def search_players(self, event=None):
+        query = self.search_field.get().strip()
+        if query == "":
+            results = self.controller.db.read_data()
+        else:
+            results = self.controller.db.search_players(query)
+        self.show_results(results)
+
+    def remove_search(self):
+        self.search_field.delete(0, tk.END)
+        self.show_results(self.controller.db.read_data())
 
 
 class CircuitsPage(ttk.Frame):
