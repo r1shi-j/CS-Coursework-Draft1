@@ -1,7 +1,6 @@
 import sqlite3
 import uuid
 from datetime import datetime
-from typing import Optional
 
 def tempdate():
     return datetime.now().strftime("%Y-%m-%d")
@@ -119,54 +118,65 @@ class Database:
 
         self.connection.commit()
 
-    def insert_data(self):
-        # self.cursor.execute("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", (create_uuid(), "Lewis", "Hamilton", 39))
-        # self.cursor.execute("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", (create_uuid(), "Max", "Verstappen", 27))
-        # self.cursor.execute("""
-        # INSERT INTO TournamentType (tournament_type_id, def_continuers, num_grandprix, longer_style) 
-        # VALUES (?, ?, ?, ?)
-        # """, (create_uuid(), 2, 1, False))
-
-        self.cursor.execute("INSERT INTO Tournament (tournament_id, date, player_count, tournament_type_id) VALUES (?, ?, ?, ?)", (create_uuid(), tempdate(), 17, "af1b7dbc-a3cd-46d5-aaae-f16aff3eec2a"))
-
-        # players = [
-        #     (create_uuid(), "Lewis", "Hamilton", 39),
-        #     (create_uuid(), "Max", "Verstappen", 27),
-        # ]
-
-        # self.cursor.executemany("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", players)
-        self.connection.commit()
-
     def read_data(self):# -> list[tuple]:
         self.cursor.execute("SELECT * FROM Player;")
-        data = self.cursor.fetchall()
-        return data
-        # print(type(data))
-        # for x in data:
-        #     print(x)
+        return self.cursor.fetchall()
 
-    def search_players(self, search_term: str) -> Optional[list[tuple]]:
-        # if firstname == "" and surname == "" and age == "":
-        #     return None
-        
-        query = "SELECT * FROM Player WHERE forename LIKE ? OR surname LIKE ? OR age LIKE ?"
-        params = [search_term, search_term, search_term]
+    def search_players(self, search_term: str) -> list[tuple]:
+        query = """
+            SELECT * FROM Player
+            WHERE forename LIKE ?
+            OR surname LIKE ?
+            OR CAST(age AS TEXT) LIKE ?
+        """
+        like_term = f"%{search_term}%"
+        params = [like_term, like_term, like_term]
 
         self.cursor.execute(query, params)
         return self.cursor.fetchall()
-
-    def search_data(self):
-        self.cursor.execute("SELECT forename, surname FROM Player WHERE age > ?", (30,))
-        print(self.cursor.fetchall())
-
-    def delete_data(self):
-        # self.cursor.execute("DELETE FROM Player WHERE player_id = ?", (player_id_to_delete,))
-        players = [
-            ("e1198136-f478-41a1-803e-0ab4009cb4bd",),
-            ("691f1187-04be-4f47-aaab-cd6e27f3e0d4",)
-        ]
-        self.cursor.executemany("DELETE FROM Player WHERE player_id = ?", players)
+    
+    def add_player(self, forename: str, surname: str, age: int):
+        self.cursor.execute("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", (create_uuid(), forename, surname, age))
         self.connection.commit()
+
+    def update_player(self, player_id: str, forename: str, surname: str, age: int):
+        self.cursor.execute("UPDATE Player SET forename=?, surname=?, age=? WHERE player_id=?", (forename, surname, age, player_id))
+        self.connection.commit()
+
+    def delete_player(self, player_id: str):
+        self.cursor.execute("DELETE FROM Player WHERE player_id = ?", (player_id,))
+        self.connection.commit()
+
+    # def search_data(self):
+    #     self.cursor.execute("SELECT forename, surname FROM Player WHERE age > ?", (30,))
+    #     print(self.cursor.fetchall())
+    # 
+    # def insert_data(self):
+    #     # self.cursor.execute("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", (create_uuid(), "Lewis", "Hamilton", 39))
+    #     # self.cursor.execute("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", (create_uuid(), "Max", "Verstappen", 27))
+    #     # self.cursor.execute("""
+    #     # INSERT INTO TournamentType (tournament_type_id, def_continuers, num_grandprix, longer_style) 
+    #     # VALUES (?, ?, ?, ?)
+    #     # """, (create_uuid(), 2, 1, False))
+    # 
+    #     self.cursor.execute("INSERT INTO Tournament (tournament_id, date, player_count, tournament_type_id) VALUES (?, ?, ?, ?)", (create_uuid(), tempdate(), 17, "af1b7dbc-a3cd-46d5-aaae-f16aff3eec2a"))
+    # 
+    #     # players = [
+    #     #     (create_uuid(), "Lewis", "Hamilton", 39),
+    #     #     (create_uuid(), "Max", "Verstappen", 27),
+    #     #
+    # 
+    #     # self.cursor.executemany("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", players)
+    #     self.connection.commit()
+    # 
+    # def delete_data(self):
+    #     # self.cursor.execute("DELETE FROM Player WHERE player_id = ?", (player_id_to_delete,))
+    #     players = [
+    #         ("e1198136-f478-41a1-803e-0ab4009cb4bd",),
+    #         ("691f1187-04be-4f47-aaab-cd6e27f3e0d4",)
+    #     ]
+    #     self.cursor.executemany("DELETE FROM Player WHERE player_id = ?", players)
+    #     self.connection.commit()
 
     def close(self):
         self.connection.close()
