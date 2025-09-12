@@ -118,6 +118,24 @@ class Database:
 
         self.connection.commit()
 
+    def read_tournament_data(self) -> list[tuple]:
+        self.cursor.execute("SELECT * FROM Tournament;")
+        return self.cursor.fetchall()
+    
+    def find_tournament_winner(self, t_id: str):
+        self.cursor.execute("""
+            SELECT p.*
+            FROM TournamentParticipation tp
+            JOIN Player p ON tp.player_id = p.player_id
+            WHERE tp.tournament_id = ?
+            AND tp.tournament_result = 1
+        """, (t_id,))
+        return self.cursor.fetchall()
+    
+    def insert_filler_tournament_data(self):
+        self.cursor.execute("INSERT INTO TournamentParticipation (tournament_id, player_id, tournament_result) VALUES (?, ?, ?)", ("fbaf8680-cb9b-4898-81af-364d66f37fb4", "03a9599d-2fd1-43b5-b3cd-f9b24bac1551", 1))
+        self.connection.commit()
+    
     def read_player_data(self) -> list[tuple]:
         self.cursor.execute("SELECT * FROM Player;")
         return self.cursor.fetchall()
@@ -263,4 +281,6 @@ class Database:
     # "Super Bell Subway",
     # "Big Blue"
 # ])
+# # db.insert_filler_tournament_data()
+# print(db.read_tournament_data())
 # db.close()
