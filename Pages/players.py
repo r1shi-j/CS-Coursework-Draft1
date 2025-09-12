@@ -38,7 +38,7 @@ class PlayersPage(ttk.Frame):
         self.results_frame = ttk.Frame(self)
         self.results_frame.pack(fill="both", expand=True)
 
-        self.show_results(self.controller.db.read_data())
+        self.show_results(self.controller.db.read_player_data())
 
     def open_create_player_view(self):
         win = tk.Toplevel(self)
@@ -59,7 +59,7 @@ class PlayersPage(ttk.Frame):
         def create_player():
             self.controller.db.add_player(firstname.get(), surname.get(), int(age.get()))
             win.destroy()
-            self.show_results(self.controller.db.read_data())
+            self.show_results(self.controller.db.read_player_data())
 
         ttk.Button(win, text="Create", command=create_player).grid(row=3, column=0, pady=10)
         ttk.Button(win, text="Cancel", command=win.destroy).grid(row=3, column=1, pady=10)
@@ -70,7 +70,7 @@ class PlayersPage(ttk.Frame):
             self.form_frame.pack_forget()
         else:
             self.form_frame.pack(pady=10, before=self.results_frame)
-        self.show_results(self.controller.db.read_data())
+        self.show_results(self.controller.db.read_player_data())
 
     def show_results(self, results):
         self.clear_results()
@@ -111,12 +111,12 @@ class PlayersPage(ttk.Frame):
         def update_player():
             self.controller.db.update_player(player[0], firstname.get(), surname.get(), int(age.get()))
             win.destroy()
-            self.show_results(self.controller.db.read_data())
+            self.show_results(self.controller.db.read_player_data())
 
         def delete_player():
             self.controller.db.delete_player(player[0])
             win.destroy()
-            self.show_results(self.controller.db.read_data())
+            self.show_results(self.controller.db.read_player_data())
 
         ttk.Button(win, text="Update", command=update_player).grid(row=3, column=0, pady=10)
         ttk.Button(win, text="Delete", command=delete_player).grid(row=3, column=1, pady=10)
@@ -132,11 +132,11 @@ class PlayersPage(ttk.Frame):
     def search_players(self, event=None):
         query = self.search_field.get().strip()
         if query == "":
-            results = self.controller.db.read_data()
+            results = self.controller.db.read_player_data()
         else:
             results = self.controller.db.search_players(query)
         self.show_results(results)
 
     def remove_search(self):
         self.search_field.delete(0, tk.END)
-        self.show_results(self.controller.db.read_data())
+        self.show_results(self.controller.db.read_player_data())

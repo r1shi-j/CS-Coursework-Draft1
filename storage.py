@@ -2,7 +2,7 @@ import sqlite3
 import uuid
 from datetime import datetime
 
-def tempdate():
+def tempdate() -> str:
     return datetime.now().strftime("%Y-%m-%d")
 
 def create_uuid() -> str:
@@ -118,7 +118,7 @@ class Database:
 
         self.connection.commit()
 
-    def read_data(self):# -> list[tuple]:
+    def read_player_data(self) -> list[tuple]:
         self.cursor.execute("SELECT * FROM Player;")
         return self.cursor.fetchall()
 
@@ -145,6 +145,34 @@ class Database:
 
     def delete_player(self, player_id: str):
         self.cursor.execute("DELETE FROM Player WHERE player_id = ?", (player_id,))
+        self.connection.commit()
+
+    def read_circuit_data(self) -> list[tuple]:
+        self.cursor.execute("SELECT * FROM Circuit;")
+        return self.cursor.fetchall()
+
+    def search_circuits(self, search_term: str) -> list[tuple]:
+        query = """
+            SELECT * FROM Circuit
+            WHERE circuit_name LIKE ?
+        """
+        like_term = f"%{search_term}%"
+        params = [like_term]
+
+        self.cursor.execute(query, params)
+        return self.cursor.fetchall()
+    
+    def insert_circuit(self, circuit_name: str):
+        self.cursor.execute("INSERT INTO Circuit (circuit_id, circuit_name) VALUES (?, ?)", (create_uuid(), circuit_name))
+        self.connection.commit()
+
+    def insert_circuits(self, circuit_names: list[str]):
+        values = [(create_uuid(), name) for name in circuit_names]
+        self.cursor.executemany("INSERT INTO Circuit (circuit_id, circuit_name) VALUES (?, ?)", values)
+        self.connection.commit()
+    
+    def remove_circuits(self, circuit_id: str):
+        self.cursor.execute("DELETE FROM Circuit WHERE circuit_id = ?", (circuit_id,))
         self.connection.commit()
 
     # def search_data(self):
@@ -184,8 +212,55 @@ class Database:
 
 # db = Database()
 # db.connect()
-# insert_data()
-# db.read_data()
-# search_data()
-# delete_data()
-# read_data()
+# db.remove_circuits("9ab5b6ed-60a6-48b2-a15f-52123e4a5035")
+# db.insert_circuits([
+#     "GBA Mario Circuit"
+    # "Sherbet Land",
+    # "Music Park",
+    # "Dragon Driftway",
+    # "Mute City",
+    # "Wario's Goldmine",
+    # "SNES Rainbow Road",
+    # "Ice Ice Outpost",
+    # "Hyrule Circuit",
+    # "Baby Park",
+    # "Cheese Land",
+    # "Wild Woods",
+    # "Animal Crossing",
+    # "N64 Rainbow Road"
+    # "Mario Kart Stadium",
+    # "Water Park",
+    # "Sweet Sweet Canyon",
+    # "Thwomp Ruins",
+    # "Mario Circuit",
+    # "Toad Harbor",
+    # "Twisted Mansion",
+    # "Shy Guy Falls",
+    # "Sunshine Airport",
+    # "Dolphin Shoals",
+    # "Electrodrome",
+    # "Mount Wario",
+    # "Cloudtop Cruise",
+    # "Bone-Dry Dunes",
+    # "Bowser’s Castle",
+    # "Rainbow Road",
+    # "Moo Moo Meadows",
+    # "Cheep Cheep Beach",
+    # "Toad’s Turnpike",
+    # "Dry Dry Desert",
+    # "Donut Plains 3",
+    # "Royal Raceway",
+    # "DK Jungle",
+    # "Wario Stadium",
+    # "Yoshi Valley",
+    # "Tick-Tock Clock",
+    # "Piranha Plant Slide",
+    # "Grumble Volcano",
+    # "Yoshi Circuit",
+    # "Excitebike Arena",
+    # "Neo Bowser City",
+    # "Ribbon Road",
+    # "Super Bell Subway",
+    # "Big Blue"
+# ])
+# db.close()

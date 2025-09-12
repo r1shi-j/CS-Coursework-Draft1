@@ -10,7 +10,7 @@ class App(tk.Frame):
         # self.master.protocol("WM_DELETE_WINDOW", self.on_app_close)
         self.db = Database()
         self.db.connect()
-        self.players_data = self.db.read_data()
+        # self.players_data = self.db.read_data()
 
         self.create_styling()
         self.create_layout()
