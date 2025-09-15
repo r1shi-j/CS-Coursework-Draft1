@@ -2,10 +2,10 @@ import sqlite3
 import uuid
 from datetime import datetime
 
-def tempdate() -> str:
-    return datetime.now().strftime("%Y-%m-%d")
+def _tempdate() -> str:
+    return datetime.now().strftime("%d/%m/%y %H:%M:%S")#.strftime("%Y-%m-%d %h:%m:%s")
 
-def create_uuid() -> str:
+def _create_uuid() -> str:
     return str(uuid.uuid4())
 
 class Database:
@@ -132,8 +132,8 @@ class Database:
         """, (t_id,))
         return self.cursor.fetchall()
     
-    def insert_filler_tournament_data(self):
-        self.cursor.execute("INSERT INTO TournamentParticipation (tournament_id, player_id, tournament_result) VALUES (?, ?, ?)", ("fbaf8680-cb9b-4898-81af-364d66f37fb4", "03a9599d-2fd1-43b5-b3cd-f9b24bac1551", 1))
+    def _insert_filler_tournament_data(self):
+        self.cursor.execute("INSERT INTO Tournament (tournament_id, date, player_count, tournament_type_id) VALUES (?, ?, ?, ?)", (_create_uuid(), _tempdate(), 5, "af1b7dbc-a3cd-46d5-aaae-f16aff3eec2a"))
         self.connection.commit()
     
     def read_player_data(self) -> list[tuple]:
@@ -154,7 +154,7 @@ class Database:
         return self.cursor.fetchall()
     
     def add_player(self, forename: str, surname: str, age: int):
-        self.cursor.execute("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", (create_uuid(), forename, surname, age))
+        self.cursor.execute("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", (_create_uuid(), forename, surname, age))
         self.connection.commit()
 
     def update_player(self, player_id: str, forename: str, surname: str, age: int):
@@ -180,16 +180,16 @@ class Database:
         self.cursor.execute(query, params)
         return self.cursor.fetchall()
     
-    def insert_circuit(self, circuit_name: str):
-        self.cursor.execute("INSERT INTO Circuit (circuit_id, circuit_name) VALUES (?, ?)", (create_uuid(), circuit_name))
+    def _insert_circuit(self, circuit_name: str):
+        self.cursor.execute("INSERT INTO Circuit (circuit_id, circuit_name) VALUES (?, ?)", (_create_uuid(), circuit_name))
         self.connection.commit()
 
-    def insert_circuits(self, circuit_names: list[str]):
-        values = [(create_uuid(), name) for name in circuit_names]
+    def _insert_circuits(self, circuit_names: list[str]):
+        values = [(_create_uuid(), name) for name in circuit_names]
         self.cursor.executemany("INSERT INTO Circuit (circuit_id, circuit_name) VALUES (?, ?)", values)
         self.connection.commit()
     
-    def remove_circuits(self, circuit_id: str):
+    def _remove_circuits(self, circuit_id: str):
         self.cursor.execute("DELETE FROM Circuit WHERE circuit_id = ?", (circuit_id,))
         self.connection.commit()
 
@@ -228,59 +228,7 @@ class Database:
         self.connection.close()
 
 
-# db = Database()
-# db.connect()
-# db.remove_circuits("9ab5b6ed-60a6-48b2-a15f-52123e4a5035")
-# db.insert_circuits([
-#     "GBA Mario Circuit"
-    # "Sherbet Land",
-    # "Music Park",
-    # "Dragon Driftway",
-    # "Mute City",
-    # "Wario's Goldmine",
-    # "SNES Rainbow Road",
-    # "Ice Ice Outpost",
-    # "Hyrule Circuit",
-    # "Baby Park",
-    # "Cheese Land",
-    # "Wild Woods",
-    # "Animal Crossing",
-    # "N64 Rainbow Road"
-    # "Mario Kart Stadium",
-    # "Water Park",
-    # "Sweet Sweet Canyon",
-    # "Thwomp Ruins",
-    # "Mario Circuit",
-    # "Toad Harbor",
-    # "Twisted Mansion",
-    # "Shy Guy Falls",
-    # "Sunshine Airport",
-    # "Dolphin Shoals",
-    # "Electrodrome",
-    # "Mount Wario",
-    # "Cloudtop Cruise",
-    # "Bone-Dry Dunes",
-    # "Bowser’s Castle",
-    # "Rainbow Road",
-    # "Moo Moo Meadows",
-    # "Cheep Cheep Beach",
-    # "Toad’s Turnpike",
-    # "Dry Dry Desert",
-    # "Donut Plains 3",
-    # "Royal Raceway",
-    # "DK Jungle",
-    # "Wario Stadium",
-    # "Yoshi Valley",
-    # "Tick-Tock Clock",
-    # "Piranha Plant Slide",
-    # "Grumble Volcano",
-    # "Yoshi Circuit",
-    # "Excitebike Arena",
-    # "Neo Bowser City",
-    # "Ribbon Road",
-    # "Super Bell Subway",
-    # "Big Blue"
-# ])
-# # db.insert_filler_tournament_data()
-# print(db.read_tournament_data())
-# db.close()
+db = Database()
+db.connect()
+db._insert_filler_tournament_data()
+db.close()

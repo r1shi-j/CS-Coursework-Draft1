@@ -37,6 +37,7 @@ class TournamentsPage(ttk.Frame):
             row_frame.pack(fill="x", pady=2)
 
             winner = self.controller.db.find_tournament_winner(row[0])
-
-            ttk.Label(row_frame, text=winner[0][1], width=20, anchor="w").pack(side="left")
+            if winner != []:
+                ttk.Label(row_frame, text=winner[0][1], width=20, anchor="w").pack(side="left")
+                
             ttk.Label(row_frame, text=row[1], width=20, anchor="w").pack(side="left")

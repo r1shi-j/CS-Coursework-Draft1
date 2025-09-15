@@ -7,11 +7,9 @@ class App(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
         self.master = master
-        # self.master.protocol("WM_DELETE_WINDOW", self.on_app_close)
+        self.master.protocol("WM_DELETE_WINDOW", self.on_app_close)
         self.db = Database()
         self.db.connect()
-        # self.players_data = self.db.read_data()
-
         self.create_styling()
         self.create_layout()
         self.frames = {}
@@ -20,7 +18,9 @@ class App(tk.Frame):
         self.show_frame("Tournaments")
 
     def on_app_close(self):
-        print("attempted close")
+        self.db.close()
+        print("saved db")
+        self.master.quit()
 
     def create_styling(self):
         self.style = ttk.Style()
