@@ -43,6 +43,7 @@ class PlayersPage(ttk.Frame):
     def open_create_player_view(self):
         win = tk.Toplevel(self)
         win.title("Create Player")
+        win.grab_set()
 
         ttk.Label(win, text="First name:").grid(row=0, column=0, padx=5, pady=5)
         firstname = ttk.Entry(win)
@@ -61,8 +62,8 @@ class PlayersPage(ttk.Frame):
             win.destroy()
             self.show_results(self.controller.db.read_player_data())
 
-        ttk.Button(win, text="Create", command=create_player).grid(row=3, column=0, pady=10)
-        ttk.Button(win, text="Cancel", command=win.destroy).grid(row=3, column=1, pady=10)
+        ttk.Button(win, text="Cancel", command=win.destroy).grid(row=3, column=0, pady=10)
+        ttk.Button(win, text="Create", command=create_player).grid(row=3, column=1, pady=10)
 
     def enable_edit_mode(self):
         self.edit_mode = not self.edit_mode
@@ -92,6 +93,7 @@ class PlayersPage(ttk.Frame):
     def open_edit_player_view(self, player):
         win = tk.Toplevel(self)
         win.title("Edit Player")
+        win.grab_set()
 
         ttk.Label(win, text="First name:").grid(row=0, column=0, padx=5, pady=5)
         firstname = ttk.Entry(win)
@@ -118,9 +120,9 @@ class PlayersPage(ttk.Frame):
             win.destroy()
             self.show_results(self.controller.db.read_player_data())
 
-        ttk.Button(win, text="Update", command=update_player).grid(row=3, column=0, pady=10)
+        ttk.Button(win, text="Cancel", command=win.destroy).grid(row=3, column=0, pady=10)
         ttk.Button(win, text="Delete", command=delete_player).grid(row=3, column=1, pady=10)
-        ttk.Button(win, text="Cancel", command=win.destroy).grid(row=3, column=2, pady=10)
+        ttk.Button(win, text="Update", command=update_player).grid(row=3, column=2, pady=10)
         
     def clear_entry(self, event=None):
         self.search_field.delete(0, tk.END)

@@ -42,17 +42,26 @@ class App(tk.Frame):
         self.container.pack(fill="both", expand=True)
 
     def create_navbar(self):
+        self.nav_labels = {}
+
         def make_nav_label(parent, text, view_name):
-            label = ttk.Label(parent, text=text, font=("Arial", 12), cursor="hand2")
+            label = ttk.Label(parent, text=text, font=("Arial", 12), cursor="hand2") # review cursor
             label.pack(side="left", padx=40)
 
-            def on_enter(e): label.configure(font=("Arial", 12, "underline"))
-            def on_leave(e): label.configure(font=("Arial", 12))
+            def on_enter(e):
+                if self.current_page != view_name:  # don't override active page
+                    label.configure(font=("Arial", 12, "underline"))
+
+            def on_leave(e):
+                if self.current_page != view_name:
+                    label.configure(font=("Arial", 12))
+
             def on_click(e): self.show_frame(view_name)
 
             label.bind("<Enter>", on_enter)
             label.bind("<Leave>", on_leave)
             label.bind("<Button-1>", on_click)
+            self.nav_labels[view_name] = label
             return label
 
         make_nav_label(self.header_frame, "Tournaments", "Tournaments")
@@ -60,9 +69,11 @@ class App(tk.Frame):
         make_nav_label(self.header_frame, "Circuits", "Circuits")
         make_nav_label(self.header_frame, "Statistics", "Statistics")
 
+        self.current_page = None
+
     def create_pages(self):
         for F in (tournaments.TournamentsPage, players.PlayersPage, circuits.CircuitsPage, statistics.StatisticsPage):
-            page_name = F.__name__.replace("Page", "") # checl if worlks
+            page_name = F.__name__.replace("Page", "")
             frame = F(self.container, self)
             self.frames[page_name] = frame
             frame.grid(row=0, column=0, sticky="nsew")
@@ -70,3 +81,11 @@ class App(tk.Frame):
     def show_frame(self, page_name):
         frame = self.frames[page_name]
         frame.tkraise()
+
+        for name, label in self.nav_labels.items():
+            if name == page_name:
+                label.configure(font=("Arial", 12, "underline"), foreground="blue")
+            else:
+                label.configure(font=("Arial", 12), foreground="black")
+
+        self.current_page = page_name

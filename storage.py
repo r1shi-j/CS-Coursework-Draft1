@@ -2,10 +2,10 @@ import sqlite3
 import uuid
 from datetime import datetime
 
-def _tempdate() -> str:
-    return datetime.now().strftime("%d/%m/%y %H:%M:%S")#.strftime("%Y-%m-%d %h:%m:%s")
+# def _tempdate() -> str:
+#     return datetime.now().strftime("%d/%m/%y %H:%M:%S")#.strftime("%Y-%m-%d %h:%m:%s")
 
-def _create_uuid() -> str:
+def create_uuid() -> str:
     return str(uuid.uuid4())
 
 class Database:
@@ -109,7 +109,7 @@ class Database:
         CREATE TABLE IF NOT EXISTS TournamentParticipation (
             tournament_id TEXT NOT NULL,
             player_id TEXT NOT NULL,
-            tournament_result INTEGER NOT NULL,
+            tournament_result INTEGER,
             PRIMARY KEY (tournament_id, player_id),
             FOREIGN KEY (tournament_id) REFERENCES Tournament(tournament_id),
             FOREIGN KEY (player_id) REFERENCES Player(player_id)
@@ -132,9 +132,35 @@ class Database:
         """, (t_id,))
         return self.cursor.fetchall()
     
-    def _insert_filler_tournament_data(self):
-        self.cursor.execute("INSERT INTO Tournament (tournament_id, date, player_count, tournament_type_id) VALUES (?, ?, ?, ?)", (_create_uuid(), _tempdate(), 5, "af1b7dbc-a3cd-46d5-aaae-f16aff3eec2a"))
+    # def _insert_filler_tournament_data(self):
+    #     self.cursor.execute("INSERT INTO Tournament (tournament_id, date, player_count, tournament_type_id) VALUES (?, ?, ?, ?)", (create_uuid(), _tempdate(), 5, "af1b7dbc-a3cd-46d5-aaae-f16aff3eec2a"))
+    #     self.connection.commit()
+
+    def add_player_to_tournament(self, t_id: str, p_id: str):
+        self.cursor.execute("INSERT INTO TournamentParticipation (tournament_id, player_id, tournament_result) VALUES (?, ?, ?)", (t_id, p_id, None))
         self.connection.commit()
+
+    def create_tournament(self, t_id: str, date: str, p_count: int, ttype_id: str):
+        self.cursor.execute("INSERT INTO Tournament (tournament_id, date, player_count, tournament_type_id) VALUES (?, ?, ?, ?)", (t_id, date, p_count, ttype_id))
+        self.connection.commit()
+
+    def read_tournament_types(self) -> list[tuple]:
+        self.cursor.execute("SELECT * FROM TournamentType;")
+        return self.cursor.fetchall()
+
+    def add_tournament_type(self, def_continuers: int, num_grandprix: int, longer_style: bool):
+        self.cursor.execute(
+            "INSERT INTO TournamentType (tournament_type_id, def_continuers, num_grandprix, longer_style) VALUES (?, ?, ?, ?)",
+            (create_uuid(), def_continuers, num_grandprix, longer_style)
+        )
+        self.connection.commit()
+    
+    # def remove_player_to_tournament(self, p_id: str):
+    #     return
+    
+    # def tournament_players(self, t_id: str) -> list[tuple]:
+    #     self.cursor.execute("SELECT * FROM TournamentParticipation WHERE player_id;")
+    #     return self.cursor.fetchall()
     
     def read_player_data(self) -> list[tuple]:
         self.cursor.execute("SELECT * FROM Player;")
@@ -154,7 +180,7 @@ class Database:
         return self.cursor.fetchall()
     
     def add_player(self, forename: str, surname: str, age: int):
-        self.cursor.execute("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", (_create_uuid(), forename, surname, age))
+        self.cursor.execute("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", (create_uuid(), forename, surname, age))
         self.connection.commit()
 
     def update_player(self, player_id: str, forename: str, surname: str, age: int):
@@ -181,11 +207,11 @@ class Database:
         return self.cursor.fetchall()
     
     def _insert_circuit(self, circuit_name: str):
-        self.cursor.execute("INSERT INTO Circuit (circuit_id, circuit_name) VALUES (?, ?)", (_create_uuid(), circuit_name))
+        self.cursor.execute("INSERT INTO Circuit (circuit_id, circuit_name) VALUES (?, ?)", (create_uuid(), circuit_name))
         self.connection.commit()
 
     def _insert_circuits(self, circuit_names: list[str]):
-        values = [(_create_uuid(), name) for name in circuit_names]
+        values = [(create_uuid(), name) for name in circuit_names]
         self.cursor.executemany("INSERT INTO Circuit (circuit_id, circuit_name) VALUES (?, ?)", values)
         self.connection.commit()
     
@@ -228,7 +254,7 @@ class Database:
         self.connection.close()
 
 
-db = Database()
-db.connect()
-db._insert_filler_tournament_data()
-db.close()
+# db = Database()
+# db.connect()
+# db._insert_filler_tournament_data()
+# db.close()
