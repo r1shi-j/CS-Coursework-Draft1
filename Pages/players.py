@@ -10,6 +10,8 @@ class PlayersPage(ttk.Frame):
         self.edit_mode = False
         self.build_view()
 
+    def block_window_closure(self): return
+
     def build_view(self):
         # each name should be a button when clicked goes to stats view with that player
         action_frame = ttk.Frame(self)
@@ -44,6 +46,7 @@ class PlayersPage(ttk.Frame):
         win = tk.Toplevel(self)
         win.title("Create Player")
         win.grab_set()
+        win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
 
         ttk.Label(win, text="First name:").grid(row=0, column=0, padx=5, pady=5)
         firstname = ttk.Entry(win)
@@ -94,6 +97,7 @@ class PlayersPage(ttk.Frame):
         win = tk.Toplevel(self)
         win.title("Edit Player")
         win.grab_set()
+        win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
 
         ttk.Label(win, text="First name:").grid(row=0, column=0, padx=5, pady=5)
         firstname = ttk.Entry(win)

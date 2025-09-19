@@ -7,3 +7,18 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = App(root)
     app.mainloop()
+
+### Forms to do
+# Tournament Bracket viewer
+# Tournament overview data
+# Input race results
+# Input grand prix results
+# Statistics view
+
+### After prototype
+# Create account view
+# Login view
+# Block all closing window via window close button (traffic lights ect, check on windows)
+# Add styling everywhere
+# Add validation to forms everywhere
+# Make ui better, sizing, padding, spacing ect

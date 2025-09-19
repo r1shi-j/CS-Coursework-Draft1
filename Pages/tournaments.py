@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-from tkcalendar import DateEntry, Calendar
+from tkcalendar import Calendar
 import datetime
 from storage import create_uuid
 
@@ -11,6 +11,8 @@ class TournamentsPage(ttk.Frame):
         ttk.Label(self, text="Tournaments Page", font=("Arial", 14)).pack(pady=20)
 
         self.build_view()
+
+    def block_window_closure(self): return
 
     def build_view(self):
         action_frame = ttk.Frame(self)
@@ -46,6 +48,7 @@ class TournamentsPage(ttk.Frame):
         win = tk.Toplevel(self)
         win.title("Create Tournament")
         win.grab_set()
+        win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
 
         datepicker_frame = ttk.LabelFrame(win, text="Date")
         datepicker_frame.grid(row=0, column=0, columnspan=2, padx=5, pady=5, sticky="nsew")
@@ -163,10 +166,157 @@ class TournamentsPage(ttk.Frame):
             for player in tournament_players:
                 self.controller.db.add_player_to_tournament(new_t_id, player[0])
             self.refresh_tournaments()
+            self.open_tournament_overview(new_t_id)
             win.destroy()
 
         ttk.Button(win, text="Cancel", command=win.destroy).grid(row=5, column=0, pady=10)
         ttk.Button(win, text="Create", command=create_tournament).grid(row=5, column=1, pady=10)
+
+    def open_edit_tournament_view(self, t_id: str):
+        win = tk.Toplevel(self)
+        win.title("Edit Tournament")
+        win.grab_set()
+        win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
+
+        original_date_str = self.controller.db.read_tournament_date(t_id)
+        original_date = datetime.datetime.strptime(original_date_str, "%d/%m/%y").date()
+
+        datepicker_frame = ttk.LabelFrame(win, text="Date")
+        datepicker_frame.grid(row=0, column=0, columnspan=2, padx=5, pady=5, sticky="nsew")
+
+        mindate = original_date - datetime.timedelta(days=365)
+        maxdate = original_date + datetime.timedelta(days=365)
+
+        cal = Calendar(
+            win,
+            selectmode="day",
+            year=original_date.year,
+            month=original_date.month,
+            day=original_date.day,
+            mindate=mindate,
+            maxdate=maxdate,
+            foreground="black",
+            selectforeground="red",
+            selectbackground="blue",
+            headersforeground="black",
+            normalforeground="black",
+            weekendforeground="black",
+            othermonthforeground="gray"
+        )
+        cal.grid(row=0, column=1, padx=5, pady=5)
+
+        def chosen_date() -> str: 
+            return datetime.datetime.strptime(cal.get_date(), '%m/%d/%y').strftime('%d/%m/%y')
+        
+        selected_date_label = ttk.Label(win, text=f"Selected Date: {chosen_date()}")
+        selected_date_label.grid(row=1, column=1, padx=5, pady=5)
+
+        def on_date_selected(event):
+            selected_date_label.config(text=f"Selected Date: {chosen_date()}")
+
+        cal.bind("<<CalendarSelected>>", on_date_selected)
+
+        tournament_players = self.controller.db.read_tournament_players(t_id)
+        removed_players = []
+        added_players = []
+
+        current_players_frame = ttk.LabelFrame(win, text="Current Players")
+        current_players_frame.grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky="nsew")
+
+        cp_canvas = tk.Canvas(current_players_frame, borderwidth=0)
+        cp_scrollbar = ttk.Scrollbar(current_players_frame, orient="vertical", command=cp_canvas.yview)
+        cp_list_frame = ttk.Frame(cp_canvas)
+
+        cp_list_frame.bind("<Configure>", lambda e: cp_canvas.configure(scrollregion=cp_canvas.bbox("all")))
+        cp_canvas.create_window((0, 0), window=cp_list_frame, anchor="nw")
+        cp_canvas.configure(yscrollcommand=cp_scrollbar.set)
+
+        cp_canvas.pack(side="left", fill="both", expand=True)
+        cp_scrollbar.pack(side="right", fill="y")
+
+        def refresh_current_players():
+            for w in cp_list_frame.winfo_children():
+                w.destroy()
+            for player in tournament_players:
+                row = ttk.Frame(cp_list_frame)
+                row.pack(fill="x", pady=1)
+                ttk.Label(row, text=player[1], width=20, anchor="w").pack(side="left")
+                ttk.Button(row, text="-", command=lambda p=player: remove_player(p)).pack(side="right")
+        refresh_current_players()
+
+        def remove_player(player):
+            tournament_players.remove(player)
+            removed_players.append(player[0])
+            refresh_current_players()
+
+        add_players_frame = ttk.LabelFrame(win, text="Add Players")
+        add_players_frame.grid(row=3, column=0, columnspan=2, padx=5, pady=5, sticky="nsew")
+
+        search_var = tk.StringVar()
+
+        search_entry = ttk.Entry(add_players_frame, textvariable=search_var)
+        search_entry.pack(fill="x", padx=5, pady=5)
+
+        results_frame = ttk.Frame(add_players_frame)
+        results_frame.pack(fill="both", expand=True)
+
+        def update_search(*args):
+            for w in results_frame.winfo_children():
+                w.destroy()
+            if not search_var.get().strip():
+                return
+            results = self.controller.db.search_players(search_var.get())
+            for player in results:
+                row = ttk.Frame(results_frame)
+                row.pack(fill="x", pady=1)
+                ttk.Label(row, text=f"{player[1]} {player[2]}", width=20, anchor="w").pack(side="left")
+                ## only allow letters no numbers
+                ttk.Button(row, text="+", command=lambda p=player: add_player(p)).pack(side="right")
+
+        def add_player(player):
+            if player not in tournament_players:
+                tournament_players.append(player)
+                added_players.append(player[0])
+            refresh_current_players()
+
+        search_var.trace_add("write", update_search)
+
+        t_type_frame = ttk.LabelFrame(win, text="Tournament Type")
+        t_type_frame.grid(row=4, column=0, columnspan=2, padx=5, pady=5, sticky="nsew")
+
+        selected_type = tk.StringVar()
+        current_type_id = self.controller.db.read_tournament_type(t_id)
+        self.build_tournament_type_section(t_type_frame, selected_type, current_type_id)
+
+        add_type_btn = ttk.Button(
+            t_type_frame,
+            text="+",
+            command=lambda: self.open_add_type_view(t_type_frame, selected_type)
+        )
+        add_type_btn.pack(side="top", anchor="ne", padx=5, pady=2)
+
+        def go_back():
+            self.open_tournament_overview(t_id)
+            win.destroy()
+
+        def update_tournament():
+            self.controller.db.update_tournament(t_id, chosen_date(), len(tournament_players), selected_type.get())
+
+            original_players = [p[0] for p in self.controller.db.read_tournament_players(t_id)]
+            for player in added_players:
+                if player not in original_players:
+                    self.controller.db.add_player_to_tournament(t_id, player)
+                
+            for player in removed_players:
+                if player in original_players:
+                    self.controller.db.remove_player_from_tournament(t_id, player)
+                
+            self.refresh_tournaments()
+            go_back()
+
+        ttk.Button(win, text="Discard Changes", command=go_back).grid(row=5, column=0, pady=10)
+        # ttk.Button(win, text="Delete", command=win.destroy).grid(row=5, column=0, pady=10)
+        ttk.Button(win, text="Update", command=update_tournament).grid(row=5, column=1, pady=10)
 
     def refresh_tournaments(self):
         for widget in self.results_frame.winfo_children():
@@ -187,15 +337,74 @@ class TournamentsPage(ttk.Frame):
             if winner:
                 tk.Label(row_frame, text=winner[0][1], width=20, anchor="w", bg=bg).pack(side="left")
 
-            row_frame.bind("<Button-1>", lambda e, tid=row[0]: self.open_tournament_detail(tid))
+            row_frame.bind("<Button-1>", lambda e, tid=row[0]: self.open_tournament_overview(tid))
             for child in row_frame.winfo_children():
-                child.bind("<Button-1>", lambda e, tid=row[0]: self.open_tournament_detail(tid))
+                child.bind("<Button-1>", lambda e, tid=row[0]: self.open_tournament_overview(tid))
 
-    def open_tournament_detail(self, t_id: str):
-        print(f"{t_id} clicked")
+    def open_tournament_brackets(self, t_id: str):
+        win = tk.Toplevel(self)
+        win.title("Tournament Brackets")
+        win.grab_set()
+        win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
+
+        rounds = ["Round 1", "Semifinals", "Final", "Semifinals", "Round 1"]
+
+        # Create columns for each round
+        for col, round_name in enumerate(rounds):
+            round_frame = ttk.LabelFrame(win, text=round_name)
+            round_frame.grid(row=0, column=col, padx=40, pady=20, sticky="n")
+
+
+            # grand prix, round inverse
+            # Example matches (dummy data for now)
+            if round_name == "Final":
+                matches = [["Jude", "Sophie", "Darren", "Eric"]]
+            else:
+                matches = [["Henry", "Lois", "Hari", "Sophie"],
+                        ["Jude", "Bob", "Kriss", "Trent"]]
+
+            # Build match boxes
+            for match in matches:
+                match_frame = ttk.Frame(round_frame, relief="solid", borderwidth=1, padding=5)
+                match_frame.pack(pady=20, fill="x")
+                for player in match:
+                    ttk.Label(match_frame, text=player, anchor="w").pack(fill="x")
+
+        # Winner section (below the middle column)
+        winner_label = ttk.Label(win, text="Winner: Eric", font=("Arial", 12, "bold"))
+        winner_label.grid(row=1, column=len(rounds)//2, pady=20)
+
+        def go_back():
+            self.open_tournament_overview(t_id)
+            win.destroy()
+
+        ttk.Button(win, text="Back", command=go_back).grid(row=2, column=0, pady=10, sticky="w")
     
-                
-    def build_tournament_type_section(self, parent, selected_type):
+    def open_tournament_overview(self, t_id: str):
+        win = tk.Toplevel(self)
+        win.title("Tournament Overview")
+        win.grab_set()
+        win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
+
+        def open_brackets():
+            self.open_tournament_brackets(t_id)
+            win.destroy()
+
+        def open_settings():
+            self.open_edit_tournament_view(t_id)
+            win.destroy()
+
+        ttk.Label(win, text="Date:").grid(row=0, column=0, padx=5, pady=5)
+        ttk.Button(win, text="Brackets", command=open_brackets).grid(row=0, column=1, pady=10)
+        ttk.Label(win, text="Player count:").grid(row=1, column=0, padx=5, pady=5)
+        ttk.Label(win, text="Round:").grid(row=2, column=0, padx=5, pady=5)
+        ttk.Label(win, text="Players competing:").grid(row=3, column=0, padx=5, pady=5)
+        ttk.Label(win, text="Players eliminated:").grid(row=4, column=0, padx=5, pady=5)
+
+        ttk.Button(win, text="Back", command=win.destroy).grid(row=5, column=0, pady=10)
+        ttk.Button(win, text="Settings", command=open_settings).grid(row=5, column=1, pady=10)
+        
+    def build_tournament_type_section(self, parent, selected_type, current_type_id=None):
         for widget in parent.winfo_children():
             if isinstance(widget, ttk.Radiobutton):
                 widget.destroy()
@@ -209,11 +418,14 @@ class TournamentsPage(ttk.Frame):
                 value=t_type[0]
             )
             rb.pack(anchor="w")
+            if current_type_id == t_type[0]:
+                selected_type.set(t_type[0])
             
     def open_add_type_view(self, parent_frame, selected_type):
         win = tk.Toplevel(self)
         win.title("Add Tournament Type")
         win.grab_set()
+        win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
 
         ttk.Label(win, text="Default Continuers:").grid(row=0, column=0, padx=5, pady=5)
         cont_entry = ttk.Entry(win)
