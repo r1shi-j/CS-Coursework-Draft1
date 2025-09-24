@@ -38,10 +38,10 @@ class Database:
         CREATE TABLE IF NOT EXISTS GrandPrix (
             grandprix_id TEXT PRIMARY KEY NOT NULL,
             tournament_id TEXT NOT NULL,
-            round INTEGER NOT NULL,
-            inverse BOOLEAN NOT NULL,
-            bracket INTEGER NOT NULL,
-            continuers INTEGER NOT NULL,
+            round INTEGER,
+            inverse BOOLEAN,
+            bracket INTEGER,
+            continuers INTEGER,
             FOREIGN KEY (tournament_id) REFERENCES Tournament(tournament_id)
         );
         """)
@@ -176,6 +176,19 @@ class Database:
         self.cursor.execute("DELETE FROM TournamentParticipation WHERE tournament_id = ? AND player_id = ?;", [t_id, p_id])
         self.connection.commit()
     
+    def read_tournament_winner(self, t_id: str) -> tuple:
+        self.cursor.execute("SELECT * FROM Player WHERE player_id = (SELECT player_id from TournamentParticipation WHERE tournament_id = ? AND tournament_result = 1);", [t_id])
+        return self.cursor.fetchall()[0]
+    
+    def read_grand_prix(self, t_id: str) -> list[tuple]:
+        self.cursor.execute("""
+            SELECT grandprix_id, round, inverse, bracket, continuers
+            FROM GrandPrix
+            WHERE tournament_id = ?
+            ORDER BY round, bracket
+        """, (t_id,))
+        return self.cursor.fetchall()
+
     def read_player_data(self) -> list[tuple]:
         self.cursor.execute("SELECT * FROM Player;")
         return self.cursor.fetchall()

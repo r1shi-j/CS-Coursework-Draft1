@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkcalendar import Calendar
 import datetime
+from collections import defaultdict
 from storage import create_uuid
 
 class TournamentsPage(ttk.Frame):
@@ -347,32 +348,47 @@ class TournamentsPage(ttk.Frame):
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
 
-        rounds = ["Round 1", "Semifinals", "Final", "Semifinals", "Round 1"]
+        grand_prix_list = self.controller.db.read_grand_prix(t_id)
+        rounds_dict = defaultdict(list)
 
-        # Create columns for each round
-        for col, round_name in enumerate(rounds):
-            round_frame = ttk.LabelFrame(win, text=round_name)
+        for gp in grand_prix_list:
+            gp_id, round_num, inverse, bracket, continuers = gp
+            rounds_dict[round_num].append(gp)
+
+        round_numbers = sorted([r if r is not None else 999 for r in rounds_dict.keys()])
+        rounds_reversed = sorted(round_numbers, reverse=True)[1:]
+        rounds_joined = round_numbers + rounds_reversed
+        final_index = rounds_joined.index(999)
+
+        def make_frame(gpi):
+            gp_id, round_num, inverse, bracket, continuers = gpi
+            match_frame = ttk.Frame(round_frame, relief="solid", borderwidth=1, padding=5)
+            match_frame.pack(pady=20, fill="x")
+
+            ttk.Label(match_frame, text=f"Grand Prix {gp_id[:4]}...", anchor="w").pack(fill="x")
+            ttk.Label(match_frame, text=f"Continuers: {continuers}", anchor="w").pack(fill="x")
+
+        for col, round_num in enumerate(rounds_joined):
+            title = f"Round {round_num}" if round_num != 999 else "Final"
+            round_frame = ttk.LabelFrame(win, text=title)
             round_frame.grid(row=0, column=col, padx=40, pady=20, sticky="n")
 
+            if round_num == 999: round_num = None
 
-            # grand prix, round inverse
-            # Example matches (dummy data for now)
-            if round_name == "Final":
-                matches = [["Jude", "Sophie", "Darren", "Eric"]]
-            else:
-                matches = [["Henry", "Lois", "Hari", "Sophie"],
-                        ["Jude", "Bob", "Kriss", "Trent"]]
+            for gp in rounds_dict[round_num]:
+                if col <= final_index: 
+                    if gp[2] == False: make_frame(gp)
+                elif col == final_index: 
+                    make_frame(gp)
+                else: 
+                    if gp[2] == True: make_frame(gp)
 
-            # Build match boxes
-            for match in matches:
-                match_frame = ttk.Frame(round_frame, relief="solid", borderwidth=1, padding=5)
-                match_frame.pack(pady=20, fill="x")
-                for player in match:
-                    ttk.Label(match_frame, text=player, anchor="w").pack(fill="x")
+        # for each grand prix with t_id=t_id, then set round, inverse and bracket
+        winner = self.controller.db.read_tournament_winner(t_id)
+        # winner link to stats? chec with ui designs
 
-        # Winner section (below the middle column)
-        winner_label = ttk.Label(win, text="Winner: Eric", font=("Arial", 12, "bold"))
-        winner_label.grid(row=1, column=len(rounds)//2, pady=20)
+        winner_label = ttk.Label(win, text=f"Winner: {winner[1]}", font=("Arial", 12, "bold"))
+        winner_label.grid(row=1, column=len(rounds_joined)//2, pady=20)
 
         def go_back():
             self.open_tournament_overview(t_id)
