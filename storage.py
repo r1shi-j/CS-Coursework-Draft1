@@ -186,7 +186,11 @@ class Database:
             FROM GrandPrix
             WHERE tournament_id = ?
             ORDER BY round, bracket
-        """, (t_id,))
+        """, [t_id])
+        return self.cursor.fetchall()
+    
+    def read_grand_prix_players(self, gp_id: str) -> list[tuple]:
+        self.cursor.execute("SELECT * FROM Player WHERE player_id IN (SELECT player_id FROM GrandPrixParticipation WHERE grandprix_id = ?)", [gp_id])
         return self.cursor.fetchall()
 
     def read_player_data(self) -> list[tuple]:

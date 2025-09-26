@@ -365,7 +365,13 @@ class TournamentsPage(ttk.Frame):
             match_frame = ttk.Frame(round_frame, relief="solid", borderwidth=1, padding=5)
             match_frame.pack(pady=20, fill="x")
 
-            ttk.Label(match_frame, text=f"Grand Prix {gp_id[:4]}...", anchor="w").pack(fill="x")
+            gp_players = self.controller.db.read_grand_prix_players(gp_id)
+            player_names = [name[1] for name in gp_players]
+
+            for name in player_names:
+                ttk.Label(match_frame, text=name, anchor="w").pack(fill="x")
+
+            ttk.Label(match_frame, text=f"Grand Prix {gp_id[:4]}", anchor="w").pack(fill="x")
             ttk.Label(match_frame, text=f"Continuers: {continuers}", anchor="w").pack(fill="x")
 
         for col, round_num in enumerate(rounds_joined):
@@ -376,19 +382,19 @@ class TournamentsPage(ttk.Frame):
             if round_num == 999: round_num = None
 
             for gp in rounds_dict[round_num]:
-                if col <= final_index: 
+                if col < final_index:
                     if gp[2] == False: make_frame(gp)
-                elif col == final_index: 
+                elif col == final_index:
                     make_frame(gp)
-                else: 
+                else:
                     if gp[2] == True: make_frame(gp)
 
         # for each grand prix with t_id=t_id, then set round, inverse and bracket
         winner = self.controller.db.read_tournament_winner(t_id)
         # winner link to stats? chec with ui designs
-
-        winner_label = ttk.Label(win, text=f"Winner: {winner[1]}", font=("Arial", 12, "bold"))
-        winner_label.grid(row=1, column=len(rounds_joined)//2, pady=20)
+        if winner is not None:
+            winner_label = ttk.Label(win, text=f"Winner: {winner[1]}", font=("Arial", 12, "bold"))
+            winner_label.grid(row=1, column=len(rounds_joined)//2, pady=20)
 
         def go_back():
             self.open_tournament_overview(t_id)
