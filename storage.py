@@ -98,7 +98,7 @@ class Database:
         CREATE TABLE IF NOT EXISTS GrandPrixParticipation (
             grandprix_id TEXT NOT NULL,
             player_id TEXT NOT NULL,
-            grandprix_result INTEGER NOT NULL,
+            grandprix_result INTEGER,
             PRIMARY KEY (grandprix_id, player_id),
             FOREIGN KEY (grandprix_id) REFERENCES GrandPrix(grandprix_id),
             FOREIGN KEY (player_id) REFERENCES Player(player_id)
@@ -192,6 +192,17 @@ class Database:
     def read_grand_prix_players(self, gp_id: str) -> list[tuple]:
         self.cursor.execute("SELECT * FROM Player WHERE player_id IN (SELECT player_id FROM GrandPrixParticipation WHERE grandprix_id = ?)", [gp_id])
         return self.cursor.fetchall()
+    
+    def create_race(self, gp_id: str, c_id: str, players: list[tuple]):
+        r_id = create_uuid()
+        self.cursor.execute("INSERT INTO Race (race_id, grandprix_id, circuit_id) VALUES (?, ?, ?)", (r_id, gp_id, c_id))
+        for p in players:
+            self.cursor.execute("INSERT INTO RaceParticipation (race_id, player_id, race_result) VALUES (?, ?, ?)", (r_id, p[0], p[1]))
+        self.connection.commit()
+
+    def get_race_count_in_gp(self, gp_id: str) -> int:
+        self.cursor.execute("SELECT COUNT(*) FROM Race WHERE grandprix_id = ?", (gp_id,))
+        return self.cursor.fetchone()[0]
 
     def read_player_data(self) -> list[tuple]:
         self.cursor.execute("SELECT * FROM Player;")

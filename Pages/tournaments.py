@@ -342,6 +342,97 @@ class TournamentsPage(ttk.Frame):
             for child in row_frame.winfo_children():
                 child.bind("<Button-1>", lambda e, tid=row[0]: self.open_tournament_overview(tid))
 
+    # change to race and then gp, or keep same and use recursion when race 4
+    def open_input_race_results(self, gp_id: str):
+        race_count = self.controller.db.get_race_count_in_gp(gp_id)
+        win = tk.Toplevel(self)
+        win.title(f"Input Race [{race_count + 1}/4] Results")
+        win.grab_set()
+        win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
+
+        circuits = self.controller.db.read_circuit_data()
+        circuit_names = [c[1] for c in circuits]
+        name_to_circuit = {c[1]: c for c in circuits}
+
+        ttk.Label(win, text="Select Circuit:").grid(row=0, column=0, padx=5, pady=5)
+
+        circuit_var = tk.StringVar()
+        circuit_dropdown = ttk.Combobox(
+            win,
+            textvariable=circuit_var,
+            values=circuit_names,
+            state="readonly"
+        )
+        circuit_dropdown.grid(row=0, column=1, padx=5, pady=5)
+        
+        players = self.controller.db.read_grand_prix_players(gp_id)
+        result_vars = {}
+        
+        for row, p in enumerate(players):
+            ttk.Label(win, text=p[1]).grid(row=1+row, column=0, padx=5, pady=5, sticky="w")
+
+            result_var = tk.StringVar()
+            result_dropdown = ttk.Combobox(
+                win,
+                textvariable=result_var,
+                values=[str(i) for i in range(1, 13)],
+                state="readonly",
+                width=5
+            )
+            result_dropdown.grid(row=1+row, column=1, padx=5, pady=5)
+            result_vars[p[0]] = result_var
+
+        # validation that all fields must be entered, and that results can't be the same
+        def insert_results():
+            chosen_name = circuit_var.get()
+            if chosen_name:
+                chosen_circuit = name_to_circuit[chosen_name]
+                c_id = chosen_circuit[0]
+            players_results = [(pid, int(var.get())) for pid, var in result_vars.items()]
+            self.controller.db.create_race(gp_id, c_id, players_results)
+            new_race_count = self.controller.db.get_race_count_in_gp(gp_id)
+            if new_race_count == 4: self.open_input_gp_results(gp_id)
+            win.destroy()
+
+        ttk.Button(win, text="Cancel", command=win.destroy).grid(row=5, column=0, pady=10, sticky="w")
+        ttk.Button(win, text="Insert Resuts", command=insert_results).grid(row=5, column=1, pady=10, sticky="w")
+    
+    def open_input_gp_results(self, gp_id: str):
+        win = tk.Toplevel(self)
+        win.title("Input Grand Prix Results")
+        win.grab_set()
+        win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
+
+        players = self.controller.db.read_grand_prix_players(gp_id)
+        result_vars = {}
+
+        for row, p in enumerate(players):
+            ttk.Label(win, text=f"{p[1]} {p[2]}").grid(row=row, column=0, padx=5, pady=5, sticky="w")
+
+            result_var = tk.StringVar()
+            result_dropdown = ttk.Combobox(
+                win,
+                textvariable=result_var,
+                values=[str(i) for i in range(1, 13)],
+                state="readonly",
+                width=5
+            )
+            result_dropdown.grid(row=row, column=1, padx=5, pady=5)
+            result_vars[p[0]] = result_var
+
+        def save_gp_results():
+            for pid, var in result_vars.items():
+                if var.get():
+                    self.controller.db.cursor.execute(
+                        "UPDATE GrandPrixParticipation SET grandprix_result = ? WHERE grandprix_id = ? AND player_id = ?",
+                        (int(var.get()), gp_id, pid)
+                    )
+                    ## update result of grandprixparticipation and then add top players to new grandprixparticipation
+            self.controller.db.connection.commit()
+            win.destroy()
+
+        ttk.Button(win, text="Complete Grand Prix", command=save_gp_results).grid(row=5, column=0, pady=10)
+        
     def open_tournament_brackets(self, t_id: str):
         win = tk.Toplevel(self)
         win.title("Tournament Brackets")
@@ -373,6 +464,11 @@ class TournamentsPage(ttk.Frame):
 
             ttk.Label(match_frame, text=f"Grand Prix {gp_id[:4]}", anchor="w").pack(fill="x")
             ttk.Label(match_frame, text=f"Continuers: {continuers}", anchor="w").pack(fill="x")
+
+            ### Input results button
+            # I think this should be shown when the next level results havent been submitted, so for each row and inverse, only one should be shown (only shown on on column on left and one on right, unless final then one in centre)
+
+            ttk.Button(match_frame, text="Input results", command=lambda: self.open_input_race_results(gp_id)).pack(fill="x")
 
         for col, round_num in enumerate(rounds_joined):
             title = f"Round {round_num}" if round_num != 999 else "Final"
