@@ -121,19 +121,34 @@ class Database:
     def read_tournament_data(self) -> list[tuple]:
         self.cursor.execute("SELECT * FROM Tournament;")
         return self.cursor.fetchall()
-    
-    def find_tournament_winner(self, t_id: str):
-        self.cursor.execute("""
-            SELECT p.*
-            FROM TournamentParticipation tp
-            JOIN Player p ON tp.player_id = p.player_id
-            WHERE tp.tournament_id = ?
-            AND tp.tournament_result = 1
-        """, (t_id,))
-        return self.cursor.fetchall()
 
     def create_tournament(self, t_id: str, date: str, p_count: int, ttype_id: str):
         self.cursor.execute("INSERT INTO Tournament (tournament_id, date, player_count, tournament_type_id) VALUES (?, ?, ?, ?)", (t_id, date, p_count, ttype_id))
+        self.connection.commit()
+    
+    def create_gps_for_tournament(self, t_id: str, players: list[tuple]):
+        starter_ids = [create_uuid(), create_uuid(), create_uuid(), create_uuid()]
+        self.cursor.execute("INSERT INTO GrandPrix (grandprix_id, tournament_id, round, inverse, bracket, continuers) VALUES (?, ?, ?, ?, ?, ?)", (starter_ids[0], t_id, 1, False, 1, 2))
+        self.cursor.execute("INSERT INTO GrandPrix (grandprix_id, tournament_id, round, inverse, bracket, continuers) VALUES (?, ?, ?, ?, ?, ?)", (starter_ids[1], t_id, 1, False, 2, 2))
+        self.cursor.execute("INSERT INTO GrandPrix (grandprix_id, tournament_id, round, inverse, bracket, continuers) VALUES (?, ?, ?, ?, ?, ?)", (starter_ids[2], t_id, 1, True, 1, 2))
+        self.cursor.execute("INSERT INTO GrandPrix (grandprix_id, tournament_id, round, inverse, bracket, continuers) VALUES (?, ?, ?, ?, ?, ?)", (starter_ids[3], t_id, 1, True, 2, 2))
+        self.cursor.execute("INSERT INTO GrandPrix (grandprix_id, tournament_id, round, inverse, bracket, continuers) VALUES (?, ?, ?, ?, ?, ?)", (create_uuid(), t_id, 2, False, 1, 2))
+        self.cursor.execute("INSERT INTO GrandPrix (grandprix_id, tournament_id, round, inverse, bracket, continuers) VALUES (?, ?, ?, ?, ?, ?)", (create_uuid(), t_id, 2, True, 1, 2))
+        self.cursor.execute("INSERT INTO GrandPrix (grandprix_id, tournament_id, round, inverse, bracket, continuers) VALUES (?, ?, ?, ?, ?, ?)", (create_uuid(), t_id, None, None, None, None))
+        self.connection.commit()
+
+        for p in players[0:4]:
+            self.cursor.execute("INSERT INTO GrandPrixParticipation (grandprix_id, player_id, grandprix_result) VALUES (?, ?, ?)", (starter_ids[0], p[0], None))
+
+        for p in players[4:8]:
+            self.cursor.execute("INSERT INTO GrandPrixParticipation (grandprix_id, player_id, grandprix_result) VALUES (?, ?, ?)", (starter_ids[1], p[0], None))
+
+        for p in players[8:12]:
+            self.cursor.execute("INSERT INTO GrandPrixParticipation (grandprix_id, player_id, grandprix_result) VALUES (?, ?, ?)", (starter_ids[2], p[0], None))
+
+        for p in players[12:16]:
+            self.cursor.execute("INSERT INTO GrandPrixParticipation (grandprix_id, player_id, grandprix_result) VALUES (?, ?, ?)", (starter_ids[3], p[0], None))
+
         self.connection.commit()
 
     def update_tournament(self, t_id, date: str, p_count: int, ttype_id: str):
@@ -146,7 +161,7 @@ class Database:
     
     def read_tournament_type(self, t_id: str) -> str:
         self.cursor.execute("SELECT tournament_type_id FROM Tournament WHERE tournament_id = ?;", [t_id])
-        return self.cursor.fetchall()[0][0]
+        return self.cursor.fetchone()[0]
 
     def add_tournament_type(self, def_continuers: int, num_grandprix: int, longer_style: bool):
         self.cursor.execute(
@@ -157,7 +172,7 @@ class Database:
 
     def read_tournament_date(self, t_id: str) -> str:
         self.cursor.execute("SELECT date FROM Tournament WHERE tournament_id = ?;", [t_id])
-        return self.cursor.fetchall()[0][0]
+        return self.cursor.fetchone()[0]
     
     def read_tournament_players(self, t_id: str) -> list[tuple]:
         self.cursor.execute("""
@@ -175,10 +190,6 @@ class Database:
     def remove_player_from_tournament(self, t_id: str, p_id: str):
         self.cursor.execute("DELETE FROM TournamentParticipation WHERE tournament_id = ? AND player_id = ?;", [t_id, p_id])
         self.connection.commit()
-    
-    def read_tournament_winner(self, t_id: str) -> tuple:
-        self.cursor.execute("SELECT * FROM Player WHERE player_id = (SELECT player_id from TournamentParticipation WHERE tournament_id = ? AND tournament_result = 1);", [t_id])
-        return self.cursor.fetchall()[0]
     
     def read_grand_prix(self, t_id: str) -> list[tuple]:
         self.cursor.execute("""
@@ -203,7 +214,92 @@ class Database:
     def get_race_count_in_gp(self, gp_id: str) -> int:
         self.cursor.execute("SELECT COUNT(*) FROM Race WHERE grandprix_id = ?", (gp_id,))
         return self.cursor.fetchone()[0]
+    
+    def t_from_gp(self, gp_id: str) -> str:
+        self.cursor.execute("SELECT tournament_id FROM GrandPrix WHERE grandprix_id = ?", (gp_id,))
+        return self.cursor.fetchone()[0]
+    
+    def find_winners_for_gp(self, gp_id: str) -> list[tuple]:
+        self.cursor.execute("""
+                SELECT continuers
+                FROM GrandPrix
+                WHERE grandprix_id = ?
+            """, (gp_id,))
+        limit = self.cursor.fetchone()[0]
+        if limit is None: return self.calculate_tournament_winner(gp_id)
 
+        self.cursor.execute("""
+            SELECT player_id, grandprix_result
+            FROM GrandPrixParticipation
+            WHERE grandprix_id = ?
+            ORDER BY grandprix_result ASC
+            LIMIT ?
+        """, (gp_id, limit))
+
+        return self.cursor.fetchall()
+    
+    def find_next_gp_id(self, gp_id: str) -> str:
+        self.cursor.execute("SELECT bracket FROM GrandPrix WHERE grandprix_id = ?", (gp_id,))
+        bracket = self.cursor.fetchone()[0]
+        if bracket is None: return "Tournament finished"
+        newbracket = (bracket + 1) // 2
+
+        self.cursor.execute("""
+            SELECT round
+            FROM GrandPrix
+            WHERE tournament_id = (SELECT tournament_id FROM GrandPrix WHERE grandprix_id = ?)
+        """, [gp_id])
+        rounds = self.cursor.fetchall()
+        rounds2 = [r[0] for r in rounds if r[0] != None]
+        maxround = max(rounds2)
+
+        self.cursor.execute("""
+            SELECT round
+            FROM GrandPrix
+            WHERE grandprix_id = ? AND tournament_id = (SELECT tournament_id FROM GrandPrix WHERE grandprix_id = ?)
+        """, [gp_id, gp_id])
+        current_round = self.cursor.fetchone()[0]
+
+        if current_round == maxround:
+            self.cursor.execute("""
+                SELECT grandprix_id
+                FROM GrandPrix
+                WHERE tournament_id = (SELECT tournament_id FROM GrandPrix WHERE grandprix_id = ?)
+                AND (round IS NULL AND bracket IS NULL AND inverse IS NULL)
+            """, (gp_id,))
+            return self.cursor.fetchone()[0]
+        else:
+            self.cursor.execute("""
+                SELECT grandprix_id
+                FROM GrandPrix
+                WHERE tournament_id = (SELECT tournament_id FROM GrandPrix WHERE grandprix_id = ?)
+                AND round = (SELECT round FROM GrandPrix WHERE grandprix_id = ?) + 1
+                AND inverse = (SELECT inverse FROM GrandPrix WHERE grandprix_id = ?)
+                AND bracket = ?
+            """, (gp_id, gp_id, gp_id, newbracket))
+            return self.cursor.fetchone()[0]
+    
+    def add_winners_to_gp(self, players: list[tuple], gp_id: str):
+        for p in players:
+            self.cursor.execute("INSERT INTO GrandPrixParticipation (grandprix_id, player_id, grandprix_result) VALUES (?, ?, ?)", (gp_id, p[0], None))
+        self.connection.commit()
+
+    def calculate_tournament_winner(self, gp_id: str) -> tuple:
+        self.cursor.execute("""
+            SELECT player_id, grandprix_result
+            FROM GrandPrixParticipation
+            WHERE grandprix_id = ?
+            ORDER BY grandprix_result ASC
+            LIMIT 1
+        """, (gp_id,))
+        w_id = self.cursor.fetchone()[0]
+        self.cursor.execute("SELECT * FROM Player WHERE player_id = ?", (w_id,))
+        return self.cursor.fetchone()
+    
+    def read_tournament_winner(self, t_id: str) -> tuple:
+        self.cursor.execute("SELECT * FROM Player WHERE player_id = (SELECT player_id from TournamentParticipation WHERE tournament_id = ? AND tournament_result = 1);", [t_id])
+        return self.cursor.fetchone()
+    
     def read_player_data(self) -> list[tuple]:
         self.cursor.execute("SELECT * FROM Player;")
         return self.cursor.fetchall()
@@ -296,7 +392,21 @@ class Database:
         self.connection.close()
 
 
-# db = Database()
-# db.connect()
-# db._insert_filler_tournament_data()
-# db.close()
+db = Database()
+db.connect()
+
+# print(db.find_winners_for_next_gp("id1"))
+# print(1, db.find_next_gp_id("id1"))
+# print(2, db.find_next_gp_id("id2"))
+# print(3, db.find_next_gp_id("id3"))
+# print(4, db.find_next_gp_id("id4"))
+# print(5, db.find_next_gp_id("id5"))
+# print(6, db.find_next_gp_id("id6"))
+# print(7, db.find_next_gp_id("id7"))
+
+# top_players = db.find_winners_for_next_gp("id1")
+# new_gp_id = db.find_next_gp_id("id1")
+# db.add_winners_to_gp(top_players, new_gp_id)
+db.calculate_tournament_winner("id1")
+
+db.close()

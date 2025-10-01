@@ -147,7 +147,6 @@ class TournamentsPage(ttk.Frame):
 
         search_var.trace_add("write", update_search)
 
-
         t_type_frame = ttk.LabelFrame(win, text="Tournament Type")
         t_type_frame.grid(row=4, column=0, columnspan=2, padx=5, pady=5, sticky="nsew")
 
@@ -166,6 +165,7 @@ class TournamentsPage(ttk.Frame):
             self.controller.db.create_tournament(new_t_id, chosen_date(), len(tournament_players), selected_type.get())
             for player in tournament_players:
                 self.controller.db.add_player_to_tournament(new_t_id, player[0])
+            self.controller.db.create_gps_for_tournament(new_t_id, tournament_players)
             self.refresh_tournaments()
             self.open_tournament_overview(new_t_id)
             win.destroy()
@@ -334,16 +334,16 @@ class TournamentsPage(ttk.Frame):
 
             tk.Label(row_frame, text=row[1], width=20, anchor="w", bg=bg).pack(side="left")
 
-            winner = self.controller.db.find_tournament_winner(row[0])
+            winner = self.controller.db.read_tournament_winner(row[0])
             if winner:
-                tk.Label(row_frame, text=winner[0][1], width=20, anchor="w", bg=bg).pack(side="left")
+                tk.Label(row_frame, text=winner[1], width=20, anchor="w", bg=bg).pack(side="left")
 
             row_frame.bind("<Button-1>", lambda e, tid=row[0]: self.open_tournament_overview(tid))
             for child in row_frame.winfo_children():
                 child.bind("<Button-1>", lambda e, tid=row[0]: self.open_tournament_overview(tid))
 
     # change to race and then gp, or keep same and use recursion when race 4
-    def open_input_race_results(self, gp_id: str):
+    def open_input_race_results(self, gp_id: str, t_id: str):
         race_count = self.controller.db.get_race_count_in_gp(gp_id)
         win = tk.Toplevel(self)
         win.title(f"Input Race [{race_count + 1}/4] Results")
@@ -391,13 +391,14 @@ class TournamentsPage(ttk.Frame):
             players_results = [(pid, int(var.get())) for pid, var in result_vars.items()]
             self.controller.db.create_race(gp_id, c_id, players_results)
             new_race_count = self.controller.db.get_race_count_in_gp(gp_id)
-            if new_race_count == 4: self.open_input_gp_results(gp_id)
+            if new_race_count == 4: self.open_input_gp_results(gp_id, t_id)
             win.destroy()
+            self.refresh_brackets(t_id)
 
         ttk.Button(win, text="Cancel", command=win.destroy).grid(row=5, column=0, pady=10, sticky="w")
         ttk.Button(win, text="Insert Resuts", command=insert_results).grid(row=5, column=1, pady=10, sticky="w")
     
-    def open_input_gp_results(self, gp_id: str):
+    def open_input_gp_results(self, gp_id: str, t_id: str):
         win = tk.Toplevel(self)
         win.title("Input Grand Prix Results")
         win.grab_set()
@@ -427,17 +428,38 @@ class TournamentsPage(ttk.Frame):
                         "UPDATE GrandPrixParticipation SET grandprix_result = ? WHERE grandprix_id = ? AND player_id = ?",
                         (int(var.get()), gp_id, pid)
                     )
-                    ## update result of grandprixparticipation and then add top players to new grandprixparticipation
             self.controller.db.connection.commit()
+            
+            top_players = self.controller.db.find_winners_for_gp(gp_id)
+            new_gp_id = self.controller.db.find_next_gp_id(gp_id)
+            if new_gp_id == "Tournament finished":
+                winner = self.controller.db.calculate_tournament_winner(gp_id)
+                print(winner)
+                ## TODO: set tournaemnt result TournamentParticipation for all players
+                self.controller.db.cursor.execute("UPDATE TournamentParticipation SET tournament_result = 1 WHERE tournament_id = ? AND player_id = ?", (t_id, winner[0]))
+                self.controller.db.connection.commit()
+            else:
+                self.controller.db.add_winners_to_gp(top_players, new_gp_id)
+
             win.destroy()
+            self.refresh_brackets(t_id)
 
         ttk.Button(win, text="Complete Grand Prix", command=save_gp_results).grid(row=5, column=0, pady=10)
         
     def open_tournament_brackets(self, t_id: str):
-        win = tk.Toplevel(self)
-        win.title("Tournament Brackets")
-        win.grab_set()
-        win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
+        self.bracket_win = tk.Toplevel(self)
+        self.bracket_win.title("Tournament Brackets")
+        self.bracket_win.grab_set()
+        self.bracket_win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
+
+        self.brackets_container = ttk.Frame(self.bracket_win)
+        self.brackets_container.pack(fill="both", expand=True)
+
+        self._build_brackets(t_id)
+
+    def _build_brackets(self, t_id: str):
+        for widget in self.brackets_container.winfo_children():
+            widget.destroy()
 
         grand_prix_list = self.controller.db.read_grand_prix(t_id)
         rounds_dict = defaultdict(list)
@@ -451,52 +473,76 @@ class TournamentsPage(ttk.Frame):
         rounds_joined = round_numbers + rounds_reversed
         final_index = rounds_joined.index(999)
 
-        def make_frame(gpi):
+        def make_frame(gpi, round_frame):
             gp_id, round_num, inverse, bracket, continuers = gpi
-            match_frame = ttk.Frame(round_frame, relief="solid", borderwidth=1, padding=5)
-            match_frame.pack(pady=20, fill="x")
-
             gp_players = self.controller.db.read_grand_prix_players(gp_id)
-            player_names = [name[1] for name in gp_players]
 
-            for name in player_names:
-                ttk.Label(match_frame, text=name, anchor="w").pack(fill="x")
+            currentno = self.controller.db.get_race_count_in_gp(gp_id)
+            if currentno == 0:
+                line = "Not started"
+            elif currentno == 4:
+                line = ""
+            else:
+                line = f"{currentno}/4 Races Completed"
+            ttk.Label(round_frame, text=line, anchor="w").pack(fill="x")
 
-            ttk.Label(match_frame, text=f"Grand Prix {gp_id[:4]}", anchor="w").pack(fill="x")
-            ttk.Label(match_frame, text=f"Continuers: {continuers}", anchor="w").pack(fill="x")
+            match_frame = ttk.Frame(round_frame, relief="solid", borderwidth=1, padding=5)
+            match_frame.pack(pady=10, fill="x")
 
-            ### Input results button
-            # I think this should be shown when the next level results havent been submitted, so for each row and inverse, only one should be shown (only shown on on column on left and one on right, unless final then one in centre)
+            style = ttk.Style()
+            style.configure("Black.TLabel", foreground="#000000")
+            style.configure("Green.TLabel", foreground="#11DF11")
 
-            ttk.Button(match_frame, text="Input results", command=lambda: self.open_input_race_results(gp_id)).pack(fill="x")
+            for name in gp_players:
+                color = "Black.TLabel"
+                if self.controller.db.get_race_count_in_gp(gp_id) == 4:
+                    wins = self.controller.db.find_winners_for_gp(gp_id)
+                    if type(wins) == tuple:
+                        if name == wins:
+                            color = "Green.TLabel"
+                    else:
+                        fmap = [p[0] for p in wins]
+                        if name[0] in fmap: 
+                            color = "Green.TLabel"
+
+                ttk.Label(match_frame, text=name[1], anchor="w", style=color).pack(fill="x")
+
+            # ttk.Label(match_frame, text=f"Grand Prix {gp_id[:4]}", anchor="w").pack(fill="x")
+            # ttk.Label(match_frame, text=f"Continuers: {continuers}", anchor="w").pack(fill="x")
+
+            # add condition that all previous sections must be complete (eg round 1 complete for round 2 buttons to be shown)
+            if currentno < 4:
+                ttk.Button(round_frame, text="Input results", command=lambda: self.open_input_race_results(gp_id, t_id)).pack(fill="x")
 
         for col, round_num in enumerate(rounds_joined):
             title = f"Round {round_num}" if round_num != 999 else "Final"
-            round_frame = ttk.LabelFrame(win, text=title)
+            round_frame = ttk.LabelFrame(self.brackets_container, text=title)
             round_frame.grid(row=0, column=col, padx=40, pady=20, sticky="n")
 
-            if round_num == 999: round_num = None
+            rn = round_num
+            if rn == 999: rn = None
 
-            for gp in rounds_dict[round_num]:
+            for gp in rounds_dict[rn]:
                 if col < final_index:
-                    if gp[2] == False: make_frame(gp)
+                    if gp[2] == False: make_frame(gp, round_frame)
                 elif col == final_index:
-                    make_frame(gp)
+                    make_frame(gp, round_frame)
                 else:
-                    if gp[2] == True: make_frame(gp)
+                    if gp[2] == True: make_frame(gp, round_frame)
 
-        # for each grand prix with t_id=t_id, then set round, inverse and bracket
         winner = self.controller.db.read_tournament_winner(t_id)
-        # winner link to stats? chec with ui designs
         if winner is not None:
-            winner_label = ttk.Label(win, text=f"Winner: {winner[1]}", font=("Arial", 12, "bold"))
+            winner_label = ttk.Label(self.brackets_container, text=f"Winner: {winner[1]}", font=("Arial", 12, "bold"))
             winner_label.grid(row=1, column=len(rounds_joined)//2, pady=20)
 
         def go_back():
             self.open_tournament_overview(t_id)
-            win.destroy()
+            self.bracket_win.destroy()
 
-        ttk.Button(win, text="Back", command=go_back).grid(row=2, column=0, pady=10, sticky="w")
+        ttk.Button(self.brackets_container, text="Back", command=go_back).grid(row=2, column=0, pady=10, sticky="w")
+
+    def refresh_brackets(self, t_id: str):
+        self._build_brackets(t_id)
     
     def open_tournament_overview(self, t_id: str):
         win = tk.Toplevel(self)
