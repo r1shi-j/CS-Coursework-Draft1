@@ -11,14 +11,18 @@ if __name__ == "__main__":
 ### Forms to do
 # Tournament Bracket viewer
 # Tournament overview data
-# Input race results
-# Input grand prix results
 # Statistics view
+
+### Bugs
+# Adding/removing players from a tournament will disrupt brackets
+# Solution is to lock current players, but can add new players
+# Tournament type doesnt currently do anything
+# Must have 16 players in a tournament otherwise bracket creating will fail
+# Tournament overview doesnt show the current round or players still in/out
 
 ### After prototype
 # Create account view
 # Login view
-# Block all closing window via window close button (traffic lights ect, check on windows)
 # Add styling everywhere
 # Add validation to forms everywhere
 # Make ui better, sizing, padding, spacing ect

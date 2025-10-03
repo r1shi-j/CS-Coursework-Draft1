@@ -179,7 +179,7 @@ class TournamentsPage(ttk.Frame):
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
 
-        original_date_str = self.controller.db.read_tournament_date(t_id)
+        original_date_str = self.controller.db.read_tournament(t_id)[1]
         original_date = datetime.datetime.strptime(original_date_str, "%d/%m/%y").date()
 
         datepicker_frame = ttk.LabelFrame(win, text="Date")
@@ -342,7 +342,6 @@ class TournamentsPage(ttk.Frame):
             for child in row_frame.winfo_children():
                 child.bind("<Button-1>", lambda e, tid=row[0]: self.open_tournament_overview(tid))
 
-    # change to race and then gp, or keep same and use recursion when race 4
     def open_input_race_results(self, gp_id: str, t_id: str):
         race_count = self.controller.db.get_race_count_in_gp(gp_id)
         win = tk.Toplevel(self)
@@ -393,7 +392,7 @@ class TournamentsPage(ttk.Frame):
             new_race_count = self.controller.db.get_race_count_in_gp(gp_id)
             if new_race_count == 4: self.open_input_gp_results(gp_id, t_id)
             win.destroy()
-            self.refresh_brackets(t_id)
+            if new_race_count < 4: self.refresh_brackets(t_id)
 
         ttk.Button(win, text="Cancel", command=win.destroy).grid(row=5, column=0, pady=10, sticky="w")
         ttk.Button(win, text="Insert Resuts", command=insert_results).grid(row=5, column=1, pady=10, sticky="w")
@@ -477,17 +476,8 @@ class TournamentsPage(ttk.Frame):
             gp_id, round_num, inverse, bracket, continuers = gpi
             gp_players = self.controller.db.read_grand_prix_players(gp_id)
 
-            currentno = self.controller.db.get_race_count_in_gp(gp_id)
-            if currentno == 0:
-                line = "Not started"
-            elif currentno == 4:
-                line = ""
-            else:
-                line = f"{currentno}/4 Races Completed"
-            ttk.Label(round_frame, text=line, anchor="w").pack(fill="x")
-
             match_frame = ttk.Frame(round_frame, relief="solid", borderwidth=1, padding=5)
-            match_frame.pack(pady=10, fill="x")
+            match_frame.pack(pady=20, fill="x")
 
             style = ttk.Style()
             style.configure("Black.TLabel", foreground="#000000")
@@ -506,13 +496,18 @@ class TournamentsPage(ttk.Frame):
                             color = "Green.TLabel"
 
                 ttk.Label(match_frame, text=name[1], anchor="w", style=color).pack(fill="x")
+            
+            for x in range((4-len(gp_players))):
+                ttk.Label(match_frame, text="", anchor="w").pack(fill="x")
 
             # ttk.Label(match_frame, text=f"Grand Prix {gp_id[:4]}", anchor="w").pack(fill="x")
             # ttk.Label(match_frame, text=f"Continuers: {continuers}", anchor="w").pack(fill="x")
 
-            # add condition that all previous sections must be complete (eg round 1 complete for round 2 buttons to be shown)
-            if currentno < 4:
-                ttk.Button(round_frame, text="Input results", command=lambda: self.open_input_race_results(gp_id, t_id)).pack(fill="x")
+            currentno = self.controller.db.get_race_count_in_gp(gp_id)
+            current_p_count = self.controller.db.get_player_count_in_gp(gp_id)
+
+            if currentno < 4 and current_p_count == 4:
+                ttk.Button(round_frame, text=f"Input race result {currentno+1}/4", command=lambda: self.open_input_race_results(gp_id, t_id)).pack(fill="x")
 
         for col, round_num in enumerate(rounds_joined):
             title = f"Round {round_num}" if round_num != 999 else "Final"
@@ -534,6 +529,8 @@ class TournamentsPage(ttk.Frame):
         if winner is not None:
             winner_label = ttk.Label(self.brackets_container, text=f"Winner: {winner[1]}", font=("Arial", 12, "bold"))
             winner_label.grid(row=1, column=len(rounds_joined)//2, pady=20)
+        else:
+            tk.Label(self.brackets_container, text=self.controller.db.get_current_round(t_id)).grid(row=2, column=2)
 
         def go_back():
             self.open_tournament_overview(t_id)
@@ -558,15 +555,20 @@ class TournamentsPage(ttk.Frame):
             self.open_edit_tournament_view(t_id)
             win.destroy()
 
-        ttk.Label(win, text="Date:").grid(row=0, column=0, padx=5, pady=5)
-        ttk.Button(win, text="Brackets", command=open_brackets).grid(row=0, column=1, pady=10)
-        ttk.Label(win, text="Player count:").grid(row=1, column=0, padx=5, pady=5)
-        ttk.Label(win, text="Round:").grid(row=2, column=0, padx=5, pady=5)
-        ttk.Label(win, text="Players competing:").grid(row=3, column=0, padx=5, pady=5)
-        ttk.Label(win, text="Players eliminated:").grid(row=4, column=0, padx=5, pady=5)
+        t = self.controller.db.read_tournament(t_id)
+        p_count = len(self.controller.db.read_tournament_players(t_id))
 
-        ttk.Button(win, text="Back", command=win.destroy).grid(row=5, column=0, pady=10)
-        ttk.Button(win, text="Settings", command=open_settings).grid(row=5, column=1, pady=10)
+        ttk.Button(win, text="Brackets", command=open_brackets).grid(row=0, column=0, columnspan=2, pady=10)
+        ttk.Label(win, text="Date:").grid(row=1, column=0, padx=5, pady=5)
+        ttk.Label(win, text=t[1]).grid(row=1, column=1, padx=5, pady=5)
+        ttk.Label(win, text="Player count:").grid(row=2, column=0, padx=5, pady=5)
+        ttk.Label(win, text=p_count).grid(row=2, column=1, padx=5, pady=5)
+        ttk.Label(win, text="Round:").grid(row=3, column=0, padx=5, pady=5)
+        ttk.Label(win, text=self.controller.db.get_current_round(t_id)).grid(row=3, column=1, padx=5, pady=5)
+        ttk.Label(win, text="Players competing:").grid(row=4, column=0, padx=5, pady=5)
+        ttk.Label(win, text="Players eliminated:").grid(row=5, column=0, padx=5, pady=5)
+        ttk.Button(win, text="Back", command=win.destroy).grid(row=6, column=0, pady=10)
+        ttk.Button(win, text="Settings", command=open_settings).grid(row=6, column=1, pady=10)
         
     def build_tournament_type_section(self, parent, selected_type, current_type_id=None):
         for widget in parent.winfo_children():

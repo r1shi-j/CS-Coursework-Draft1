@@ -170,10 +170,6 @@ class Database:
         )
         self.connection.commit()
 
-    def read_tournament_date(self, t_id: str) -> str:
-        self.cursor.execute("SELECT date FROM Tournament WHERE tournament_id = ?;", [t_id])
-        return self.cursor.fetchone()[0]
-    
     def read_tournament_players(self, t_id: str) -> list[tuple]:
         self.cursor.execute("""
             SELECT p.player_id, p.forename, p.surname, p.age
@@ -182,6 +178,10 @@ class Database:
             WHERE tp.tournament_id = ?;
         """, [t_id])
         return self.cursor.fetchall()
+    
+    def read_tournament(self, t_id: str) -> tuple:
+        self.cursor.execute("SELECT * FROM Tournament WHERE tournament_id = ?;", [t_id])
+        return self.cursor.fetchone()
     
     def add_player_to_tournament(self, t_id: str, p_id: str):
         self.cursor.execute("INSERT INTO TournamentParticipation (tournament_id, player_id, tournament_result) VALUES (?, ?, ?)", (t_id, p_id, None))
@@ -214,6 +214,43 @@ class Database:
     def get_race_count_in_gp(self, gp_id: str) -> int:
         self.cursor.execute("SELECT COUNT(*) FROM Race WHERE grandprix_id = ?", (gp_id,))
         return self.cursor.fetchone()[0]
+    
+    def get_player_count_in_gp(self, gp_id: str) -> int:
+        self.cursor.execute("SELECT COUNT(*) FROM GrandPrixParticipation WHERE grandprix_id = ?", (gp_id,))
+        return self.cursor.fetchone()[0]
+    
+    def get_current_round(self, t_id: str):
+        self.cursor.execute("""
+            SELECT grandprix_id, round
+            FROM GrandPrix
+            WHERE tournament_id = ?
+            AND round IS NOT NULL
+        """, [t_id])
+        gps = self.cursor.fetchall()
+
+        current_rounds = []
+        for gp_id, round_num in gps:
+            self.cursor.execute("SELECT COUNT(*) FROM Race WHERE grandprix_id = ?", (gp_id,))
+            race_count = self.cursor.fetchone()[0]
+
+            if race_count < 4:
+                current_rounds.append(round_num)
+                continue
+
+            self.cursor.execute("""
+                SELECT COUNT(*) 
+                FROM GrandPrixParticipation
+                WHERE grandprix_id = ? AND grandprix_result IS NULL
+            """, (gp_id,))
+            unfilled = self.cursor.fetchone()[0]
+
+            if unfilled > 0:
+                current_rounds.append(round_num)
+
+        if current_rounds:
+            return min(current_rounds)
+        else:
+            return "Final"
     
     def t_from_gp(self, gp_id: str) -> str:
         self.cursor.execute("SELECT tournament_id FROM GrandPrix WHERE grandprix_id = ?", (gp_id,))
