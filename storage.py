@@ -251,6 +251,23 @@ class Database:
             return min(current_rounds)
         else:
             return "Final"
+        
+    def get_players_count_eliminated(self, t_id: str) -> int:
+        self.cursor.execute("""
+                SELECT grandprix_id
+                FROM GrandPrix
+                WHERE tournament_id = ?
+            """, (t_id,))
+        
+        gp_ids = self.cursor.fetchall()
+        players = set()
+
+        for gp in gp_ids:
+            if self.get_player_count_in_gp(gp[0]) == 4 and self.get_race_count_in_gp(gp[0]) == 4:
+                losers = self.find_losers_for_gp(gp[0])
+                players.update([x for x in losers])
+
+        return len(players)
     
     def t_from_gp(self, gp_id: str) -> str:
         self.cursor.execute("SELECT tournament_id FROM GrandPrix WHERE grandprix_id = ?", (gp_id,))
@@ -274,6 +291,20 @@ class Database:
         """, (gp_id, limit))
 
         return self.cursor.fetchall()
+    
+    def find_losers_for_gp(self, gp_id: str) -> list[tuple]:
+        self.cursor.execute("""
+                SELECT player_id
+                FROM GrandPrixParticipation
+                WHERE grandprix_id = ?
+            """, (gp_id,))
+        player = self.cursor.fetchall()
+        players = set([x[0] for x in player])
+        winner = self.find_winners_for_gp(gp_id)
+        winners = set([x[0] for x in winner])
+
+        losers = players - winners
+        return losers
     
     def find_next_gp_id(self, gp_id: str) -> str:
         self.cursor.execute("SELECT bracket FROM GrandPrix WHERE grandprix_id = ?", (gp_id,))

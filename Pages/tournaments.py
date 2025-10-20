@@ -529,8 +529,6 @@ class TournamentsPage(ttk.Frame):
         if winner is not None:
             winner_label = ttk.Label(self.brackets_container, text=f"Winner: {winner[1]}", font=("Arial", 12, "bold"))
             winner_label.grid(row=1, column=len(rounds_joined)//2, pady=20)
-        else:
-            tk.Label(self.brackets_container, text=self.controller.db.get_current_round(t_id)).grid(row=2, column=2)
 
         def go_back():
             self.open_tournament_overview(t_id)
@@ -563,10 +561,21 @@ class TournamentsPage(ttk.Frame):
         ttk.Label(win, text=t[1]).grid(row=1, column=1, padx=5, pady=5)
         ttk.Label(win, text="Player count:").grid(row=2, column=0, padx=5, pady=5)
         ttk.Label(win, text=p_count).grid(row=2, column=1, padx=5, pady=5)
-        ttk.Label(win, text="Round:").grid(row=3, column=0, padx=5, pady=5)
-        ttk.Label(win, text=self.controller.db.get_current_round(t_id)).grid(row=3, column=1, padx=5, pady=5)
-        ttk.Label(win, text="Players competing:").grid(row=4, column=0, padx=5, pady=5)
-        ttk.Label(win, text="Players eliminated:").grid(row=5, column=0, padx=5, pady=5)
+
+        winner = self.controller.db.read_tournament_winner(t_id)
+        if winner:
+            ttk.Label(win, text="Winner:").grid(row=3, column=0, padx=5, pady=5)
+            ttk.Label(win, text=winner[1]).grid(row=3, column=1, padx=5, pady=5)
+        else:
+            eliminated_count = self.controller.db.get_players_count_eliminated(t_id)
+            competing_count = 16 - eliminated_count
+            ttk.Label(win, text="Round:").grid(row=3, column=0, padx=5, pady=5)
+            ttk.Label(win, text=self.controller.db.get_current_round(t_id)).grid(row=3, column=1, padx=5, pady=5)
+            ttk.Label(win, text="Players competing:").grid(row=4, column=0, padx=5, pady=5)
+            ttk.Label(win, text=competing_count).grid(row=4, column=1, padx=5, pady=5)
+            ttk.Label(win, text="Players eliminated:").grid(row=5, column=0, padx=5, pady=5)
+            ttk.Label(win, text=eliminated_count).grid(row=5, column=1, padx=5, pady=5)
+
         ttk.Button(win, text="Back", command=win.destroy).grid(row=6, column=0, pady=10)
         ttk.Button(win, text="Settings", command=open_settings).grid(row=6, column=1, pady=10)
         
