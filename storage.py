@@ -389,6 +389,48 @@ class Database:
         self.cursor.execute("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", (create_uuid(), forename, surname, age))
         self.connection.commit()
 
+    # def clean_data(self):
+    #     self.cursor.execute("""
+    #         SELECT grandprix_id
+    #         FROM GrandPrix
+    #     """)
+    #     gp = self.cursor.fetchall()
+    #     gps = set([x[0] for x in gp])
+
+    #     self.cursor.execute("""
+    #         SELECT grandprix_id
+    #         FROM Race
+    #     """)
+    #     race = self.cursor.fetchall()
+    #     races = set([x[0] for x in race])
+
+    #     print(gps)
+    #     print(races)
+    #     old = races - gps
+    #     print(old)
+
+    #     for x in old:
+    #         self.cursor.execute("""
+    #             SELECT race_id 
+    #             FROM Race
+    #             WHERE grandprix_id = ?
+    #         """, (x,))
+    #         roid = self.cursor.fetchall()
+    #         rids = [x[0] for x in roid]
+
+    #         for r in rids:
+    #             self.cursor.execute("""
+    #                 DELETE FROM RaceParticipation
+    #                 WHERE race_id = ?
+    #             """, (r,))
+
+    #             self.cursor.execute("""
+    #                 DELETE FROM Race
+    #                 WHERE race_id = ?
+    #             """, (r,))
+        
+    #     self.connection.commit()
+
     def update_player(self, player_id: str, forename: str, surname: str, age: int):
         self.cursor.execute("UPDATE Player SET forename=?, surname=?, age=? WHERE player_id=?", (forename, surname, age, player_id))
         self.connection.commit()
@@ -460,21 +502,6 @@ class Database:
         self.connection.close()
 
 
-db = Database()
-db.connect()
-
-# print(db.find_winners_for_next_gp("id1"))
-# print(1, db.find_next_gp_id("id1"))
-# print(2, db.find_next_gp_id("id2"))
-# print(3, db.find_next_gp_id("id3"))
-# print(4, db.find_next_gp_id("id4"))
-# print(5, db.find_next_gp_id("id5"))
-# print(6, db.find_next_gp_id("id6"))
-# print(7, db.find_next_gp_id("id7"))
-
-# top_players = db.find_winners_for_next_gp("id1")
-# new_gp_id = db.find_next_gp_id("id1")
-# db.add_winners_to_gp(top_players, new_gp_id)
-db.calculate_tournament_winner("id1")
-
-db.close()
+# db = Database()
+# db.connect()
+# db.close()
