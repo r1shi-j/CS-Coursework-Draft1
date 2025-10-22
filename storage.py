@@ -1,19 +1,18 @@
 import sqlite3
 import uuid
-from datetime import datetime
 
-# def _tempdate() -> str:
-#     return datetime.now().strftime("%d/%m/%y %H:%M:%S")#.strftime("%Y-%m-%d %h:%m:%s")
-
+# function to generate UUID
 def create_uuid() -> str:
     return str(uuid.uuid4())
 
 class Database:
+    # setting up connection
     def __init__(self, path="tournament.db"):
         self.connection = sqlite3.connect(path)
         self.connection.execute("PRAGMA foreign_keys = ON;")
         self.cursor = self.connection.cursor()
 
+    # creating all the tables if they dont exist
     def connect(self):
         self.cursor.execute("""
         CREATE TABLE IF NOT EXISTS Player (
@@ -118,14 +117,17 @@ class Database:
 
         self.connection.commit()
 
+    # reads all tournament data
     def read_tournament_data(self) -> list[tuple]:
         self.cursor.execute("SELECT * FROM Tournament;")
         return self.cursor.fetchall()
 
+    # creates a new tournament with the specified data
     def create_tournament(self, t_id: str, date: str, p_count: int, ttype_id: str):
         self.cursor.execute("INSERT INTO Tournament (tournament_id, date, player_count, tournament_type_id) VALUES (?, ?, ?, ?)", (t_id, date, p_count, ttype_id))
         self.connection.commit()
     
+    # creating the grand prixs for a new tournament and adding the respective players to them
     def create_gps_for_tournament(self, t_id: str, players: list[tuple]):
         starter_ids = [create_uuid(), create_uuid(), create_uuid(), create_uuid()]
         self.cursor.execute("INSERT INTO GrandPrix (grandprix_id, tournament_id, round, inverse, bracket, continuers) VALUES (?, ?, ?, ?, ?, ?)", (starter_ids[0], t_id, 1, False, 1, 2))
@@ -137,32 +139,32 @@ class Database:
         self.cursor.execute("INSERT INTO GrandPrix (grandprix_id, tournament_id, round, inverse, bracket, continuers) VALUES (?, ?, ?, ?, ?, ?)", (create_uuid(), t_id, None, None, None, None))
         self.connection.commit()
 
-        for p in players[0:4]:
-            self.cursor.execute("INSERT INTO GrandPrixParticipation (grandprix_id, player_id, grandprix_result) VALUES (?, ?, ?)", (starter_ids[0], p[0], None))
+        for p in players[0:4]: self.add_player_to_gp(starter_ids[0], p[0], None)
+        for p in players[4:8]: self.add_player_to_gp(starter_ids[1], p[0], None)
+        for p in players[8:12]: self.add_player_to_gp(starter_ids[2], p[0], None)
+        for p in players[12:16]: self.add_player_to_gp(starter_ids[3], p[0], None)
 
-        for p in players[4:8]:
-            self.cursor.execute("INSERT INTO GrandPrixParticipation (grandprix_id, player_id, grandprix_result) VALUES (?, ?, ?)", (starter_ids[1], p[0], None))
-
-        for p in players[8:12]:
-            self.cursor.execute("INSERT INTO GrandPrixParticipation (grandprix_id, player_id, grandprix_result) VALUES (?, ?, ?)", (starter_ids[2], p[0], None))
-
-        for p in players[12:16]:
-            self.cursor.execute("INSERT INTO GrandPrixParticipation (grandprix_id, player_id, grandprix_result) VALUES (?, ?, ?)", (starter_ids[3], p[0], None))
-
+    # adds a player to a grand prix
+    def add_player_to_gp(self, gp_id: str, p_id: str, res: int):
+        self.cursor.execute("INSERT INTO GrandPrixParticipation (grandprix_id, player_id, grandprix_result) VALUES (?, ?, ?)", (gp_id, p_id, res))
         self.connection.commit()
 
+    # updates a tournament with the changes
     def update_tournament(self, t_id, date: str, p_count: int, ttype_id: str):
         self.cursor.execute("UPDATE Tournament SET date = ?, player_count = ?, tournament_type_id = ? WHERE tournament_id = ?", (date, p_count, ttype_id, t_id))
         self.connection.commit()
 
+    # reading all the tournament types
     def read_tournament_types(self) -> list[tuple]:
         self.cursor.execute("SELECT * FROM TournamentType;")
         return self.cursor.fetchall()
     
+    # reading the tournament type id for a specific tournament
     def read_tournament_type(self, t_id: str) -> str:
         self.cursor.execute("SELECT tournament_type_id FROM Tournament WHERE tournament_id = ?;", [t_id])
         return self.cursor.fetchone()[0]
 
+    # creating a new tournament type
     def add_tournament_type(self, def_continuers: int, num_grandprix: int, longer_style: bool):
         self.cursor.execute(
             "INSERT INTO TournamentType (tournament_type_id, def_continuers, num_grandprix, longer_style) VALUES (?, ?, ?, ?)",
@@ -170,6 +172,7 @@ class Database:
         )
         self.connection.commit()
 
+    # reading all the players in a tournament
     def read_tournament_players(self, t_id: str) -> list[tuple]:
         self.cursor.execute("""
             SELECT p.player_id, p.forename, p.surname, p.age
@@ -178,19 +181,23 @@ class Database:
             WHERE tp.tournament_id = ?;
         """, [t_id])
         return self.cursor.fetchall()
-    
+
+    # reading a specific tournament
     def read_tournament(self, t_id: str) -> tuple:
         self.cursor.execute("SELECT * FROM Tournament WHERE tournament_id = ?;", [t_id])
         return self.cursor.fetchone()
     
+    # adding a player to a tournament
     def add_player_to_tournament(self, t_id: str, p_id: str):
         self.cursor.execute("INSERT INTO TournamentParticipation (tournament_id, player_id, tournament_result) VALUES (?, ?, ?)", (t_id, p_id, None))
         self.connection.commit()
 
+    # removing a player from a tournament
     def remove_player_from_tournament(self, t_id: str, p_id: str):
         self.cursor.execute("DELETE FROM TournamentParticipation WHERE tournament_id = ? AND player_id = ?;", [t_id, p_id])
         self.connection.commit()
-    
+
+    # reading all grand prixs in a specific tournament
     def read_grand_prix(self, t_id: str) -> list[tuple]:
         self.cursor.execute("""
             SELECT grandprix_id, round, inverse, bracket, continuers
@@ -200,10 +207,12 @@ class Database:
         """, [t_id])
         return self.cursor.fetchall()
     
+    # reading all players in a grand prix
     def read_grand_prix_players(self, gp_id: str) -> list[tuple]:
         self.cursor.execute("SELECT * FROM Player WHERE player_id IN (SELECT player_id FROM GrandPrixParticipation WHERE grandprix_id = ?)", [gp_id])
         return self.cursor.fetchall()
     
+    # creating a race and adding all the players to it
     def create_race(self, gp_id: str, c_id: str, players: list[tuple]):
         r_id = create_uuid()
         self.cursor.execute("INSERT INTO Race (race_id, grandprix_id, circuit_id) VALUES (?, ?, ?)", (r_id, gp_id, c_id))
@@ -211,15 +220,19 @@ class Database:
             self.cursor.execute("INSERT INTO RaceParticipation (race_id, player_id, race_result) VALUES (?, ?, ?)", (r_id, p[0], p[1]))
         self.connection.commit()
 
+    # getting the number of races in a grand prix
     def get_race_count_in_gp(self, gp_id: str) -> int:
         self.cursor.execute("SELECT COUNT(*) FROM Race WHERE grandprix_id = ?", (gp_id,))
         return self.cursor.fetchone()[0]
     
+    # getting the number of players in a grand prix
     def get_player_count_in_gp(self, gp_id: str) -> int:
         self.cursor.execute("SELECT COUNT(*) FROM GrandPrixParticipation WHERE grandprix_id = ?", (gp_id,))
         return self.cursor.fetchone()[0]
     
+    # getting the current round in a tournament
     def get_current_round(self, t_id: str):
+        # first fetching all gp id and round in a tournament
         self.cursor.execute("""
             SELECT grandprix_id, round
             FROM GrandPrix
@@ -228,10 +241,10 @@ class Database:
         """, [t_id])
         gps = self.cursor.fetchall()
 
+        # if any grand prix not finished, then adding the round number to list
         current_rounds = []
         for gp_id, round_num in gps:
-            self.cursor.execute("SELECT COUNT(*) FROM Race WHERE grandprix_id = ?", (gp_id,))
-            race_count = self.cursor.fetchone()[0]
+            race_count = self.get_race_count_in_gp(gp_id)
 
             if race_count < 4:
                 current_rounds.append(round_num)
@@ -247,41 +260,49 @@ class Database:
             if unfilled > 0:
                 current_rounds.append(round_num)
 
+        # if at least one grand prix not finished, then return the smallest round number for this grand prix
+        # otherwise return final
         if current_rounds:
             return min(current_rounds)
         else:
             return "Final"
-        
+    
+    # gets the number of players that are eliminated
     def get_players_count_eliminated(self, t_id: str) -> int:
+        # fetching all grand prix ids for specific tournament
         self.cursor.execute("""
-                SELECT grandprix_id
-                FROM GrandPrix
-                WHERE tournament_id = ?
-            """, (t_id,))
+            SELECT grandprix_id
+            FROM GrandPrix
+            WHERE tournament_id = ?
+        """, (t_id,))
         
         gp_ids = self.cursor.fetchall()
         players = set()
 
+        # for each grand prix in the tournament
         for gp in gp_ids:
+            # if the grand prix is finished
             if self.get_player_count_in_gp(gp[0]) == 4 and self.get_race_count_in_gp(gp[0]) == 4:
+                # add the losers to the set
                 losers = self.find_losers_for_gp(gp[0])
                 players.update([x for x in losers])
 
+        # return the number of people in the set
         return len(players)
     
-    def t_from_gp(self, gp_id: str) -> str:
-        self.cursor.execute("SELECT tournament_id FROM GrandPrix WHERE grandprix_id = ?", (gp_id,))
-        return self.cursor.fetchone()[0]
-    
+    # finds the winners for a grand prix
     def find_winners_for_gp(self, gp_id: str) -> list[tuple]:
+        # selects the continuers property for grand prix
         self.cursor.execute("""
-                SELECT continuers
-                FROM GrandPrix
-                WHERE grandprix_id = ?
-            """, (gp_id,))
+            SELECT continuers
+            FROM GrandPrix
+            WHERE grandprix_id = ?
+        """, (gp_id,))
         limit = self.cursor.fetchone()[0]
+        # if this is None then this is the final grand prix so only one winner, therefore calculate the winner
         if limit is None: return self.calculate_tournament_winner(gp_id)
 
+        # return the top n people in the grand prix where n is found above
         self.cursor.execute("""
             SELECT player_id, grandprix_result
             FROM GrandPrixParticipation
@@ -292,35 +313,44 @@ class Database:
 
         return self.cursor.fetchall()
     
+    # finds the losers for a grand prix
     def find_losers_for_gp(self, gp_id: str) -> list[tuple]:
+        # fetching all player ids in a grand prix
+        # fetching all winners in a grand prix
         self.cursor.execute("""
-                SELECT player_id
-                FROM GrandPrixParticipation
-                WHERE grandprix_id = ?
-            """, (gp_id,))
+            SELECT player_id
+            FROM GrandPrixParticipation
+            WHERE grandprix_id = ?
+        """, (gp_id,))
         player = self.cursor.fetchall()
         players = set([x[0] for x in player])
         winner = self.find_winners_for_gp(gp_id)
         winners = set([x[0] for x in winner])
 
+        # finding the players that didn't win so are the losers
         losers = players - winners
         return losers
     
+    # finding the grand prix id for next round
     def find_next_gp_id(self, gp_id: str) -> str:
+        # selecting the current bracket and finding the next one
         self.cursor.execute("SELECT bracket FROM GrandPrix WHERE grandprix_id = ?", (gp_id,))
         bracket = self.cursor.fetchone()[0]
         if bracket is None: return "Tournament finished"
         newbracket = (bracket + 1) // 2
 
+        # fetching the round of all grand prix in a tournament
         self.cursor.execute("""
             SELECT round
             FROM GrandPrix
             WHERE tournament_id = (SELECT tournament_id FROM GrandPrix WHERE grandprix_id = ?)
         """, [gp_id])
-        rounds = self.cursor.fetchall()
-        rounds2 = [r[0] for r in rounds if r[0] != None]
-        maxround = max(rounds2)
+        round = self.cursor.fetchall()
+        rounds = [r[0] for r in round if r[0] != None]
+        # finding the maximum round
+        maxround = max(rounds)
 
+        # fetching the round for current grand prix
         self.cursor.execute("""
             SELECT round
             FROM GrandPrix
@@ -328,7 +358,9 @@ class Database:
         """, [gp_id, gp_id])
         current_round = self.cursor.fetchone()[0]
 
+        # if this is the last round
         if current_round == maxround:
+            # return the grand prix id of the final
             self.cursor.execute("""
                 SELECT grandprix_id
                 FROM GrandPrix
@@ -337,6 +369,7 @@ class Database:
             """, (gp_id,))
             return self.cursor.fetchone()[0]
         else:
+            # return the grand prix id of the next grand prix by increasing the round
             self.cursor.execute("""
                 SELECT grandprix_id
                 FROM GrandPrix
@@ -347,12 +380,13 @@ class Database:
             """, (gp_id, gp_id, gp_id, newbracket))
             return self.cursor.fetchone()[0]
     
+    # adding the winners to the next gp
     def add_winners_to_gp(self, players: list[tuple], gp_id: str):
-        for p in players:
-            self.cursor.execute("INSERT INTO GrandPrixParticipation (grandprix_id, player_id, grandprix_result) VALUES (?, ?, ?)", (gp_id, p[0], None))
-        self.connection.commit()
+        for p in players: self.add_player_to_gp(gp_id, p[0], None)
 
+    # finding the tournament winner from the final grand prix id
     def calculate_tournament_winner(self, gp_id: str) -> tuple:
+        # finding the player with highest grand prix result in the final grand prix
         self.cursor.execute("""
             SELECT player_id, grandprix_result
             FROM GrandPrixParticipation
@@ -361,17 +395,22 @@ class Database:
             LIMIT 1
         """, (gp_id,))
         w_id = self.cursor.fetchone()[0]
+
+        # returing the player with that id
         self.cursor.execute("SELECT * FROM Player WHERE player_id = ?", (w_id,))
         return self.cursor.fetchone()
     
+    # finding the tournament winner from a tournament id
     def read_tournament_winner(self, t_id: str) -> tuple:
         self.cursor.execute("SELECT * FROM Player WHERE player_id = (SELECT player_id from TournamentParticipation WHERE tournament_id = ? AND tournament_result = 1);", [t_id])
         return self.cursor.fetchone()
     
+    # reading all player data
     def read_player_data(self) -> list[tuple]:
         self.cursor.execute("SELECT * FROM Player;")
         return self.cursor.fetchall()
 
+    # searching players with a query
     def search_players(self, search_term: str) -> list[tuple]:
         query = """
             SELECT * FROM Player
@@ -385,64 +424,27 @@ class Database:
         self.cursor.execute(query, params)
         return self.cursor.fetchall()
     
+    # creating a player with details
     def add_player(self, forename: str, surname: str, age: int):
         self.cursor.execute("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", (create_uuid(), forename, surname, age))
         self.connection.commit()
 
-    # def clean_data(self):
-    #     self.cursor.execute("""
-    #         SELECT grandprix_id
-    #         FROM GrandPrix
-    #     """)
-    #     gp = self.cursor.fetchall()
-    #     gps = set([x[0] for x in gp])
-
-    #     self.cursor.execute("""
-    #         SELECT grandprix_id
-    #         FROM Race
-    #     """)
-    #     race = self.cursor.fetchall()
-    #     races = set([x[0] for x in race])
-
-    #     print(gps)
-    #     print(races)
-    #     old = races - gps
-    #     print(old)
-
-    #     for x in old:
-    #         self.cursor.execute("""
-    #             SELECT race_id 
-    #             FROM Race
-    #             WHERE grandprix_id = ?
-    #         """, (x,))
-    #         roid = self.cursor.fetchall()
-    #         rids = [x[0] for x in roid]
-
-    #         for r in rids:
-    #             self.cursor.execute("""
-    #                 DELETE FROM RaceParticipation
-    #                 WHERE race_id = ?
-    #             """, (r,))
-
-    #             self.cursor.execute("""
-    #                 DELETE FROM Race
-    #                 WHERE race_id = ?
-    #             """, (r,))
-        
-    #     self.connection.commit()
-
+    # updating a player
     def update_player(self, player_id: str, forename: str, surname: str, age: int):
         self.cursor.execute("UPDATE Player SET forename=?, surname=?, age=? WHERE player_id=?", (forename, surname, age, player_id))
         self.connection.commit()
 
+    # deleting a player
     def delete_player(self, player_id: str):
         self.cursor.execute("DELETE FROM Player WHERE player_id = ?", (player_id,))
         self.connection.commit()
 
+    # reading all circuits
     def read_circuit_data(self) -> list[tuple]:
         self.cursor.execute("SELECT * FROM Circuit;")
         return self.cursor.fetchall()
 
+    # searching circuits with a query
     def search_circuits(self, search_term: str) -> list[tuple]:
         query = """
             SELECT * FROM Circuit
@@ -453,54 +455,10 @@ class Database:
 
         self.cursor.execute(query, params)
         return self.cursor.fetchall()
-    
-    # def _insert_circuit(self, circuit_name: str):
-    #     self.cursor.execute("INSERT INTO Circuit (circuit_id, circuit_name) VALUES (?, ?)", (create_uuid(), circuit_name))
-    #     self.connection.commit()
 
-    # def _insert_circuits(self, circuit_names: list[str]):
-    #     values = [(create_uuid(), name) for name in circuit_names]
-    #     self.cursor.executemany("INSERT INTO Circuit (circuit_id, circuit_name) VALUES (?, ?)", values)
-    #     self.connection.commit()
-    
-    # def _remove_circuits(self, circuit_id: str):
-    #     self.cursor.execute("DELETE FROM Circuit WHERE circuit_id = ?", (circuit_id,))
-    #     self.connection.commit()
-
-    # def search_data(self):
-    #     self.cursor.execute("SELECT forename, surname FROM Player WHERE age > ?", (30,))
-    #     print(self.cursor.fetchall())
-    # 
-    # def insert_data(self):
-    #     # self.cursor.execute("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", (create_uuid(), "Lewis", "Hamilton", 39))
-    #     # self.cursor.execute("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", (create_uuid(), "Max", "Verstappen", 27))
-    #     # self.cursor.execute("""
-    #     # INSERT INTO TournamentType (tournament_type_id, def_continuers, num_grandprix, longer_style) 
-    #     # VALUES (?, ?, ?, ?)
-    #     # """, (create_uuid(), 2, 1, False))
-    # 
-    #     self.cursor.execute("INSERT INTO Tournament (tournament_id, date, player_count, tournament_type_id) VALUES (?, ?, ?, ?)", (create_uuid(), tempdate(), 17, "af1b7dbc-a3cd-46d5-aaae-f16aff3eec2a"))
-    # 
-    #     # players = [
-    #     #     (create_uuid(), "Lewis", "Hamilton", 39),
-    #     #     (create_uuid(), "Max", "Verstappen", 27),
-    #     #
-    # 
-    #     # self.cursor.executemany("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", players)
-    #     self.connection.commit()
-    # 
-    # def delete_data(self):
-    #     # self.cursor.execute("DELETE FROM Player WHERE player_id = ?", (player_id_to_delete,))
-    #     players = [
-    #         ("e1198136-f478-41a1-803e-0ab4009cb4bd",),
-    #         ("691f1187-04be-4f47-aaab-cd6e27f3e0d4",)
-    #     ]
-    #     self.cursor.executemany("DELETE FROM Player WHERE player_id = ?", players)
-    #     self.connection.commit()
-
+    # closing the database
     def close(self):
         self.connection.close()
-
 
 # db = Database()
 # db.connect()

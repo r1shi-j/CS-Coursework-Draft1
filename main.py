@@ -1,28 +1,28 @@
-# import locale
 import tkinter as tk
 from app import App
 
+# creating and running the app
 if __name__ == "__main__":
-    # locale.setlocale(locale.LC_TIME, 'en_GB')
     root = tk.Tk()
     app = App(root)
     app.mainloop()
 
-### Forms to do
-# Tournament Bracket viewer
-# Tournament overview data
-# Statistics view
-
-### Bugs
+### FIXME Bugs
+# window title doesnt change based on navigation view
+# Add column headers to tournament home menu
+# at end of tournament, calculate and set all player tournament result
+# Entering data must be done to the correct data type
 # Adding/removing players from a tournament will disrupt brackets
 # Solution is to lock current players, but can add new players
 # Tournament type doesnt currently do anything
-# Must have 16 players in a tournament otherwise bracket creating will fail
-# Tournament overview doesnt show the current round or players still in/out
+# Only 16 player single elimination is supported
+# Look at all to-dos
 
-### After prototype
+### TODO After prototype
+# Statistics view
 # Create account view
 # Login view
 # Add styling everywhere
+# cursor styling using `, cursor="plus"`
 # Add validation to forms everywhere
 # Make ui better, sizing, padding, spacing ect

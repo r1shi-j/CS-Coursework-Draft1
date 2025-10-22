@@ -3,7 +3,10 @@ from tkinter import ttk
 from storage import Database
 from Pages import tournaments, players, circuits, statistics
 
+# creating the frame
 class App(tk.Frame):
+    # initialising the database and creating the layout
+    # master protocol to run a function when closes window with red x
     def __init__(self, master):
         super().__init__(master)
         self.master = master
@@ -16,17 +19,20 @@ class App(tk.Frame):
         self.create_navbar()
         self.create_pages()
         self.show_frame("Tournaments")
-
+    
+    # when close window, first closing the database, and then close window
     def on_app_close(self):
         self.db.close()
-        print("saved db")
         self.master.quit()
 
     def create_styling(self):
         self.style = ttk.Style()
 
+    # creating the layout
+    # creates the frame and disables resizing
     def create_layout(self):
-        self.master.title("Home") ###
+        #* TODO: window title should change name based on which view is open, or just set it to Mario Kart Tournament System
+        self.master.title("Home")
         self.master.minsize(600, 400)
         self.master.resizable(False, False)
         self.main_frame = ttk.Frame(self.master)
@@ -41,15 +47,18 @@ class App(tk.Frame):
         self.container = ttk.Frame(self.main_frame)
         self.container.pack(fill="both", expand=True)
 
+    # creates the navigation bar
     def create_navbar(self):
         self.nav_labels = {}
 
+        # function to make navigation label
         def make_nav_label(parent, text, view_name):
-            label = ttk.Label(parent, text=text, font=("Arial", 12), cursor="hand2") # review cursor
+            label = ttk.Label(parent, text=text, font=("Arial", 12))
             label.pack(side="left", padx=40)
 
+            # adding and removing the underline on hover
             def on_enter(e):
-                if self.current_page != view_name:  # don't override active page
+                if self.current_page != view_name:
                     label.configure(font=("Arial", 12, "underline"))
 
             def on_leave(e):
@@ -64,6 +73,7 @@ class App(tk.Frame):
             self.nav_labels[view_name] = label
             return label
 
+        # making all the headers
         make_nav_label(self.header_frame, "Tournaments", "Tournaments")
         make_nav_label(self.header_frame, "Players", "Players")
         make_nav_label(self.header_frame, "Circuits", "Circuits")
@@ -71,6 +81,7 @@ class App(tk.Frame):
 
         self.current_page = None
 
+    # linking the Pages files to run when clicked on their header
     def create_pages(self):
         for F in (tournaments.TournamentsPage, players.PlayersPage, circuits.CircuitsPage, statistics.StatisticsPage):
             page_name = F.__name__.replace("Page", "")
@@ -78,10 +89,12 @@ class App(tk.Frame):
             self.frames[page_name] = frame
             frame.grid(row=0, column=0, sticky="nsew")
 
+    # showing the respective frame when clicked on
     def show_frame(self, page_name):
         frame = self.frames[page_name]
         frame.tkraise()
 
+        # adding or removing the blue font colour to current view title
         for name, label in self.nav_labels.items():
             if name == page_name:
                 label.configure(font=("Arial", 12, "underline"), foreground="blue")
