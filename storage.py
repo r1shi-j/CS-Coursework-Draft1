@@ -1,5 +1,6 @@
 import sqlite3
 import uuid
+from datetime import datetime
 
 # function to generate UUID
 def create_uuid() -> str:
@@ -122,6 +123,92 @@ class Database:
         self.cursor.execute("SELECT * FROM Tournament;")
         return self.cursor.fetchall()
 
+    # bubble sort on tournaments
+    def sort_tournaments(self, options: tuple[str, str]) -> list[tuple]:
+        # internal function to convert string dates to date objects so can compare them
+        def compare_dates(lhs, rhs, sign) -> bool:
+            lhs_date = datetime.strptime(lhs, "%d/%m/%y")
+            rhs_date = datetime.strptime(rhs, "%d/%m/%y")
+
+            if sign == ">":
+                return lhs_date > rhs_date
+            elif sign == "<":
+                return lhs_date < rhs_date
+        
+        # function to sort a list by date
+        # takes the order, and the lower and upper bounds of the indexes in the list to sort
+        def sort_by_date(o, lb, ub):
+            # classic bubble sort to sort the dates
+            swapped = True
+            while swapped == True:
+                swapped = False
+                for i in range(lb, ub):
+                    curr = t[i][1]
+                    next = t[i+1][1]
+                    # storings the dates for the current and next tournaments in curr and next
+            
+                    if o == "ASC":
+                        # comparing the dates to see if the current is larger then next
+                        # if so then swaps
+                        if compare_dates(curr, next, ">"):
+                            temp = t[i]
+                            t[i] = t[i+1]
+                            t[i+1] = temp
+                            swapped = True
+                    elif o == "DESC":
+                        if compare_dates(curr, next, "<"):
+                            temp = t[i]
+                            t[i] = t[i+1]
+                            t[i+1] = temp
+                            swapped = True
+
+        # reading all tournaments, the list to sort
+        t = self.read_tournament_data()
+
+        # if the field to sort is winner
+        if options[0] == "Winner":
+            # counting all the times there is no winner, and for each time moving the tournament to the end of the list
+            counter = 0
+            for i in range(len(t)-1):
+                try:
+                    curr = self.read_tournament_winner(t[i][0])[1]
+                except:
+                    temp = t[i]
+                    t.remove(t[i])
+                    t.append(temp)
+                    counter += 1
+
+            # classic bubble sort to sort the tournaments by tournament name
+            swapped = True
+            while swapped == True:
+                swapped = False
+                # range is only for the tournaments with winners
+                for i in range(len(t)-1-counter):
+                    curr = self.read_tournament_winner(t[i][0])[1]
+                    next = self.read_tournament_winner(t[i+1][0])[1]
+            
+                    if options[1] == "ASC":
+                        if curr > next:
+                            temp = t[i]
+                            t[i] = t[i+1]
+                            t[i+1] = temp
+                            swapped = True
+                    elif options[1] == "DESC":
+                        if curr < next:
+                            temp = t[i]
+                            t[i] = t[i+1]
+                            t[i+1] = temp
+                            swapped = True
+            
+            # sort by date for the rest of the tournaments with no winner
+            sort_by_date("ASC", len(t)-counter, len(t)-1)
+
+        # else if the field to sort is date, sort by date
+        elif options[0] == "Date":
+            sort_by_date(options[1], 0, len(t)-1)
+        
+        return t
+    
     # creates a new tournament with the specified data
     def create_tournament(self, t_id: str, date: str, p_count: int, ttype_id: str):
         self.cursor.execute("INSERT INTO Tournament (tournament_id, date, player_count, tournament_type_id) VALUES (?, ?, ?, ?)", (t_id, date, p_count, ttype_id))
@@ -445,17 +532,26 @@ class Database:
         return self.cursor.fetchall()
 
     # searching circuits with a query
-    def search_circuits(self, search_term: str) -> list[tuple]:
-        query = """
-            SELECT * FROM Circuit
-            WHERE circuit_name LIKE ?
-        """
-        like_term = f"%{search_term}%"
-        params = [like_term]
+    # def search_circuits(self, search_term: str) -> list[tuple]:
+    #     query = """
+    #         SELECT * FROM Circuit
+    #         WHERE circuit_name LIKE ?
+    #     """
+    #     like_term = f"%{search_term}%"
+    #     params = [like_term]
 
-        self.cursor.execute(query, params)
-        return self.cursor.fetchall()
+    #     self.cursor.execute(query, params)
+    #     return self.cursor.fetchall()
 
+    # linear search on circuits
+    def search_circuits(self, query: str) -> list[tuple]:
+        c = self.read_circuit_data()
+        res = []
+        for i in c:
+            if query in i[1].lower():
+                res.append(i)
+        return res
+    
     # closing the database
     def close(self):
         self.connection.close()

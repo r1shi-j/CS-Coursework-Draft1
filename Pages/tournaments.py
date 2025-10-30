@@ -26,6 +26,52 @@ class TournamentsPage(ttk.Frame):
         create_btn = ttk.Button(action_frame, text="Create Tournament", command=self.open_create_tournament_view)
         create_btn.pack(side="left", padx=5)
 
+        # initialising the sort options
+        self.sort_options = ("Date", "ASC")
+
+        # function to change the internal property tracking the sort option and order
+        # after the change it refreshes the view so that the sorted list is shown
+        def change_order(property: str):
+            if self.sort_options[0] == property:
+                self.sort_options = (property, "ASC") if self.sort_options[1] == "DESC" else (property, "DESC")
+            else:
+                self.sort_options = (property, "ASC")
+
+            update_header_arrows()
+            self.refresh_tournaments()
+
+        # Updates the arrow in headings when sort field changes
+        def update_header_arrows():
+            for field, label in header_labels.items():
+                base = field
+                if self.sort_options[0] == field:
+                    arrow = " ▲" if self.sort_options[1] == "ASC" else " ▼"
+                    label.config(text=base + arrow)
+                else:
+                    label.config(text=base)
+
+        header_frame = ttk.Frame(self)
+        header_frame.pack(fill="x", pady=1)
+        header_labels = {}
+
+        # function to get the arrow for a header field
+        def get_arrow(field):
+            if self.sort_options[0] == field:
+                return " ▲" if self.sort_options[1] == "ASC" else " ▼"
+            else:
+                return ""
+        
+        # date and winner labels, binding to buttons so no button styling
+        date_label = ttk.Label(header_frame, text="Date"+get_arrow("Date"), width=20, anchor="center")
+        date_label.pack(side="left", padx=(0,10))
+        date_label.bind("<Button-1>", lambda e: change_order("Date"))
+        header_labels["Date"] = date_label
+
+        winner_label = ttk.Label(header_frame, text="Winner"+get_arrow("Winner"), width=20, anchor="center")
+        winner_label.pack(side="left")
+        winner_label.bind("<Button-1>", lambda e: change_order("Winner"))
+        header_labels["Winner"] = winner_label
+
         container = ttk.Frame(self)
         container.pack(fill="both", expand=True)
 
@@ -48,6 +94,7 @@ class TournamentsPage(ttk.Frame):
             canvas.itemconfig(canvas_window, width=event.width)
         canvas.bind("<Configure>", on_canvas_configure)
 
+        update_header_arrows()
         self.refresh_tournaments()
 
     # opens create tournament subview
@@ -405,9 +452,9 @@ class TournamentsPage(ttk.Frame):
         for widget in self.results_frame.winfo_children():
             widget.destroy()
 
-        results = self.controller.db.read_tournament_data()
+        # fetch the sorted results for the current sort
+        results = self.controller.db.sort_tournaments(self.sort_options)
 
-        #* TODO: add column headers
         for i, row in enumerate(results):
             # alternating background color for row
             bg = "#f0f0f0" if i % 2 == 0 else "#d9d9d9"
@@ -416,12 +463,12 @@ class TournamentsPage(ttk.Frame):
             row_frame.pack(fill="x", pady=1)
 
             # displaying the date
-            tk.Label(row_frame, text=row[1], width=20, anchor="w", bg=bg).pack(side="left")
+            tk.Label(row_frame, text=row[1], width=20, anchor="center", bg=bg).pack(side="left")
 
             # checking if there is a winner, and then displaying it
             winner = self.controller.db.read_tournament_winner(row[0])
             if winner:
-                tk.Label(row_frame, text=winner[1], width=20, anchor="w", bg=bg).pack(side="left")
+                tk.Label(row_frame, text=winner[1], width=20, anchor="center", bg=bg).pack(side="left")
 
             # when row or buttons clicked, open the tournament overview
             row_frame.bind("<Button-1>", lambda e, tid=row[0]: self.open_tournament_overview(tid))
