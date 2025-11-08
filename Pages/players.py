@@ -5,49 +5,67 @@ class PlayersPage(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        ttk.Label(self, text="Players Page", font=("Arial", 14)).pack()
-
         self.edit_mode = False
         self.build_view()
 
     def block_window_closure(self): return
 
+    # building the players view homepage with buttons to create and edit players, search bar and list of players
     def build_view(self):
-        # TODO: convert to scroll view
-        # TODO: each name should be a button when clicked goes to stats view with that player
-        # creating a seperate frame for the action buttons
-        action_frame = ttk.Frame(self)
-        action_frame.pack(pady=5)
-
-        # adding create and edit buttons to the action frame
-        create_btn = ttk.Button(action_frame, text="Create Player", command=self.open_create_player_view)
-        create_btn.pack(side="left", padx=5)
-
-        edit_btn = ttk.Button(action_frame, text="Edit Player", command=self.toggle_edit_mode)
-        edit_btn.pack(side="left", padx=5)
-        
-        # creating another frame for the rest of the view
         self.form_frame = ttk.Frame(self)
-        self.form_frame.pack(pady=10)
-
-        ttk.Label(self.form_frame, text="Search players:").grid(row=0, column=0, padx=5, pady=2, sticky="e")
-
-        # creating the search field textbox
-        self.search_field = ttk.Entry(self.form_frame, width=20)
-        self.search_field.grid(row=0, column=1, padx=5, pady=2)
+        self.form_frame.pack()
         
-        # when any key is pressed it will search which is for real time searching
-        # binding cmd del to clear search field
+        # creating the title
+        title_frame = ttk.Frame(self.form_frame)
+        title_frame.pack(pady=(10, 5))
+
+        ttk.Label(title_frame, text="Players List", font=("TkDefaultFont", 14, "bold")).pack()
+        
+        # action buttons frame and buttons
+        buttons_frame = ttk.Frame(self.form_frame)
+        buttons_frame.pack(pady=(5, 10))
+
+        self.create_btn = ttk.Button(buttons_frame, text="Create Player", command=self.open_create_player_view)
+        self.create_btn.pack(side="left", padx=5)
+        edit_btn = ttk.Button(buttons_frame, text="Edit Player", command=self.toggle_edit_mode)
+        edit_btn.pack(side="left", padx=5)
+
+        # creating the search bar frame
+        search_frame = ttk.Frame(self.form_frame)
+        search_frame.pack(pady=(5, 10))
+
+        # subtitle, search field and clear button
+        # binding keyboard buttons to clear and unfocus search field, with every key release triggering a search for real time searching
+        ttk.Label(search_frame, text="Search players:").pack(side="left", padx=5)
+        self.search_field = ttk.Entry(search_frame, width=20)
+        self.search_field.pack(side="left", padx=5)
         self.search_field.bind("<KeyRelease>", self.search_players)
         self.search_field.bind("<Command-BackSpace>", self.clear_entry)
+        self.search_field.bind("<Escape>", lambda e: self.search_field.focus_set() or self.focus())
+        self.clear_results_btn = ttk.Button(search_frame, text="⌫", width=2, command=self.remove_search)
+        self.clear_results_btn.pack(side="left", padx=5)
 
-        # clear search button
-        rmv_search_btn = ttk.Button(self.form_frame, text="⌫", width=2, command=self.remove_search)
-        rmv_search_btn.grid(row=0, column=2, padx=2)
+        # creating the scroll container
+        container = ttk.Frame(self)
+        container.pack(fill="both", expand=True)
+        canvas = tk.Canvas(container)
+        scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
 
         # the container for the search results
-        self.results_frame = ttk.Frame(self)
-        self.results_frame.pack(fill="both", expand=True)
+        self.results_frame = ttk.Frame(canvas)
+        self.results_frame.pack()
+        canvas_window = canvas.create_window((0, 0), window=self.results_frame, anchor="nw")
+
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+        self.results_frame.bind("<Configure>", on_frame_configure)
+
+        def on_canvas_configure(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+        canvas.bind("<Configure>", on_canvas_configure)
 
         # initially showing all players (no search query)
         self.show_results(self.controller.db.read_player_data())
@@ -88,40 +106,18 @@ class PlayersPage(ttk.Frame):
         ttk.Button(win, text="Create", command=create_player).grid(row=3, column=1, pady=10)
 
     # function to toggle edit mode
-    # when going into edit mode, hiding the search field frame and clearing it
-    # when going out of edit mode, showing the search field frame
+    # when going into edit mode, disable create button, search field and clear results button
+    # when going out of edit mode, enable them again
     def toggle_edit_mode(self):
         self.edit_mode = not self.edit_mode
         if self.edit_mode:
-            self.form_frame.pack_forget()
-            self.clear_entry()
+            self.create_btn['state'] = 'disabled'
+            self.search_field['state'] = 'disabled'
+            self.clear_results_btn['state'] = 'disabled'
         else:
-            self.form_frame.pack(pady=10, before=self.results_frame)
-        self.show_results(self.controller.db.read_player_data())
-
-    # function to show results
-    def show_results(self, results):
-        # first clear current results
-        self.clear_results()
-
-        # if no items found for query then display this message
-        if not results:
-            ttk.Label(self.results_frame, text="No players found.").pack(pady=10)
-            return
-
-        # creating a row with the text for each result
-        for row in results:
-            row_frame = ttk.Frame(self.results_frame)
-            row_frame.pack(fill="x", pady=2)
-
-            # TODO: each player should be a button when clicked goes to stats view for that player
-            ttk.Label(row_frame, text=row[1], width=20, anchor="w").pack(side="left")
-            ttk.Label(row_frame, text=row[2], width=20, anchor="w").pack(side="left")
-
-            # if in edit mode, then display the edit button
-            if self.edit_mode:
-                edit_btn = ttk.Button(row_frame, text="✎", width=2, command=lambda r=row: self.open_edit_player_view(r))
-                edit_btn.pack(side="left", padx=5)
+            self.create_btn['state'] = 'normal'
+            self.search_field['state'] = 'normal'
+            self.clear_results_btn['state'] = 'normal'
 
     # opens the edit player view
     def open_edit_player_view(self, player):
@@ -168,6 +164,28 @@ class PlayersPage(ttk.Frame):
         ttk.Button(win, text="Delete", command=delete_player).grid(row=3, column=1, pady=10)
         ttk.Button(win, text="Update", command=update_player).grid(row=3, column=2, pady=10)
     
+    # function to display the search results
+    def show_results(self, results):
+        # first clear current results
+        self.clear_results()
+        
+        # if no items found for query then display this message
+        if not results:
+            ttk.Label(self.results_frame, text="No players found.").pack(pady=10)
+            return
+
+        # creating a row with the text for each result
+        # adding extra padding at the bottom of last row
+        # binding the name to open edit view if in edit mode otherwise statistics view with the player data
+        # name is underlined on hover
+        for row in results:
+            row_frame = ttk.Frame(self.results_frame)
+            row_frame.pack(fill="x", pady=(2 if results.index(row) != len(results)-1 else (2,20)))
+            name = ttk.Label(row_frame, text=f"{row[1]} {row[2]}", anchor="center")
+            name.pack()
+            name.bind("<Button-1>", lambda e, r=row: self.open_edit_player_view(r) if self.edit_mode else self.controller.open_statistics_player(r))
+            self.controller.make_hoverable(name)
+
     # function to clear the search field by deleting content in the text box
     def clear_entry(self, event=None):
         self.search_field.delete(0, tk.END)

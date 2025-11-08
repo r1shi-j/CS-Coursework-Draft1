@@ -31,8 +31,7 @@ class App(tk.Frame):
     # creating the layout
     # creates the frame and disables resizing
     def create_layout(self):
-        #* TODO: window title should change name based on which view is open, or just set it to Mario Kart Tournament System
-        self.master.title("Home")
+        self.master.title("Mario Kart Tournament System")
         self.master.minsize(600, 400)
         self.master.resizable(False, False)
         self.main_frame = ttk.Frame(self.master)
@@ -53,17 +52,18 @@ class App(tk.Frame):
 
         # function to make navigation label
         def make_nav_label(parent, text, view_name):
-            label = ttk.Label(parent, text=text, font=("Arial", 12))
+            label = ttk.Label(parent, text=text, font=("TkDefaultFont", 12))
             label.pack(side="left", padx=40)
 
-            # adding and removing the underline on hover
+            # adding underline when hover
             def on_enter(e):
                 if self.current_page != view_name:
-                    label.configure(font=("Arial", 12, "underline"))
+                    label.configure(font=("TkDefaultFont", 12, "underline"))
 
+            # remove underline when not hovering
             def on_leave(e):
                 if self.current_page != view_name:
-                    label.configure(font=("Arial", 12))
+                    label.configure(font=("TkDefaultFont", 12))
 
             def on_click(e): self.show_frame(view_name)
 
@@ -97,8 +97,29 @@ class App(tk.Frame):
         # adding or removing the blue font colour to current view title
         for name, label in self.nav_labels.items():
             if name == page_name:
-                label.configure(font=("Arial", 12, "underline"), foreground="blue")
+                label.configure(font=("TkDefaultFont", 12, "underline"), foreground="blue")
             else:
-                label.configure(font=("Arial", 12), foreground="black")
+                label.configure(font=("TkDefaultFont", 12), foreground="black")
 
         self.current_page = page_name
+
+    # function to underline a label on hover
+    # takes opetional parameters for font size and weight
+    def make_hoverable(self, label, size=None, weight=None):
+        base_font = ("TkDefaultFont", size if size else 10, weight if weight else "normal")
+        hover_font = ("TkDefaultFont", size if size else 10, f"{weight} underline" if weight else "underline")
+        #* TODO: label.configure(cursor="hand2")
+        label.bind("<Enter>", lambda e: label.config(font=hover_font))
+        label.bind("<Leave>", lambda e: label.config(font=base_font))
+
+    # function to open statistics view with player data
+    def open_statistics_player(self, player):
+        stats_page = self.frames["Statistics"]
+        stats_page.load_player_stats(player)
+        self.show_frame("Statistics")
+
+    # function to open statistics view with circuit data
+    def open_statistics_circuit(self, circuit):
+        stats_page = self.frames["Statistics"]
+        stats_page.load_circuit_stats(circuit)
+        self.show_frame("Statistics")

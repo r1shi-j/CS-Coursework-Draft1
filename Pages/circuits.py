@@ -5,42 +5,45 @@ class CircuitsPage(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        ttk.Label(self, text="Circuits Page", font=("Arial", 14)).pack(pady=20)
-
         self.build_view()
 
+    # building the circuits view homepage with search bar and list of circuits
     def build_view(self):
         self.form_frame = ttk.Frame(self)
-        self.form_frame.pack(pady=10, fill="x")
+        self.form_frame.pack()
+        
+        # creating the title
+        title_frame = ttk.Frame(self.form_frame)
+        title_frame.pack(pady=(10, 5))
 
-        container = ttk.Frame(self)
-        container.pack(fill="both", expand=True)
+        ttk.Label(title_frame, text="Circuits List", font=("TkDefaultFont", 14, "bold")).pack()
+
+        # creating the search bar frame
+        search_frame = ttk.Frame(self.form_frame)
+        search_frame.pack(pady=(5, 10))
+
+        # subtitle, search field and clear button
+        # binding keyboard buttons to clear and unfocus search field, with every key release triggering a search for real time searching
+        ttk.Label(search_frame, text="Search circuits:").pack(side="left", padx=5)
+        self.search_field = ttk.Entry(search_frame, width=20)
+        self.search_field.pack(side="left", padx=5)
+        self.search_field.bind("<KeyRelease>", self.search_circuits)
+        self.search_field.bind("<Command-BackSpace>", self.clear_entry)
+        self.search_field.bind("<Escape>", lambda e: self.search_field.focus_set() or self.focus())
+        ttk.Button(search_frame, text="⌫", width=2, command=self.remove_search).pack(side="left", padx=5)
 
         # creating the scroll container
+        container = ttk.Frame(self)
+        container.pack(fill="both", expand=True)
         canvas = tk.Canvas(container)
         scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
         canvas.configure(yscrollcommand=scrollbar.set)
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        ttk.Label(self.form_frame, text="Search circuits:").grid(row=0, column=0, padx=5, pady=2, sticky="e")
-
-        # creating the search field textbox
-        self.search_field = ttk.Entry(self.form_frame, width=20)
-        self.search_field.grid(row=0, column=1, padx=5, pady=2)
-
-        # when any key is pressed it will search which is for real time searching
-        # binding cmd del to clear search field
-        self.search_field.bind("<KeyRelease>", self.search_circuits)
-        self.search_field.bind("<Command-BackSpace>", self.clear_entry)
-
-        # clear search button
-        rmv_search_btn = ttk.Button(self.form_frame, text="⌫", width=2, command=self.remove_search)
-        rmv_search_btn.grid(row=0, column=2, padx=2)
-
         # the container for the search results
         self.results_frame = ttk.Frame(canvas)
-        self.results_frame.pack(fill="both", expand=True)
+        self.results_frame.pack()
         canvas_window = canvas.create_window((0, 0), window=self.results_frame, anchor="nw")
 
         def on_frame_configure(event):
@@ -65,12 +68,16 @@ class CircuitsPage(ttk.Frame):
             return
 
         # creating a row with the text for each result
+        # adding extra padding at the bottom of last row
+        # binding the name to open statistics view with the circuit data
+        # name is underlined on hover
         for row in results:
             row_frame = ttk.Frame(self.results_frame)
-            row_frame.pack(fill="x", pady=2)
-
-            # TODO: each circuit should be a button when clicked goes to stats view for that circuit
-            ttk.Label(row_frame, text=row[1], width=20, anchor="w").pack(side="left")
+            row_frame.pack(fill="x", pady=(2 if results.index(row) != len(results)-1 else (2,20)))
+            name = ttk.Label(row_frame, text=row[1], anchor="center")
+            name.pack()
+            name.bind("<Button-1>", lambda e, r=row: self.controller.open_statistics_circuit(r))
+            self.controller.make_hoverable(name)
 
     # function to clear the search field by deleting content in the text box
     def clear_entry(self, event=None):
@@ -98,4 +105,3 @@ class CircuitsPage(ttk.Frame):
     def remove_search(self):
         self.clear_entry()
         self.show_results(self.controller.db.read_circuit_data())
-        
