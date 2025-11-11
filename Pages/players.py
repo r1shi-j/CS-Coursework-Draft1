@@ -25,10 +25,13 @@ class PlayersPage(ttk.Frame):
         buttons_frame = ttk.Frame(self.form_frame)
         buttons_frame.pack(pady=(5, 10))
 
-        self.create_btn = ttk.Button(buttons_frame, text="Create Player", command=self.open_create_player_view)
-        self.create_btn.pack(side="left", padx=5)
-        edit_btn = ttk.Button(buttons_frame, text="Edit Player", command=self.toggle_edit_mode)
-        edit_btn.pack(side="left", padx=5)
+        self.create_btn = ttk.Button(buttons_frame, text="Create Player", command=self.open_create_player_view, cursor="plus")
+        self.create_btn.pack(side="left", padx=10, ipadx=10)
+        self.controller.make_hoverable_btn(self.create_btn, "Hover", "UnHover")
+
+        edit_btn = ttk.Button(buttons_frame, text="Edit Player", command=self.toggle_edit_mode, cursor="spraycan")
+        edit_btn.pack(side="left", padx=10, ipadx=10)
+        self.controller.make_hoverable_btn(edit_btn, "Hover", "UnHover")
 
         # creating the search bar frame
         search_frame = ttk.Frame(self.form_frame)
@@ -42,7 +45,7 @@ class PlayersPage(ttk.Frame):
         self.search_field.bind("<KeyRelease>", self.search_players)
         self.search_field.bind("<Command-BackSpace>", self.clear_entry)
         self.search_field.bind("<Escape>", lambda e: self.search_field.focus_set() or self.focus())
-        self.clear_results_btn = ttk.Button(search_frame, text="⌫", width=2, command=self.remove_search)
+        self.clear_results_btn = ttk.Button(search_frame, text="⌫", width=2, command=self.remove_search, cursor="pirate")
         self.clear_results_btn.pack(side="left", padx=5)
 
         # creating the scroll container
@@ -78,21 +81,25 @@ class PlayersPage(ttk.Frame):
         win.title("Create Player")
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
+        win.resizable(False, False)
 
         # text box for first name
-        ttk.Label(win, text="First name:").grid(row=0, column=0, padx=5, pady=5)
+        ttk.Label(win, text="First name:").grid(row=0, column=0, padx=10, pady=(16,8), sticky="e")
         firstname = ttk.Entry(win)
-        firstname.grid(row=0, column=1, padx=5, pady=5)
+        firstname.grid(row=0, column=1, padx=(5,20), pady=(16,8))
+        firstname.bind("<Escape>", lambda e: win.focus())
 
         # text box for surname
-        ttk.Label(win, text="Surname:").grid(row=1, column=0, padx=5, pady=5)
+        ttk.Label(win, text="Surname:").grid(row=1, column=0, padx=10, pady=8, sticky="e")
         surname = ttk.Entry(win)
-        surname.grid(row=1, column=1, padx=5, pady=5)
+        surname.grid(row=1, column=1, padx=(5,20), pady=8)
+        surname.bind("<Escape>", lambda e: win.focus())
 
         # text box for age
-        ttk.Label(win, text="Age:").grid(row=2, column=0, padx=5, pady=5)
+        ttk.Label(win, text="Age:").grid(row=2, column=0, padx=10, pady=8, sticky="e")
         age = ttk.Entry(win)
-        age.grid(row=2, column=1, padx=5, pady=5)
+        age.grid(row=2, column=1, padx=(5,20), pady=8)
+        age.bind("<Escape>", lambda e: win.focus())
 
         # adding the player to the database, and then closing the window and refreshing the player view so that the new player is present
         def create_player():
@@ -102,8 +109,14 @@ class PlayersPage(ttk.Frame):
 
         # buttons to cancel or create
         # cancel closes this window, and create runs the above function
-        ttk.Button(win, text="Cancel", command=win.destroy).grid(row=3, column=0, pady=10)
-        ttk.Button(win, text="Create", command=create_player).grid(row=3, column=1, pady=10)
+        # when hovers over, the text is underlined
+        cancel_btn = ttk.Button(win, text="Cancel", command=win.destroy, style="UnHover.TButton", cursor="mouse")
+        cancel_btn.grid(row=3, column=0, padx=(20,0), pady=(10,16), ipadx=10, sticky="e")
+        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+
+        create_btn = ttk.Button(win, text="Create", command=create_player, style="UnHoverSubmit.TButton", cursor="mouse")
+        create_btn.grid(row=3, column=1, padx=(0,20), pady=(10,16), ipadx=10, sticky="e")
+        self.controller.make_hoverable_btn(create_btn, "HoverSubmit", "UnHoverSubmit")
 
     # function to toggle edit mode
     # when going into edit mode, disable create button, search field and clear results button
@@ -112,12 +125,16 @@ class PlayersPage(ttk.Frame):
         self.edit_mode = not self.edit_mode
         if self.edit_mode:
             self.create_btn['state'] = 'disabled'
+            self.create_btn['cursor'] = 'arrow'
             self.search_field['state'] = 'disabled'
             self.clear_results_btn['state'] = 'disabled'
+            self.clear_results_btn['cursor'] = 'arrow'
         else:
             self.create_btn['state'] = 'normal'
+            self.create_btn['cursor'] = 'crosshair'
             self.search_field['state'] = 'normal'
             self.clear_results_btn['state'] = 'normal'
+            self.clear_results_btn['cursor'] = 'pirate'
 
     # opens the edit player view
     def open_edit_player_view(self, player):
@@ -127,24 +144,28 @@ class PlayersPage(ttk.Frame):
         win.title("Edit Player")
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
+        win.resizable(False, False)
 
         # text box for first name, prefilling with the original data
-        ttk.Label(win, text="First name:").grid(row=0, column=0, padx=5, pady=5)
+        ttk.Label(win, text="First name:").grid(row=0, column=0, padx=10, pady=(16,8), sticky="e")
         firstname = ttk.Entry(win)
         firstname.insert(0, player[1])
-        firstname.grid(row=0, column=1, padx=5, pady=5)
+        firstname.grid(row=0, column=1, columnspan=2, padx=(5,20), pady=(16,8))
+        firstname.bind("<Escape>", lambda e: win.focus())
 
         # text box for surname, prefilling with the original data
-        ttk.Label(win, text="Surname:").grid(row=1, column=0, padx=5, pady=5)
+        ttk.Label(win, text="Surname:").grid(row=1, column=0, padx=10, pady=8, sticky="e")
         surname = ttk.Entry(win)
         surname.insert(0, player[2])
-        surname.grid(row=1, column=1, padx=5, pady=5)
+        surname.grid(row=1, column=1, columnspan=2, padx=(5,20), pady=8)
+        surname.bind("<Escape>", lambda e: win.focus())
 
         # text box for age, prefilling with the original data
-        ttk.Label(win, text="Age:").grid(row=2, column=0, padx=5, pady=5)
+        ttk.Label(win, text="Age:").grid(row=2, column=0, padx=10, pady=8, sticky="e")
         age = ttk.Entry(win)
         age.insert(0, player[3])
-        age.grid(row=2, column=1, padx=5, pady=5)
+        age.grid(row=2, column=1, columnspan=2, padx=(5,20), pady=8)
+        age.bind("<Escape>", lambda e: win.focus())
 
         # function to update the data, and then go back
         def update_player():
@@ -157,13 +178,22 @@ class PlayersPage(ttk.Frame):
             self.controller.db.delete_player(player[0])
             win.destroy()
             self.show_results(self.controller.db.read_player_data())
-
+            
         # buttons to cancel, delete and update
         # cancel just closes the window
-        ttk.Button(win, text="Cancel", command=win.destroy).grid(row=3, column=0, pady=10)
-        ttk.Button(win, text="Delete", command=delete_player).grid(row=3, column=1, pady=10)
-        ttk.Button(win, text="Update", command=update_player).grid(row=3, column=2, pady=10)
-    
+        # when hovers over, the text is underlined
+        cancel_btn = ttk.Button(win, text="Cancel", command=win.destroy, style="UnHover.TButton", cursor="mouse")
+        cancel_btn.grid(row=3, column=0, padx=(20,0), pady=(10,16), sticky="e")
+        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+
+        delete_btn = ttk.Button(win, text="Delete", command=delete_player, style="UnHoverDelete.TButton", cursor="mouse")
+        delete_btn.grid(row=3, column=1, padx=(0,0), pady=(10,16), sticky="e")
+        self.controller.make_hoverable_btn(delete_btn, "HoverDelete", "UnHoverDelete")
+
+        update_btn = ttk.Button(win, text="Update", command=update_player, style="UnHoverSubmit.TButton", cursor="mouse")
+        update_btn.grid(row=3, column=2, padx=(0,20), pady=(10,16), sticky="e")
+        self.controller.make_hoverable_btn(update_btn, "HoverSubmit", "UnHoverSubmit")
+
     # function to display the search results
     def show_results(self, results):
         # first clear current results
@@ -179,10 +209,8 @@ class PlayersPage(ttk.Frame):
         # binding the name to open edit view if in edit mode otherwise statistics view with the player data
         # name is underlined on hover
         for row in results:
-            row_frame = ttk.Frame(self.results_frame)
-            row_frame.pack(fill="x", pady=(2 if results.index(row) != len(results)-1 else (2,20)))
-            name = ttk.Label(row_frame, text=f"{row[1]} {row[2]}", anchor="center")
-            name.pack()
+            name = ttk.Label(self.results_frame, text=f"{row[1]} {row[2]}", anchor="center")
+            name.pack(pady=(2 if results.index(row) != len(results)-1 else (2,20)))
             name.bind("<Button-1>", lambda e, r=row: self.open_edit_player_view(r) if self.edit_mode else self.controller.open_statistics_player(r))
             self.controller.make_hoverable(name)
 

@@ -30,7 +30,7 @@ class CircuitsPage(ttk.Frame):
         self.search_field.bind("<KeyRelease>", self.search_circuits)
         self.search_field.bind("<Command-BackSpace>", self.clear_entry)
         self.search_field.bind("<Escape>", lambda e: self.search_field.focus_set() or self.focus())
-        ttk.Button(search_frame, text="⌫", width=2, command=self.remove_search).pack(side="left", padx=5)
+        ttk.Button(search_frame, text="⌫", width=2, command=self.remove_search, cursor="pirate").pack(side="left", padx=5)
 
         # creating the scroll container
         container = ttk.Frame(self)
@@ -72,10 +72,8 @@ class CircuitsPage(ttk.Frame):
         # binding the name to open statistics view with the circuit data
         # name is underlined on hover
         for row in results:
-            row_frame = ttk.Frame(self.results_frame)
-            row_frame.pack(fill="x", pady=(2 if results.index(row) != len(results)-1 else (2,20)))
-            name = ttk.Label(row_frame, text=row[1], anchor="center")
-            name.pack()
+            name = ttk.Label(self.results_frame, text=row[1], anchor="center")
+            name.pack(pady=(2 if results.index(row) != len(results)-1 else (2,20)))
             name.bind("<Button-1>", lambda e, r=row: self.controller.open_statistics_circuit(r))
             self.controller.make_hoverable(name)
 

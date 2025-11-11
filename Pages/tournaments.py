@@ -4,7 +4,7 @@ from tkcalendar import Calendar
 import datetime
 from collections import defaultdict
 from storage import create_uuid
-
+# add win.resizable(False, False)
 class TournamentsPage(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -30,7 +30,8 @@ class TournamentsPage(ttk.Frame):
         buttons_frame.pack(pady=(5, 10))
 
         create_btn = ttk.Button(buttons_frame, text="Create Tournament", command=self.open_create_tournament_view)
-        create_btn.pack(side="left", padx=5)
+        create_btn.pack(side="left", padx=10, ipadx=10)
+        self.controller.make_hoverable_btn(create_btn, "Hover", "UnHover")
 
         # creating the scroll container
         container = ttk.Frame(self)

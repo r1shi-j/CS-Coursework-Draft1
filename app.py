@@ -27,6 +27,12 @@ class App(tk.Frame):
 
     def create_styling(self):
         self.style = ttk.Style()
+        self.style.configure("HoverDelete.TButton", foreground="#df3832", font=("TkDefaultFont", 10, "underline"))
+        self.style.configure("UnHoverDelete.TButton", foreground="#df3832", font=("TkDefaultFont", 10, "normal"))
+        self.style.configure("HoverSubmit.TButton", foreground="#00a2ff", font=("TkDefaultFont", 10, "underline"))
+        self.style.configure("UnHoverSubmit.TButton", foreground="#00a2ff", font=("TkDefaultFont", 10, "normal"))
+        self.style.configure("Hover.TButton", font=("TkDefaultFont", 10, "underline"))
+        self.style.configure("UnHover.TButton", font=("TkDefaultFont", 10, "normal"))
 
     # creating the layout
     # creates the frame and disables resizing
@@ -108,9 +114,12 @@ class App(tk.Frame):
     def make_hoverable(self, label, size=None, weight=None):
         base_font = ("TkDefaultFont", size if size else 10, weight if weight else "normal")
         hover_font = ("TkDefaultFont", size if size else 10, f"{weight} underline" if weight else "underline")
-        #* TODO: label.configure(cursor="hand2")
         label.bind("<Enter>", lambda e: label.config(font=hover_font))
         label.bind("<Leave>", lambda e: label.config(font=base_font))
+
+    def make_hoverable_btn(self, button, h, uh):
+        button.bind("<Enter>", lambda e: button.config(style=f"{h}.TButton"))
+        button.bind("<Leave>", lambda e: button.config(style=f"{uh}.TButton"))
 
     # function to open statistics view with player data
     def open_statistics_player(self, player):
