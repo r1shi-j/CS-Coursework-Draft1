@@ -15,14 +15,19 @@ if __name__ == "__main__":
 # Tournament type doesnt currently do anything
 # Only 16 player single elimination is supported
 
-# Look at all to-dos (validation and statistics link)
-
-### TODO
+### Implement
 # Statistics view
 # Create account view
 # Login view
 
-# Add styling everywhere
-# cursor styling using `, cursor="plus"`
-# Add validation to forms everywhere
-# Make ui better, sizing, padding, spacing ect
+### Redo UI
+#* input race/gp results
+# choosing tournament type (create and edit tournament)
+# creating tournament type (create and edit tournament)
+# brackets view
+
+#* Add validation to forms everywhere
+# add animations or subtle color change on hover for buttons/labels
+# add cursor styling, underline, color change on hover
+# block window resizing
+# bind escape key to deactive search field
