@@ -1,10 +1,10 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from tkcalendar import Calendar
 import datetime
 from collections import defaultdict
 from storage import create_uuid
-# add win.resizable(False, False)
+
 class TournamentsPage(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -29,7 +29,7 @@ class TournamentsPage(ttk.Frame):
         buttons_frame = ttk.Frame(self.form_frame)
         buttons_frame.pack(pady=(5, 10))
 
-        create_btn = ttk.Button(buttons_frame, text="Create Tournament", command=self.open_create_tournament_view, style="UnHover.TButton")
+        create_btn = ttk.Button(buttons_frame, text="Create Tournament", command=self.open_create_tournament_view, style="UnHover.TButton", cursor="plus")
         create_btn.pack(side="left", padx=10, ipadx=10)
         self.controller.make_hoverable_btn(create_btn, "Hover", "UnHover")
 
@@ -133,13 +133,19 @@ class TournamentsPage(ttk.Frame):
         step2 = ttk.Frame(step2_frame)
         tournament_players = []
 
+        # function to clear the search field when command backspace pressed
+        def clear_query(event=None):
+            search_field.delete(0, tk.END)
+
         # creating the search field
         search_frame = ttk.LabelFrame(step2, text="Search Players")
         search_frame.pack(fill="both", expand=True)
         search_var = tk.StringVar()
-        search_field = ttk.Entry(search_frame, textvariable=search_var)
+        vcmd = (win.register(self.controller.validate_only_letters), '%P')
+        search_field = ttk.Entry(search_frame, textvariable=search_var, validate='key', validatecommand=vcmd)
         search_field.pack(fill="x", padx=5, pady=5)
         search_field.bind("<Escape>", lambda e: win.focus())
+        search_field.bind("<Command-BackSpace>", clear_query)
 
         # search results frame
         results_outer = ttk.LabelFrame(step2, text="Add Players")
@@ -239,6 +245,14 @@ class TournamentsPage(ttk.Frame):
 
         search_var.trace_add("write", update_search_results)
 
+        # function to validate the correct number of players are added
+        # if correct then show the next step
+        def validate_player_count():
+            if len(tournament_players) == 16:
+                show_step(2)
+            else:
+                messagebox.showerror("Incorrect number of players", f"Number of players should be 16.\nCurrently {len(tournament_players)} players added.")
+
         bottom_bar = ttk.Frame(step2)
         bottom_bar.pack(fill="x", pady=(10,0))
 
@@ -246,7 +260,7 @@ class TournamentsPage(ttk.Frame):
         back_btn.pack(side="left", padx=5)
         self.controller.make_hoverable_btn(back_btn, "Hover", "UnHover")
 
-        next_btn = ttk.Button(bottom_bar, text="Next", command=lambda: show_step(2), style="UnHoverSubmit.TButton")
+        next_btn = ttk.Button(bottom_bar, text="Next", command=validate_player_count, style="UnHoverSubmit.TButton")
         next_btn.pack(side="right", padx=5)
         self.controller.make_hoverable_btn(next_btn, "HoverSubmit", "UnHoverSubmit")
 
@@ -262,14 +276,20 @@ class TournamentsPage(ttk.Frame):
         types_container = ttk.Frame(step3)
         types_container.pack(fill="x")
         
-        ttk.Button(step3, text="+", command=lambda: self.open_add_type_view(types_container, selected_type)).pack(anchor="ne", padx=5, pady=2)
         self.build_tournament_type_section(types_container, selected_type)
+        ttk.Button(step3, text="+", command=lambda: self.open_add_type_view(types_container, selected_type), style="UnHover.TButton", cursor="plus").pack(anchor="ne", padx=5, pady=2)
 
         # Create the tournament
         def create_tournament():
+            # validation that the tournament type isn't empty
+            ttype = selected_type.get()
+            if ttype == "":
+                messagebox.showerror("Missing Info", "Please select a tournament type.")
+                return
+            
             # creating tournament with data, making new id
             new_t_id = create_uuid()
-            self.controller.db.create_tournament(new_t_id, get_date(), len(tournament_players), selected_type.get())
+            self.controller.db.create_tournament(new_t_id, get_date(), len(tournament_players), ttype)
 
             # adding all players to tournament in TournamentParticipation table
             for player in tournament_players:
@@ -310,6 +330,11 @@ class TournamentsPage(ttk.Frame):
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
+
+        # function to go back to tournament overview
+        def go_back():
+            self.open_tournament_overview(t_id)
+            win.destroy()
 
         # storing the steps to create tournament as differrent views
         # settings current step index to 0
@@ -365,7 +390,7 @@ class TournamentsPage(ttk.Frame):
         # cancel button closes window
         # next button shows next step
         # underlines on hover
-        cancel_btn = ttk.Button(bottom_bar, text="Cancel", command=win.destroy, style="UnHover.TButton")
+        cancel_btn = ttk.Button(bottom_bar, text="Cancel", command=go_back, style="UnHover.TButton")
         cancel_btn.pack(side="left", padx=5)
         self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
 
@@ -382,13 +407,19 @@ class TournamentsPage(ttk.Frame):
         removed_players = []
         added_players = []
 
+        # function to clear the search field when command backspace pressed
+        def clear_query(event=None):
+            search_field.delete(0, tk.END)
+
         # creating the search field
         search_frame = ttk.LabelFrame(step2, text="Search Players")
         search_frame.pack(fill="both", expand=True)
         search_var = tk.StringVar()
-        search_field = ttk.Entry(search_frame, textvariable=search_var)
+        vcmd = (win.register(self.controller.validate_only_letters), '%P')
+        search_field = ttk.Entry(search_frame, textvariable=search_var, validate='key', validatecommand=vcmd)
         search_field.pack(fill="x", padx=5, pady=5)
         search_field.bind("<Escape>", lambda e: win.focus())
+        search_field.bind("<Command-BackSpace>", clear_query)
 
         # search results frame
         results_outer = ttk.LabelFrame(step2, text="Add Players")
@@ -491,6 +522,14 @@ class TournamentsPage(ttk.Frame):
 
         search_var.trace_add("write", update_search_results)
 
+        # function to validate the correct number of players are added
+        # if correct then show the next step
+        def validate_player_count():
+            if len(tournament_players) == 16:
+                show_step(2)
+            else:
+                messagebox.showerror("Incorrect number of players", f"Number of players should be 16.\nCurrently {len(tournament_players)} players added.")
+
         bottom_bar = ttk.Frame(step2)
         bottom_bar.pack(fill="x", pady=(10,0))
 
@@ -498,11 +537,11 @@ class TournamentsPage(ttk.Frame):
         back_btn.pack(side="left", padx=5)
         self.controller.make_hoverable_btn(back_btn, "Hover", "UnHover")
 
-        next_btn = ttk.Button(bottom_bar, text="Next", command=lambda: show_step(2), style="UnHoverSubmit.TButton")
+        next_btn = ttk.Button(bottom_bar, text="Next", command=validate_player_count, style="UnHoverSubmit.TButton")
         next_btn.pack(side="right", padx=5)
         self.controller.make_hoverable_btn(next_btn, "HoverSubmit", "UnHoverSubmit")
 
-        cancel_btn = ttk.Button(bottom_bar, text="Cancel", command=win.destroy, style="UnHover.TButton")
+        cancel_btn = ttk.Button(bottom_bar, text="Cancel", command=go_back, style="UnHover.TButton")
         cancel_btn.pack(padx=5)
         self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
 
@@ -516,16 +555,18 @@ class TournamentsPage(ttk.Frame):
         types_container.pack(fill="x")
         
         self.build_tournament_type_section(types_container, selected_type, current_type_id)
-        ttk.Button(step3, text="+", command=lambda: self.open_add_type_view(types_container, selected_type)).pack(anchor="ne", padx=5, pady=2)
-
-        def go_back():
-            self.open_tournament_overview(t_id)
-            win.destroy()
+        ttk.Button(step3, text="+", command=lambda: self.open_add_type_view(types_container, selected_type), style="UnHover.TButton", cursor="plus").pack(anchor="ne", padx=5, pady=2)
 
         # Update the tournament
         def update_tournament():
+            # validation that the tournament type isn't empty
+            ttype = selected_type.get()
+            if ttype == "":
+                messagebox.showerror("Missing Info", "Please select a tournament type.")
+                return
+            
             # updating the tournament with data
-            self.controller.db.update_tournament(t_id, get_date(), len(tournament_players), selected_type.get())
+            self.controller.db.update_tournament(t_id, get_date(), len(tournament_players), ttype)
 
             # adding new players, removing old players
             original_players = [p[0] for p in self.controller.db.read_tournament_players(t_id)]
@@ -675,8 +716,8 @@ class TournamentsPage(ttk.Frame):
             winner_label.grid(row=i, column=1, pady=2)
 
             # clicking any column opens tournament overview
-            date_label.bind("<Button-1>", lambda e, tid=row[0]: self.open_tournament_overview(tid))
-            winner_label.bind("<Button-1>", lambda e, tid=row[0]: self.open_tournament_overview(tid))
+            date_label.bind("<Button-1>", lambda e, t_id=row[0]: self.open_tournament_overview(t_id))
+            winner_label.bind("<Button-1>", lambda e, t_id=row[0]: self.open_tournament_overview(t_id))
 
     # creates tournament overview subview
     def open_tournament_overview(self, t_id: str):
@@ -733,7 +774,7 @@ class TournamentsPage(ttk.Frame):
         back_btn.grid(row=6, column=0, padx=(20,0), pady=8, ipadx=10, sticky="w")
         self.controller.make_hoverable_btn(back_btn, "Hover", "UnHover")
 
-        settings_btn = ttk.Button(win, text="Settings", command=open_settings, style="UnHover.TButton")
+        settings_btn = ttk.Button(win, text="Settings", command=open_settings, style="UnHover.TButton", cursor="spraycan")
         settings_btn.grid(row=6, column=1, padx=(5,20), pady=8, ipadx=5, sticky="w")
         self.controller.make_hoverable_btn(settings_btn, "Hover", "UnHover")
 
@@ -863,10 +904,10 @@ class TournamentsPage(ttk.Frame):
     
     # opens subview to input race results
     def open_input_race_results(self, gp_id: str, t_id: str):
-        # getting the number of races data is entered for
+        # getting the number of races data is entered for to display in title
         race_count = self.controller.db.get_race_count_in_gp(gp_id)
         win = tk.Toplevel(self)
-        win.title(f"Input Race [{race_count + 1}/4] Results")
+        win.title(f"Input Race Results [{race_count + 1}/4]")
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
@@ -877,49 +918,73 @@ class TournamentsPage(ttk.Frame):
         circuit_names = [c[1] for c in circuits]
         name_to_circuit = {c[1]: c for c in circuits}
 
-        ttk.Label(win, text="Select Circuit:").grid(row=0, column=0, padx=5, pady=5)
+        # frame for the circuit selection
+        select_circuit_frame = ttk.LabelFrame(win, text="Select the circuit")
+        select_circuit_frame.pack(padx=10, pady=10)
 
         # drop down selection box with all circuits
         circuit_var = tk.StringVar()
-        circuit_dropdown = ttk.Combobox(
-            win,
-            textvariable=circuit_var,
-            values=circuit_names,
-            state="readonly"
-        )
-        circuit_dropdown.grid(row=0, column=1, padx=5, pady=5)
+        circuit_dropdown = ttk.Combobox(select_circuit_frame, textvariable=circuit_var, values=circuit_names, state="readonly")
+        circuit_dropdown.pack(padx=20, pady=10)
+        circuit_dropdown.bind("<Escape>", lambda e: win.focus())
+        circuit_dropdown.bind("<<ComboboxSelected>>", lambda e: win.focus())
         
+        # getting list of players in the grand prix
         players = self.controller.db.read_grand_prix_players(gp_id)
         result_vars = {}
+
+        # frame for the player results selection
+        inp_results_frame = ttk.LabelFrame(win, text="Input player results")
+        inp_results_frame.pack(padx=10, pady=10)
         
         # for each player in the race, creating a result selction box 1-12
-        for row, p in enumerate(players):
-            ttk.Label(win, text=p[1]).grid(row=1+row, column=0, padx=5, pady=5, sticky="w")
+        for p in players:
+            # creating a row frame to position the name and dropdown
+            row_frame = ttk.Frame(inp_results_frame)
+            row_frame.pack(padx=30, fill="x")
 
+            # name label and the dropdown box
+            # width 5 as only numbers in the dropdown
+            ttk.Label(row_frame, text=p[1]).pack(padx=20, side="left")
             result_var = tk.StringVar()
-            result_dropdown = ttk.Combobox(
-                win,
-                textvariable=result_var,
-                values=[str(i) for i in range(1, 13)],
-                state="readonly",
-                width=5
-            )
-            result_dropdown.grid(row=1+row, column=1, padx=5, pady=5)
+            result_dropdown = ttk.Combobox(row_frame, textvariable=result_var, values=[str(i) for i in range(1, 13)], state="readonly", width="5")
+            result_dropdown.pack(padx=20, side="right")
+            result_dropdown.bind("<Escape>", lambda e: win.focus())
+            result_dropdown.bind("<<ComboboxSelected>>", lambda e: win.focus())
             result_vars[p[0]] = result_var
 
-        # TODO: validation that all fields must be entered, and that results can't be the same
-        # function to submit the results
+        # function to submit the results with validation
         def insert_results():
+            # fetching the chosen circuit
             chosen_name = circuit_var.get()
+            # if selection is nothing then shows error to select a circuit
+            if chosen_name == "":
+                messagebox.showerror("Missing Info", "Please select a circuit.")
+                return
+            # trying to fetch all the results as integers
+            # this fails if not all integers and hence not all results have values
+            try:
+                # creating an array of integers of all results
+                # then converting it into a set to remove duplicates
+                raw_results = [int(var.get()) for _, var in result_vars.items()]
+                unique_results = set(raw_results)
+            except ValueError:
+                # if can't convert all results to integer then showing error that not all results have been entered
+                messagebox.showerror("Incomplete Data", "Please ensure all players have a position assigned.")
+                return
+            # if number of unique results is not 4 then means 2 results have the same value so showing error
+            if len(unique_results) != 4:
+                messagebox.showerror("Duplicate Positions", "Two players cannot finish in the same position.\nPlease check your entries.")
+                return
+            
             # finding the circuit id from its name
-            if chosen_name:
-                chosen_circuit = name_to_circuit[chosen_name]
-                c_id = chosen_circuit[0]
+            chosen_circuit = name_to_circuit[chosen_name]
+            c_id = chosen_circuit[0]
 
             # collecting all the players
             # creating the race and adding the players and results to it
             # if this is the last race in gp then open gp results subview
-            players_results = [(pid, int(var.get())) for pid, var in result_vars.items()]
+            players_results = [(p_id, int(var.get())) for p_id, var in result_vars.items()]
             self.controller.db.create_race(gp_id, c_id, players_results)
             new_race_count = self.controller.db.get_race_count_in_gp(gp_id)
             if new_race_count == 4: self.open_input_gp_results(gp_id, t_id)
@@ -927,8 +992,16 @@ class TournamentsPage(ttk.Frame):
             if new_race_count < 4: self.refresh_brackets(t_id)
 
         # action buttons
-        ttk.Button(win, text="Cancel", command=win.destroy).grid(row=5, column=0, pady=10, sticky="w")
-        ttk.Button(win, text="Insert Resuts", command=insert_results).grid(row=5, column=1, pady=10, sticky="w")
+        bottom_bar = ttk.Frame(win)
+        bottom_bar.pack(fill="x", pady=(6,12))
+
+        cancel_btn = ttk.Button(bottom_bar, text="Cancel", command=win.destroy, style="UnHover.TButton")
+        cancel_btn.pack(side="left", padx=10)
+        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+
+        submit_btn = ttk.Button(bottom_bar, text="Insert Resuts", command=insert_results, style="UnHoverSubmit.TButton")
+        submit_btn.pack(side="right", padx=10)
+        self.controller.make_hoverable_btn(submit_btn, "HoverSubmit", "UnHoverSubmit")
 
     # opens subview to input grand prix results
     def open_input_gp_results(self, gp_id: str, t_id: str):
@@ -938,32 +1011,49 @@ class TournamentsPage(ttk.Frame):
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
 
+        # getting list of players in the grand prix
         players = self.controller.db.read_grand_prix_players(gp_id)
         result_vars = {}
+        
+        # frame for the player results selection
+        inp_results_frame = ttk.LabelFrame(win, text="Input player results")
+        inp_results_frame.pack(padx=10, pady=10)
 
-        for row, p in enumerate(players):
-            ttk.Label(win, text=f"{p[1]} {p[2]}").grid(row=row, column=0, padx=5, pady=5, sticky="w")
+        for p in players:
+            # creating a row frame to position the name and dropdown
+            row_frame = ttk.Frame(inp_results_frame)
+            row_frame.pack(padx=30, fill="x")
 
+            # name label and the dropdown box
+            # width 5 as only numbers in the dropdown
+            ttk.Label(row_frame, text=p[1]).pack(padx=20, side="left")
             result_var = tk.StringVar()
-            result_dropdown = ttk.Combobox(
-                win,
-                textvariable=result_var,
-                values=[str(i) for i in range(1, 13)],
-                state="readonly",
-                width=5
-            )
-            result_dropdown.grid(row=row, column=1, padx=5, pady=5)
+            result_dropdown = ttk.Combobox(row_frame, textvariable=result_var, values=[str(i) for i in range(1, 13)], state="readonly", width="5")
+            result_dropdown.pack(padx=20, side="right")
+            result_dropdown.bind("<Escape>", lambda e: win.focus())
+            result_dropdown.bind("<<ComboboxSelected>>", lambda e: win.focus())
             result_vars[p[0]] = result_var
 
         # function to insert the grand prix results
         def save_gp_results():
-            for pid, var in result_vars.items():
-                if var.get():
-                    self.controller.db.cursor.execute(
-                        "UPDATE GrandPrixParticipation SET grandprix_result = ? WHERE grandprix_id = ? AND player_id = ?",
-                        (int(var.get()), gp_id, pid)
-                    )
-            self.controller.db.connection.commit()
+            # trying to fetch all the results as integers
+            # this fails if not all integers and hence not all results have values
+            try:
+                # creating an array of integers of all results
+                # then converting it into a set to remove duplicates
+                raw_results = [int(var.get()) for _, var in result_vars.items()]
+                unique_results = set(raw_results)
+            except ValueError:
+                # if can't convert all results to integer then showing error that not all results have been entered
+                messagebox.showerror("Incomplete Data", "Please ensure all players have a position assigned.")
+                return
+            # if number of unique results is not 4 then means 2 results have the same value so showing error
+            if len(unique_results) != 4:
+                messagebox.showerror("Duplicate Positions", "Two players cannot finish in the same position.\nPlease check your entries.")
+                return
+            
+            # adding the results of the players to GrandPrixParticipation
+            self.controller.db.insert_gp_results(gp_id, result_vars.items())
             
             # finding the top players in the gp
             top_players = self.controller.db.find_winners_for_gp(gp_id)
@@ -972,9 +1062,10 @@ class TournamentsPage(ttk.Frame):
             # if this is the final bracket
             if new_gp_id == "Tournament finished":
                 # finding the winner
-                # setting the tournament results for the players
                 winner = self.controller.db.calculate_tournament_winner(gp_id)
+                # setting the tournament results for the players
                 #* TODO: set tournament result TournamentParticipation for all players
+                # removing this db execution ad put in storage
                 self.controller.db.cursor.execute("UPDATE TournamentParticipation SET tournament_result = 1 WHERE tournament_id = ? AND player_id = ?", (t_id, winner[0]))
                 self.controller.db.connection.commit()
             else:
@@ -984,4 +1075,7 @@ class TournamentsPage(ttk.Frame):
             win.destroy()
             self.refresh_brackets(t_id)
 
-        ttk.Button(win, text="Complete Grand Prix", command=save_gp_results).grid(row=5, column=0, pady=10)
+        # complete button
+        complete_btn = ttk.Button(win, text="Complete Grand Prix", command=save_gp_results, style="UnHoverSubmit.TButton")
+        complete_btn.pack(padx=10, pady=(6,12))
+        self.controller.make_hoverable_btn(complete_btn, "HoverSubmit", "UnHoverSubmit")

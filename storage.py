@@ -467,6 +467,15 @@ class Database:
             """, (gp_id, gp_id, gp_id, newbracket))
             return self.cursor.fetchone()[0]
     
+    # inserting the grand prix results for players after grand prix finished
+    def insert_gp_results(self, gp_id: str, results: list[tuple]):
+        for p_id, var in results:
+            self.cursor.execute(
+                "UPDATE GrandPrixParticipation SET grandprix_result = ? WHERE grandprix_id = ? AND player_id = ?",
+                (int(var.get()), gp_id, p_id)
+            )
+        self.connection.commit()
+        
     # adding the winners to the next gp
     def add_winners_to_gp(self, players: list[tuple], gp_id: str):
         for p in players: self.add_player_to_gp(gp_id, p[0], None)
@@ -499,14 +508,20 @@ class Database:
 
     # searching players with a query
     def search_players(self, search_term: str) -> list[tuple]:
-        query = """
-            SELECT * FROM Player
-            WHERE forename LIKE ?
-            OR surname LIKE ?
-            OR CAST(age AS TEXT) LIKE ?
-        """
-        like_term = f"%{search_term}%"
-        params = [like_term, like_term, like_term]
+        # splitting the query into words
+        terms = search_term.split()
+        if not terms: return []
+        
+        # making the query with checks for each word in query
+        column_check = "(forename LIKE ? OR surname LIKE ? OR CAST(age AS TEXT) LIKE ?)"
+        where_clause = " AND ".join([column_check] * len(terms))
+        query = f"SELECT * FROM Player WHERE {where_clause}"
+
+        # creating the input parameters for each search term
+        params = []
+        for term in terms:
+            like_term = f"%{term}%"
+            params.extend([like_term, like_term, like_term])
 
         self.cursor.execute(query, params)
         return self.cursor.fetchall()
@@ -532,25 +547,33 @@ class Database:
         return self.cursor.fetchall()
 
     # searching circuits with a query
-    # def search_circuits(self, search_term: str) -> list[tuple]:
-    #     query = """
-    #         SELECT * FROM Circuit
-    #         WHERE circuit_name LIKE ?
-    #     """
-    #     like_term = f"%{search_term}%"
-    #     params = [like_term]
+    def search_circuits(self, search_term: str) -> list[tuple]:
+        # splitting the query into words
+        terms = search_term.split()
+        if not terms: return []
+        
+        # making the query with checks for each word in query
+        column_check = "(circuit_name LIKE ?)"
+        where_clause = " AND ".join([column_check] * len(terms))
+        query = f"SELECT * FROM Circuit WHERE {where_clause}"
 
-    #     self.cursor.execute(query, params)
-    #     return self.cursor.fetchall()
+        # creating the input parameters for each search term
+        params = []
+        for term in terms:
+            like_term = f"%{term}%"
+            params.extend([like_term])
 
-    # linear search on circuits
-    def search_circuits(self, query: str) -> list[tuple]:
-        c = self.read_circuit_data()
-        res = []
-        for i in c:
-            if query in i[1].lower():
-                res.append(i)
-        return res
+        self.cursor.execute(query, params)
+        return self.cursor.fetchall()
+
+    # # linear search on circuits
+    # def search_circuits(self, query: str) -> list[tuple]:
+    #     c = self.read_circuit_data()
+    #     res = []
+    #     for i in c:
+    #         if query in i[1].lower():
+    #             res.append(i)
+    #     return res
     
     # closing the database
     def close(self):

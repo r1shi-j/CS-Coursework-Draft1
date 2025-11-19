@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from storage import Database
 from Pages import tournaments, players, circuits, statistics
+import re
 
 # creating the frame
 class App(tk.Frame):
@@ -132,3 +133,18 @@ class App(tk.Frame):
         stats_page = self.frames["Statistics"]
         stats_page.load_circuit_stats(circuit)
         self.show_frame("Statistics")
+        
+    # function to valdidate input to only allow letters
+    @staticmethod
+    def validate_only_letters(s):
+        return re.fullmatch(r"[a-zA-Z ]*", s) is not None
+    
+    # function to valdidate input to only allow letters and numbers
+    @staticmethod
+    def validate_only_letters_numbers(s):
+        return re.fullmatch(r"[a-zA-Z 0-9]*", s) is not None
+    
+    # function to valdidate input to only allow numbers
+    @staticmethod
+    def validate_only_numbers(s):
+        return re.fullmatch(r"[0-9]*", s) is not None
