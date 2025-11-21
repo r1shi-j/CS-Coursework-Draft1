@@ -105,7 +105,7 @@ class TournamentsPage(ttk.Frame):
         cal.pack(padx=10, pady=10)
 
         # function to get the selected date from calendar and format it correctly
-        def get_date(): return datetime.datetime.strptime(cal.get_date(), '%m/%d/%y').strftime('%d/%m/%y')
+        def get_date(): return datetime.datetime.strptime(cal.get_date(), "%m/%d/%y").strftime("%d/%m/%y")
 
         # label with selected date
         # updating label when selected date is changed
@@ -141,8 +141,8 @@ class TournamentsPage(ttk.Frame):
         search_frame = ttk.LabelFrame(step2, text="Search Players")
         search_frame.pack(fill="both", expand=True)
         search_var = tk.StringVar()
-        vcmd = (win.register(self.controller.validate_only_letters), '%P')
-        search_field = ttk.Entry(search_frame, textvariable=search_var, validate='key', validatecommand=vcmd)
+        vcmd = (win.register(self.controller.validate_only_letters), "%P")
+        search_field = ttk.Entry(search_frame, textvariable=search_var, validate="key", validatecommand=vcmd)
         search_field.pack(fill="x", padx=5, pady=5)
         search_field.bind("<Escape>", lambda e: win.focus())
         search_field.bind("<Command-BackSpace>", clear_query)
@@ -245,6 +245,7 @@ class TournamentsPage(ttk.Frame):
 
         search_var.trace_add("write", update_search_results)
 
+        #* Temporary function
         # function to validate the correct number of players are added
         # if correct then show the next step
         def validate_player_count():
@@ -375,7 +376,7 @@ class TournamentsPage(ttk.Frame):
         cal.pack(padx=10, pady=10)
 
         # function to get the selected date from calendar and format it correctly
-        def get_date(): return datetime.datetime.strptime(cal.get_date(), '%m/%d/%y').strftime('%d/%m/%y')
+        def get_date(): return datetime.datetime.strptime(cal.get_date(), "%m/%d/%y").strftime("%d/%m/%y")
 
         # label with selected date
         # updating label when selected date is changed
@@ -415,8 +416,8 @@ class TournamentsPage(ttk.Frame):
         search_frame = ttk.LabelFrame(step2, text="Search Players")
         search_frame.pack(fill="both", expand=True)
         search_var = tk.StringVar()
-        vcmd = (win.register(self.controller.validate_only_letters), '%P')
-        search_field = ttk.Entry(search_frame, textvariable=search_var, validate='key', validatecommand=vcmd)
+        vcmd = (win.register(self.controller.validate_only_letters), "%P")
+        search_field = ttk.Entry(search_frame, textvariable=search_var, validate="key", validatecommand=vcmd)
         search_field.pack(fill="x", padx=5, pady=5)
         search_field.bind("<Escape>", lambda e: win.focus())
         search_field.bind("<Command-BackSpace>", clear_query)
@@ -487,7 +488,8 @@ class TournamentsPage(ttk.Frame):
                 row = ttk.Frame(results_frame)
                 row.pack(fill="x", padx=10, pady=pdy)
                 ttk.Label(row, text=f"{player[1]} {player[2]}").pack(side="left")
-                ttk.Button(row, text="+", command=lambda p=player: add_player(p)).pack(side="right")
+                #* Temporarily disabled
+                ttk.Button(row, text="+", command=lambda p=player: add_player(p), state="disabled").pack(side="right")
 
         # function to update current players list when player is added or removed
         def refresh_current_players():
@@ -499,7 +501,8 @@ class TournamentsPage(ttk.Frame):
                 row = ttk.Frame(current_players_frame)
                 row.pack(fill="x", padx=10, pady=pdy)
                 ttk.Label(row, text=f"{player[1]} {player[2]}").pack(side="left")
-                ttk.Button(row, text="-", command=lambda p=player: remove_player(p)).pack(side="right")
+                #* Temporarily disabled
+                ttk.Button(row, text="-", command=lambda p=player: remove_player(p), state="disabled").pack(side="right")
 
         # function to remove player from tournament
         # remove from database then refresh views
@@ -522,6 +525,7 @@ class TournamentsPage(ttk.Frame):
 
         search_var.trace_add("write", update_search_results)
 
+        #* Temporary function
         # function to validate the correct number of players are added
         # if correct then show the next step
         def validate_player_count():
@@ -607,7 +611,7 @@ class TournamentsPage(ttk.Frame):
 
         types = self.controller.db.read_tournament_types()
         for t in types:
-            desc = f"{t[1]} cont, {t[2]} GPs, {'Long' if t[3] else 'Normal'}"
+            desc = f"{t[1]} cont, {t[2]} GPs, {"Long" if t[3] else "Normal"}"
             rb = ttk.Radiobutton(parent, text=desc, value=t[0], variable=selected_type)
             rb.pack(anchor="w")
 
@@ -760,8 +764,9 @@ class TournamentsPage(ttk.Frame):
             ttk.Label(win, text=winner[1]).grid(row=3, column=1, padx=(5,10), pady=8, sticky="w")
         else:
             # if no winner then displaying other details
+            total_count = self.controller.db.get_player_count_in_tournament(t_id)
             eliminated_count = self.controller.db.get_players_count_eliminated(t_id)
-            competing_count = 16 - eliminated_count
+            competing_count = total_count - eliminated_count
             ttk.Label(win, text="Round:").grid(row=3, column=0, padx=(20,10), pady=8, sticky="e")
             ttk.Label(win, text=self.controller.db.get_current_round(t_id)).grid(row=3, column=1, padx=(5,10), pady=8, sticky="w")
             ttk.Label(win, text="Players competing:").grid(row=4, column=0, padx=(20,10), pady=8, sticky="e")
@@ -844,11 +849,13 @@ class TournamentsPage(ttk.Frame):
                         fmap = [p[0] for p in wins]
                         if name[0] in fmap: 
                             colour = "Green.TLabel"
-
-                ttk.Label(match_frame, text=name[1], anchor="w", style=colour).pack(fill="x")
+                
+                result = self.controller.db.get_tournament_result(t_id, name[0])
+                text = f"{name[1]}: {result}" if result else name[1]
+                ttk.Label(match_frame, text=text, anchor="w", style=colour).pack(fill="x")
             
             # filling with blank lines if not all players qualified yet
-            for x in range((4-len(gp_players))):
+            for _ in range((4-len(gp_players))):
                 ttk.Label(match_frame, text="", anchor="w").pack(fill="x")
 
             # fetching current race and player count in the gp
@@ -1061,13 +1068,8 @@ class TournamentsPage(ttk.Frame):
 
             # if this is the final bracket
             if new_gp_id == "Tournament finished":
-                # finding the winner
-                winner = self.controller.db.calculate_tournament_winner(gp_id)
-                # setting the tournament results for the players
-                #* TODO: set tournament result TournamentParticipation for all players
-                # removing this db execution ad put in storage
-                self.controller.db.cursor.execute("UPDATE TournamentParticipation SET tournament_result = 1 WHERE tournament_id = ? AND player_id = ?", (t_id, winner[0]))
-                self.controller.db.connection.commit()
+                # setting tournament results for all players
+                self.controller.db.set_tournament_results(t_id)
             else:
                 # otherwise add the top players to the next round
                 self.controller.db.add_winners_to_gp(top_players, new_gp_id)

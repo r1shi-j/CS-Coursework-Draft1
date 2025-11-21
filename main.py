@@ -7,27 +7,31 @@ if __name__ == "__main__":
     app = App(root)
     app.mainloop()
 
-### FIXME Bugs
-#* at end of tournament, calculate and set all player tournament result
-
-# Adding/removing players from a tournament will disrupt brackets
-# Solution is to lock current players, but can add new players
-# Tournament type doesnt currently do anything
-# Only 16 player single elimination is supported
-
-### Implement
-# Statistics view
-# Create account view
-# Login view
+### Bugs
+# Tournament type doesn't currently do anything: temporary solution is leave it as it is
+# Adding/removing players from a tournament will disrupt brackets: temporary solution is locking players
+# Only 16 player single elimination is supported: temporary solution is requiring 16 players, in future maybe a restriction of at least 4 players
 
 ### Redo UI
 # choosing tournament type (create and edit tournament)
 # creating tournament type (create and edit tournament)
 # brackets view
 
-# Add validation to forms everywhere
+### Implement
+# Statistics view
+# Create account view
+# Login view
+
+# Sorting/searching algorithms
+# Validation
+# 2D Array
+# Recursion
+# Commenting
+
 # block window resizing
 # bind escape key to deactivate search field
 # bind cmd backspace to clear field - update for windows use control instead?
 # add animations or subtle color change on hover for buttons/labels
 # add cursor styling, underline, color change on hover
+# using "" instead of '' for strings
+# use (,) instead of [] in sql

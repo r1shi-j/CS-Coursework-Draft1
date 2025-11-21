@@ -40,8 +40,8 @@ class PlayersPage(ttk.Frame):
         # subtitle, search field and clear button
         # binding keyboard buttons to clear and unfocus search field, with every key release triggering a search for real time searching
         ttk.Label(search_frame, text="Search players:").pack(side="left", padx=5)
-        vcmd = (search_frame.register(self.controller.validate_only_letters_numbers), '%P')
-        self.search_field = ttk.Entry(search_frame, width=20, validate='key', validatecommand=vcmd)
+        vcmd = (search_frame.register(self.controller.validate_only_letters_numbers), "%P")
+        self.search_field = ttk.Entry(search_frame, width=20, validate="key", validatecommand=vcmd)
         self.search_field.pack(side="left", padx=5)
         self.search_field.bind("<KeyRelease>", self.search_players)
         self.search_field.bind("<Command-BackSpace>", self.clear_entry)
@@ -84,8 +84,8 @@ class PlayersPage(ttk.Frame):
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
 
-        vcmd_letters = (win.register(self.controller.validate_only_letters), '%P')
-        vcmd_num = (win.register(self.controller.validate_only_numbers), '%P')
+        vcmd_letters = (win.register(self.controller.validate_only_letters), "%P")
+        vcmd_num = (win.register(self.controller.validate_only_numbers), "%P")
 
         # functions to clear the textfield when command backspace pressed
         def clear_fname(event=None):
@@ -97,21 +97,21 @@ class PlayersPage(ttk.Frame):
 
         # text box for first name
         ttk.Label(win, text="First name:").grid(row=0, column=0, padx=10, pady=(16,8), sticky="e")
-        firstname = ttk.Entry(win, validate='key', validatecommand=vcmd_letters)
+        firstname = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
         firstname.grid(row=0, column=1, padx=(5,20), pady=(16,8))
         firstname.bind("<Escape>", lambda e: win.focus())
         firstname.bind("<Command-BackSpace>", clear_fname)
 
         # text box for surname
         ttk.Label(win, text="Surname:").grid(row=1, column=0, padx=10, pady=8, sticky="e")
-        surname = ttk.Entry(win, validate='key', validatecommand=vcmd_letters)
+        surname = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
         surname.grid(row=1, column=1, padx=(5,20), pady=8)
         surname.bind("<Escape>", lambda e: win.focus())
         surname.bind("<Command-BackSpace>", clear_sname)
 
         # text box for age
         ttk.Label(win, text="Age:").grid(row=2, column=0, padx=10, pady=8, sticky="e")
-        age = ttk.Entry(win, validate='key', validatecommand=vcmd_num)
+        age = ttk.Entry(win, validate="key", validatecommand=vcmd_num)
         age.grid(row=2, column=1, padx=(5,20), pady=8)
         age.bind("<Escape>", lambda e: win.focus())
         age.bind("<Command-BackSpace>", clear_age)
@@ -145,17 +145,17 @@ class PlayersPage(ttk.Frame):
     def toggle_edit_mode(self):
         self.edit_mode = not self.edit_mode
         if self.edit_mode:
-            self.create_btn['state'] = 'disabled'
-            self.create_btn['cursor'] = 'arrow'
-            self.search_field['state'] = 'disabled'
-            self.clear_results_btn['state'] = 'disabled'
-            self.clear_results_btn['cursor'] = 'arrow'
+            self.create_btn["state"] = "disabled"
+            self.create_btn["cursor"] = "arrow"
+            self.search_field["state"] = "disabled"
+            self.clear_results_btn["state"] = "disabled"
+            self.clear_results_btn["cursor"] = "arrow"
         else:
-            self.create_btn['state'] = 'normal'
-            self.create_btn['cursor'] = 'crosshair'
-            self.search_field['state'] = 'normal'
-            self.clear_results_btn['state'] = 'normal'
-            self.clear_results_btn['cursor'] = 'pirate'
+            self.create_btn["state"] = "normal"
+            self.create_btn["cursor"] = "crosshair"
+            self.search_field["state"] = "normal"
+            self.clear_results_btn["state"] = "normal"
+            self.clear_results_btn["cursor"] = "pirate"
 
     # opens the edit player view
     def open_edit_player_view(self, player):
@@ -167,8 +167,8 @@ class PlayersPage(ttk.Frame):
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
 
-        vcmd_letters = (win.register(self.controller.validate_only_letters), '%P')
-        vcmd_num = (win.register(self.controller.validate_only_numbers), '%P')
+        vcmd_letters = (win.register(self.controller.validate_only_letters), "%P")
+        vcmd_num = (win.register(self.controller.validate_only_numbers), "%P")
 
         # functions to clear the textfield when command backspace pressed
         def clear_fname(event=None):
@@ -180,7 +180,7 @@ class PlayersPage(ttk.Frame):
 
         # text box for first name, prefilling with the original data
         ttk.Label(win, text="First name:").grid(row=0, column=0, padx=10, pady=(16,8), sticky="e")
-        firstname = ttk.Entry(win, validate='key', validatecommand=vcmd_letters)
+        firstname = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
         firstname.insert(0, player[1])
         firstname.grid(row=0, column=1, columnspan=2, padx=(5,20), pady=(16,8))
         firstname.bind("<Escape>", lambda e: win.focus())
@@ -188,7 +188,7 @@ class PlayersPage(ttk.Frame):
 
         # text box for surname, prefilling with the original data
         ttk.Label(win, text="Surname:").grid(row=1, column=0, padx=10, pady=8, sticky="e")
-        surname = ttk.Entry(win, validate='key', validatecommand=vcmd_letters)
+        surname = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
         surname.insert(0, player[2])
         surname.grid(row=1, column=1, columnspan=2, padx=(5,20), pady=8)
         surname.bind("<Escape>", lambda e: win.focus())
@@ -196,7 +196,7 @@ class PlayersPage(ttk.Frame):
 
         # text box for age, prefilling with the original data
         ttk.Label(win, text="Age:").grid(row=2, column=0, padx=10, pady=8, sticky="e")
-        age = ttk.Entry(win, validate='key', validatecommand=vcmd_num)
+        age = ttk.Entry(win, validate="key", validatecommand=vcmd_num)
         age.insert(0, player[3])
         age.grid(row=2, column=1, columnspan=2, padx=(5,20), pady=8)
         age.bind("<Escape>", lambda e: win.focus())

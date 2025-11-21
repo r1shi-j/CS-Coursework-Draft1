@@ -25,8 +25,8 @@ class CircuitsPage(ttk.Frame):
         # subtitle, search field and clear button
         # binding keyboard buttons to clear and unfocus search field, with every key release triggering a search for real time searching
         ttk.Label(search_frame, text="Search circuits:").pack(side="left", padx=5)
-        vcmd = (search_frame.register(self.controller.validate_only_letters), '%P')
-        self.search_field = ttk.Entry(search_frame, width=20, validate='key', validatecommand=vcmd)
+        vcmd = (search_frame.register(self.controller.validate_only_letters), "%P")
+        self.search_field = ttk.Entry(search_frame, width=20, validate="key", validatecommand=vcmd)
         self.search_field.pack(side="left", padx=5)
         self.search_field.bind("<KeyRelease>", self.search_circuits)
         self.search_field.bind("<Command-BackSpace>", self.clear_entry)
