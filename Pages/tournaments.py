@@ -22,13 +22,11 @@ class TournamentsPage(ttk.Frame):
         # creating the title
         title_frame = ttk.Frame(self.form_frame)
         title_frame.pack(pady=(10, 5))
-
-        ttk.Label(title_frame, text="Tournaments List", font=("TkDefaultFont", 14, "bold")).pack(padx=223)
+        ttk.Label(title_frame, text="Tournaments Dashboard", font=("TkDefaultFont", 14, "bold")).pack()
         
         # action buttons frame and button
         buttons_frame = ttk.Frame(self.form_frame)
         buttons_frame.pack(pady=(5, 10))
-
         create_btn = ttk.Button(buttons_frame, text="Create Tournament", command=self.open_create_tournament_view, style="UnHover.TButton", cursor="plus")
         create_btn.pack(side="left", padx=10, ipadx=10)
         self.controller.make_hoverable_btn(create_btn, "Hover", "UnHover")
@@ -703,6 +701,10 @@ class TournamentsPage(ttk.Frame):
         # fetching the tournaments data
         results = self.controller.db.sort_tournaments(self.sort_options)
 
+        if len(results) == 0:
+            ttk.Label(self.results_frame, text="You haven't created any tournaments yet.\nClick the create button above!").grid(row=1, column=0, columnspan=2)
+            return
+
         # iterating over all results with start index 1 to account for header row
         for i, row in enumerate(results, start=1):
             # alternating background colour for row
@@ -767,8 +769,9 @@ class TournamentsPage(ttk.Frame):
             total_count = self.controller.db.get_player_count_in_tournament(t_id)
             eliminated_count = self.controller.db.get_players_count_eliminated(t_id)
             competing_count = total_count - eliminated_count
+            current_round = self.controller.db.get_current_round(t_id)
             ttk.Label(win, text="Round:").grid(row=3, column=0, padx=(20,10), pady=8, sticky="e")
-            ttk.Label(win, text=self.controller.db.get_current_round(t_id)).grid(row=3, column=1, padx=(5,10), pady=8, sticky="w")
+            ttk.Label(win, text=current_round if current_round > 0 else "Final").grid(row=3, column=1, padx=(5,10), pady=8, sticky="w")
             ttk.Label(win, text="Players competing:").grid(row=4, column=0, padx=(20,10), pady=8, sticky="e")
             ttk.Label(win, text=competing_count).grid(row=4, column=1, padx=(5,10), pady=8, sticky="w")
             ttk.Label(win, text="Players eliminated:").grid(row=5, column=0, padx=(20,10), pady=8, sticky="e")
@@ -1070,6 +1073,7 @@ class TournamentsPage(ttk.Frame):
             if new_gp_id == "Tournament finished":
                 # setting tournament results for all players
                 self.controller.db.set_tournament_results(t_id)
+                self.refresh_tournaments()
             else:
                 # otherwise add the top players to the next round
                 self.controller.db.add_winners_to_gp(top_players, new_gp_id)

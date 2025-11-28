@@ -7,13 +7,14 @@ def create_uuid() -> str:
     return str(uuid.uuid4())
 
 class Database:
+    # MARK: - Initialisation
     # setting up connection
     def __init__(self, path="tournament.db"):
         self.connection = sqlite3.connect(path)
         self.connection.execute("PRAGMA foreign_keys = ON;")
         self.cursor = self.connection.cursor()
 
-    # creating all the tables if they dont exist
+    # creating all the tables if they don't exist
     def connect(self):
         self.cursor.execute("""
         CREATE TABLE IF NOT EXISTS Player (
@@ -116,13 +117,25 @@ class Database:
         );
         """)
 
+        # getting number of circuits
+        self.cursor.execute("SELECT COUNT(*) FROM Circuit")
+        circuit_count = self.cursor.fetchone()[0]
+
+        # if no circuits exist then add them
+        if circuit_count == 0:
+            paper_circuits = ['Mario Kart Stadium', 'Water Park', 'Sweet Sweet Canyon', 'Thwomp Ruins', 'Mario Circuit', 'Toad Harbor', 'Twisted Mansion', 'Shy Guy Falls', 'Sunshine Airport', 'Dolphin Shoals', 'Electrodrome', 'Mount Wario', 'Cloudtop Cruise', 'Bone-Dry Dunes', 'Bowser’s Castle', 'Rainbow Road', 'Moo Moo Meadows', 'GBA Mario Circuit', 'Cheep Cheep Beach', 'Toad’s Turnpike', 'Dry Dry Desert', 'Donut Plains 3', 'Royal Raceway', 'DK Jungle', 'Wario Stadium', 'Sherbet Land', 'Music Park', 'Yoshi Valley', 'Tick-Tock Clock', 'Piranha Plant Slide', 'Grumble Volcano', 'N64 Rainbow Road', 'Yoshi Circuit', 'Excitebike Arena', 'Dragon Driftway', 'Mute City', "Wario's Goldmine", 'SNES Rainbow Road', 'Ice Ice Outpost', 'Hyrule Circuit', 'Baby Park', 'Cheese Land', 'Wild Woods', 'Animal Crossing', 'Neo Bowser City', 'Ribbon Road', 'Super Bell Subway', 'Big Blue']
+            print("adding)")
+            self.cursor.executemany("INSERT INTO Circuit (circuit_id, circuit_name) VALUES (?, ?)", [(create_uuid(), name) for name in paper_circuits])
+
         self.connection.commit()
+
+    # MARK: - Tournaments
 
     # reads all tournament data
     def read_tournament_data(self) -> list[tuple]:
         self.cursor.execute("SELECT * FROM Tournament;")
         return self.cursor.fetchall()
-
+    
     # bubble sort on tournaments
     def sort_tournaments(self, options: tuple[str, str]) -> list[tuple]:
         # internal function to convert string dates to date objects so can compare them
@@ -321,7 +334,7 @@ class Database:
         return self.cursor.fetchone()[0]
     
     # getting the current round in a tournament
-    def get_current_round(self, t_id: str):
+    def get_current_round(self, t_id: str) -> int:
         # first fetching all gp id and round in a tournament
         self.cursor.execute("""
             SELECT grandprix_id, round
@@ -355,7 +368,7 @@ class Database:
         if current_rounds:
             return min(current_rounds)
         else:
-            return "Final"
+            return -1
     
     # gets the number of players that are eliminated
     def get_players_count_eliminated(self, t_id: str) -> int:
@@ -526,7 +539,7 @@ class Database:
                     # otherwise adding the players which were eliminated to round_results
                     bottom2 = self.find_losers_for_gp(id[0], True)
                     for p in bottom2:
-                        self.cursor.execute("SELECT * FROM GrandPrixParticipation WHERE player_id = ?", (p,))
+                        self.cursor.execute("SELECT * FROM GrandPrixParticipation WHERE player_id = ? AND grandprix_id = ?", (p, id[0]))
                         full_player = self.cursor.fetchone()
                         round_results.append(full_player)
 
@@ -569,6 +582,8 @@ class Database:
         # saving changes
         self.connection.commit()
 
+    # MARK: - Players
+
     # reading all player data
     def read_player_data(self) -> list[tuple]:
         self.cursor.execute("SELECT * FROM Player;")
@@ -608,6 +623,13 @@ class Database:
     def delete_player(self, player_id: str):
         self.cursor.execute("DELETE FROM Player WHERE player_id = ?", (player_id,))
         self.connection.commit()
+    
+    # getting the number of players in database
+    def get_player_count(self) -> int:
+        self.cursor.execute("SELECT COUNT(*) FROM Player;")
+        return self.cursor.fetchone()[0]
+
+    # MARK: - Circuits
 
     # reading all circuits
     def read_circuit_data(self) -> list[tuple]:
@@ -634,7 +656,7 @@ class Database:
         self.cursor.execute(query, params)
         return self.cursor.fetchall()
 
-    # # linear search on circuits
+    # linear search on circuits
     # def search_circuits(self, query: str) -> list[tuple]:
     #     c = self.read_circuit_data()
     #     res = []
@@ -642,6 +664,116 @@ class Database:
     #         if query in i[1].lower():
     #             res.append(i)
     #     return res
+
+    # MARK: - Statistics
+
+    # getting top winners stats
+    def get_top_winners_stats(self) -> list[tuple]:
+        # fetches the first name and surname in a single string, and the number of tournament wins
+        query = """
+        SELECT p.forename || ' ' || p.surname, COUNT(tp.tournament_result) as wins
+        FROM TournamentParticipation tp
+        JOIN Player p ON tp.player_id = p.player_id
+        WHERE tp.tournament_result = 1
+        GROUP BY p.player_id
+        ORDER BY wins DESC
+        """
+        self.cursor.execute(query)
+        return self.cursor.fetchall()
+    
+    # getting rivalry stats
+    def get_rivalry_stats(self) -> dict[str: list[tuple]]:
+        # fetches the first name and surname in a single string, and the sum and number of tournament resultes
+        query = """
+        SELECT p.forename || ' ' || p.surname, SUM(tp.tournament_result) as sum, COUNT(tp.tournament_result) as count
+        FROM TournamentParticipation tp
+        JOIN Player p ON tp.player_id = p.player_id
+        GROUP BY p.player_id
+        ORDER BY sum ASC
+        """
+        self.cursor.execute(query)
+        res = self.cursor.fetchall()
+        # finding the average tournament result for each player and sorting the list
+        avg_res = [(x[0], x[1]/x[2]) for x in res]
+        sorted_res = sorted(avg_res, key=lambda x: x[1])
+        # taking the top 5 players with the best average result
+        top_players = [p[0] for p in sorted_res[:5]]
+        data = {}
+        
+        # for each player, fetches their tournament history
+        for name in top_players:
+            # fetching the date and tournament result for the player
+            query = """
+            SELECT t.date, tp.tournament_result
+            FROM TournamentParticipation tp
+            JOIN Tournament t ON tp.tournament_id = t.tournament_id
+            JOIN Player p ON tp.player_id = p.player_id
+            WHERE (p.forename || ' ' || p.surname) = ? AND t.date IS NOT NULL
+            """
+            self.cursor.execute(query, (name,))
+            # adding the data to the dictionary of players
+            data[name] = self.cursor.fetchall() 
+        return data
+
+    # getting circuit usage stats
+    def get_circuit_usage_stats(self) -> list[tuple]:
+        # getting the name of circuit and number of races that use that circuit
+        query = """
+        SELECT c.circuit_name, COUNT(r.race_id)
+        FROM Race r
+        JOIN Circuit c ON r.circuit_id = c.circuit_id
+        GROUP BY c.circuit_id
+        ORDER BY COUNT(r.race_id) DESC
+        """
+        self.cursor.execute(query)
+        return self.cursor.fetchall()
+
+    # getting circuit winners stats
+    def get_circuit_winners(self, circuit_id: str) -> list[tuple]:
+        # getting the first and surname as a single string, and the number of wins the player has on that circuit
+        query = """
+        SELECT p.forename || ' ' || p.surname, COUNT(rp.race_result)
+        FROM RaceParticipation rp
+        JOIN Race r ON rp.race_id = r.race_id
+        JOIN Player p ON rp.player_id = p.player_id
+        WHERE r.circuit_id = ? AND rp.race_result = 1
+        GROUP BY p.player_id
+        ORDER BY COUNT(rp.race_result) DESC
+        """
+        self.cursor.execute(query, (circuit_id,))
+        return self.cursor.fetchall()
+
+    # getting player circuit results
+    def get_player_circuit_results(self, circuit_id: str, player_id: str) -> list[tuple]:
+        # getting the race result and the number of times the player has achieved that result on that circuit
+        query = """
+        SELECT rp.race_result, COUNT(rp.race_result)
+        FROM RaceParticipation rp
+        JOIN Race r ON rp.race_id = r.race_id
+        WHERE r.circuit_id = ? AND rp.player_id = ?
+        GROUP BY rp.race_result
+        ORDER BY rp.race_result ASC
+        """
+        self.cursor.execute(query, (circuit_id, player_id))
+        return self.cursor.fetchall()
+    
+    # getting player history
+    def get_player_history(self, player_id: str) -> list[tuple]:
+        # getting the date and tournament result for the player
+        query = """
+        SELECT t.date, tp.tournament_result
+        FROM TournamentParticipation tp
+        JOIN Tournament t ON tp.tournament_id = t.tournament_id
+        WHERE tp.player_id = ? AND tp.tournament_result IS NOT NULL
+        """
+        self.cursor.execute(query, (player_id,))
+        return self.cursor.fetchall()
+    
+    # getting race results for a player
+    def get_race_results(self, p_id: str) -> list[int]:
+        # getting the race results for the player
+        self.cursor.execute("SELECT race_result FROM RaceParticipation WHERE player_id = ?", (p_id,))
+        return [row[0] for row in self.cursor.fetchall()]
     
     # closing the database
     def close(self):

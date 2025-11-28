@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
+import re
 from storage import Database
 from Pages import tournaments, players, circuits, statistics
-import re
 
 # creating the frame
 class App(tk.Frame):
@@ -90,6 +90,8 @@ class App(tk.Frame):
 
     # linking the Pages files to run when clicked on their header
     def create_pages(self):
+        self.container.grid_rowconfigure(0, weight=1)
+        self.container.grid_columnconfigure(0, weight=1)
         for F in (tournaments.TournamentsPage, players.PlayersPage, circuits.CircuitsPage, statistics.StatisticsPage):
             page_name = F.__name__.replace("Page", "")
             frame = F(self.container, self)

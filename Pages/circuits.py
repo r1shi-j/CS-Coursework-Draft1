@@ -15,8 +15,7 @@ class CircuitsPage(ttk.Frame):
         # creating the title
         title_frame = ttk.Frame(self.form_frame)
         title_frame.pack(pady=(10, 5))
-
-        ttk.Label(title_frame, text="Circuits List", font=("TkDefaultFont", 14, "bold")).pack()
+        ttk.Label(title_frame, text="Circuits Dashboard", font=("TkDefaultFont", 14, "bold")).pack()
 
         # creating the search bar frame
         search_frame = ttk.Frame(self.form_frame)

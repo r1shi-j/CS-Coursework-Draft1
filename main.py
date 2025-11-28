@@ -18,9 +18,8 @@ if __name__ == "__main__":
 # brackets view
 
 ### Implement
-# Statistics view
-# Create account view
-# Login view
+#* Create account view
+#* Login view
 
 # Sorting/searching algorithms
 # Validation

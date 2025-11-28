@@ -18,18 +18,17 @@ class PlayersPage(ttk.Frame):
         # creating the title
         title_frame = ttk.Frame(self.form_frame)
         title_frame.pack(pady=(10, 5))
-
-        ttk.Label(title_frame, text="Players List", font=("TkDefaultFont", 14, "bold")).pack()
+        ttk.Label(title_frame, text="Players Dashboard", font=("TkDefaultFont", 14, "bold")).pack()
         
         # action buttons frame and buttons
         buttons_frame = ttk.Frame(self.form_frame)
         buttons_frame.pack(pady=(5, 10))
 
-        self.create_btn = ttk.Button(buttons_frame, text="Create Player", command=self.open_create_player_view, cursor="plus")
+        self.create_btn = ttk.Button(buttons_frame, text="Create Player", command=self.open_create_player_view, style="UnHover.TButton", cursor="plus")
         self.create_btn.pack(side="left", padx=10, ipadx=10)
         self.controller.make_hoverable_btn(self.create_btn, "Hover", "UnHover")
 
-        edit_btn = ttk.Button(buttons_frame, text="Edit Player", command=self.toggle_edit_mode, cursor="spraycan")
+        edit_btn = ttk.Button(buttons_frame, text="Edit Player", command=self.toggle_edit_mode, style="UnHover.TButton", cursor="spraycan")
         edit_btn.pack(side="left", padx=10, ipadx=10)
         self.controller.make_hoverable_btn(edit_btn, "Hover", "UnHover")
 
@@ -242,7 +241,12 @@ class PlayersPage(ttk.Frame):
         
         # if no items found for query then display this message
         if not results:
-            ttk.Label(self.results_frame, text="No players found.").pack(pady=10)
+            # if no players in database then show that message, otherwise no players in search results show different message
+            if self.controller.db.get_player_count() == 0:
+                msg = "You haven't created any players yet.\nClick the create button above!"
+            else:
+                msg = "No players found."
+            ttk.Label(self.results_frame, text=msg).pack(pady=10)
             return
 
         # creating a row with the text for each result
