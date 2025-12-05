@@ -58,7 +58,7 @@ class App(tk.Frame):
         self.nav_labels = {}
 
         # function to make navigation label
-        def make_nav_label(parent, text, view_name):
+        def make_nav_label(parent: ttk.Frame, text: str, view_name: str):
             label = ttk.Label(parent, text=text, font=("TkDefaultFont", 12))
             label.pack(side="left", padx=40)
 
@@ -99,7 +99,7 @@ class App(tk.Frame):
             frame.grid(row=0, column=0, sticky="nsew")
 
     # showing the respective frame when clicked on
-    def show_frame(self, page_name):
+    def show_frame(self, page_name: str):
         frame = self.frames[page_name]
         frame.tkraise()
 
@@ -114,24 +114,24 @@ class App(tk.Frame):
 
     # function to underline a label on hover
     # takes opetional parameters for font size and weight
-    def make_hoverable(self, label, size=None, weight=None):
+    def make_hoverable(self, label: ttk.Label, size=None, weight=None):
         base_font = ("TkDefaultFont", size if size else 10, weight if weight else "normal")
         hover_font = ("TkDefaultFont", size if size else 10, f"{weight} underline" if weight else "underline")
         label.bind("<Enter>", lambda e: label.config(font=hover_font))
         label.bind("<Leave>", lambda e: label.config(font=base_font))
 
-    def make_hoverable_btn(self, button, h, uh):
+    def make_hoverable_btn(self, button: ttk.Button, h: str, uh: str):
         button.bind("<Enter>", lambda e: button.config(style=f"{h}.TButton"))
         button.bind("<Leave>", lambda e: button.config(style=f"{uh}.TButton"))
 
     # function to open statistics view with player data
-    def open_statistics_player(self, player):
+    def open_statistics_player(self, player: tuple[str, str, str, int]):
         stats_page = self.frames["Statistics"]
         stats_page.load_player_stats(player)
         self.show_frame("Statistics")
 
     # function to open statistics view with circuit data
-    def open_statistics_circuit(self, circuit):
+    def open_statistics_circuit(self, circuit: tuple[str, str]):
         stats_page = self.frames["Statistics"]
         stats_page.load_circuit_stats(circuit)
         self.show_frame("Statistics")

@@ -6,7 +6,7 @@ from collections import defaultdict
 from storage import create_uuid
 
 class TournamentsPage(ttk.Frame):
-    def __init__(self, parent, controller):
+    def __init__(self, parent: ttk.Frame, controller):
         super().__init__(parent)
         self.controller = controller
         self.build_view()
@@ -53,6 +53,13 @@ class TournamentsPage(ttk.Frame):
             canvas.itemconfig(canvas_window, width=event.width)
         canvas.bind("<Configure>", on_canvas_configure)
 
+        # settings the login status for all tournaments to be logged out
+        self.login_status = {}
+        # id: (True, "username"), ...
+        results = self.controller.db.read_tournament_data()
+        for res in results:
+            self.login_status[res[0]] = (False, None)
+
         # initialising the sort options and initially loading the tournaments list
         self.sort_options = ("Date", "ASC")
         self.refresh_tournaments()
@@ -74,7 +81,7 @@ class TournamentsPage(ttk.Frame):
         # function to show a specific step
         # hides all steps then shows the current step
         # changes the current step index
-        def show_step(index):
+        def show_step(index: int):
             for step in steps:
                 step.pack_forget()
             steps[index].pack(padx=10, pady=10)
@@ -228,14 +235,14 @@ class TournamentsPage(ttk.Frame):
 
         # function to remove player from tournament
         # remove from database then refresh views
-        def remove_player(p):
+        def remove_player(p: tuple[str, str, str, int]):
             tournament_players.remove(p)
             refresh_current_players()
             update_search_results()
 
         # function to add player to tournament
         # add to database then refresh views
-        def add_player(p):
+        def add_player(p: tuple[str, str, str, int]):
             if p not in tournament_players:
                 tournament_players.append(p)
             refresh_current_players()
@@ -297,9 +304,12 @@ class TournamentsPage(ttk.Frame):
             # creating grand prixs and adding players to them in GrandPrixParticipation table
             self.controller.db.create_gps_for_tournament(new_t_id, tournament_players)
 
-            # opening tournament overview and refreshing tournaments list
+            # refreshing tournaments list to account for the new tournament
+            # Adding the new tournament to login status dictionary
+            # opening create account view for user to make an account
             self.refresh_tournaments()
-            self.open_tournament_overview(new_t_id)
+            self.login_status[new_t_id] = (False, None)
+            self.open_create_account(new_t_id)
             win.destroy()
 
         bottom_bar = ttk.Frame(step3)
@@ -343,11 +353,11 @@ class TournamentsPage(ttk.Frame):
         # function to show a specific step
         # hides all steps then shows the current step
         # changes the current step index
-        def show_step(index):
+        def show_step(index: int):
             for step in steps:
                 step.pack_forget()
             steps[index].pack(padx=10, pady=10)
-            steps[index+3].pack(padx=10, pady=10)
+            steps[index+4].pack(padx=10, pady=10)
             current_step.set(index)
         
         # Step 1: Select date
@@ -504,7 +514,7 @@ class TournamentsPage(ttk.Frame):
 
         # function to remove player from tournament
         # remove from database then refresh views
-        def remove_player(p):
+        def remove_player(p: tuple[str, str, str, int]):
             tournament_players.remove(p)
             removed_players.append(p[0])
             refresh_current_players()
@@ -512,7 +522,7 @@ class TournamentsPage(ttk.Frame):
 
         # function to add player to tournament
         # add to database then refresh views
-        def add_player(p):
+        def add_player(p: tuple[str, str, str, int]):
             if p not in tournament_players:
                 tournament_players.append(p)
                 added_players.append(p[0])
@@ -555,20 +565,52 @@ class TournamentsPage(ttk.Frame):
 
         types_container = ttk.Frame(step3)
         types_container.pack(fill="x")
-        
-        self.build_tournament_type_section(types_container, selected_type, current_type_id)
-        ttk.Button(step3, text="+", command=lambda: self.open_add_type_view(types_container, selected_type), style="UnHover.TButton", cursor="plus").pack(anchor="ne", padx=5, pady=2)
 
-        # Update the tournament
-        def update_tournament():
-            # validation that the tournament type isn't empty
+        # function to check if user has selected a tournament type, if they have then show the next step otherwise show an error
+        def validate_ttype():
             ttype = selected_type.get()
             if ttype == "":
                 messagebox.showerror("Missing Info", "Please select a tournament type.")
                 return
-            
+            else:
+                show_step(3)
+        
+        # building the tournament type list and the add button
+        self.build_tournament_type_section(types_container, selected_type, current_type_id)
+        ttk.Button(step3, text="+", command=lambda: self.open_add_type_view(types_container, selected_type), style="UnHover.TButton", cursor="plus").pack(anchor="ne", padx=5, pady=2)
+
+        # making frame for the actions buttons
+        bottom_bar = ttk.Frame(step3)
+        bottom_bar.pack(fill="x", pady=(10,0))
+
+        # back button that shows the previous step
+        back_btn = ttk.Button(bottom_bar, text="Back", command=lambda: show_step(1), style="UnHover.TButton")
+        back_btn.pack(side="left", padx=5)
+        self.controller.make_hoverable_btn(back_btn, "Hover", "UnHover")
+
+        # next button that validates and shows the next step
+        next_btn = ttk.Button(bottom_bar, text="Next", command=validate_ttype, style="UnHoverSubmit.TButton")
+        next_btn.pack(side="right", padx=5)
+        self.controller.make_hoverable_btn(next_btn, "HoverSubmit", "UnHoverSubmit")
+
+        # cancel button which closes the create view
+        cancel_btn = ttk.Button(bottom_bar, text="Cancel", command=go_back, style="UnHover.TButton")
+        cancel_btn.pack(padx=5)
+        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+
+        # Step 4: Manage accounts
+        step4_frame = ttk.LabelFrame(win, text="Manage accounts")
+        step4 = ttk.Frame(step4_frame)
+
+        # creating container for the accounts list and building it
+        accounts_container = ttk.Frame(step4)
+        accounts_container.pack(fill="x")
+        self.build_accounts_section(t_id, accounts_container)
+
+        # Update the tournament
+        def update_tournament():
             # updating the tournament with data
-            self.controller.db.update_tournament(t_id, get_date(), len(tournament_players), ttype)
+            self.controller.db.update_tournament(t_id, get_date(), len(tournament_players), selected_type.get())
 
             # adding new players, removing old players
             original_players = [p[0] for p in self.controller.db.read_tournament_players(t_id)]
@@ -583,27 +625,31 @@ class TournamentsPage(ttk.Frame):
             self.refresh_tournaments()
             go_back()
 
-        bottom_bar = ttk.Frame(step3)
+        # bottom bar frame for action buttons
+        bottom_bar = ttk.Frame(step4)
         bottom_bar.pack(fill="x", pady=(10,0))
 
-        back_btn = ttk.Button(bottom_bar, text="Back", command=lambda: show_step(1), style="UnHover.TButton")
+        # back button
+        back_btn = ttk.Button(bottom_bar, text="Back", command=lambda: show_step(2), style="UnHover.TButton")
         back_btn.pack(side="left", padx=5)
         self.controller.make_hoverable_btn(back_btn, "Hover", "UnHover")
 
-        create_btn = ttk.Button(bottom_bar, text="Update", command=update_tournament, style="UnHoverSubmit.TButton")
-        create_btn.pack(side="right", padx=5)
-        self.controller.make_hoverable_btn(create_btn, "HoverSubmit", "UnHoverSubmit")
+        # update button
+        update_btn = ttk.Button(bottom_bar, text="Update", command=update_tournament, style="UnHoverSubmit.TButton")
+        update_btn.pack(side="right", padx=5)
+        self.controller.make_hoverable_btn(update_btn, "HoverSubmit", "UnHoverSubmit")
 
+        # cancel button
         cancel_btn = ttk.Button(bottom_bar, text="Cancel", command=go_back, style="UnHover.TButton")
         cancel_btn.pack(padx=5)
         self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
 
         # adding the frames to the steps view array and then showing step 1
-        steps.extend([step1, step2, step3, step1_frame, step2_frame, step3_frame])
+        steps.extend([step1, step2, step3, step4, step1_frame, step2_frame, step3_frame, step4_frame])
         show_step(0)
 
     # builds the list of tournament types with radio button selection 
-    def build_tournament_type_section(self, parent, selected_type, current_type_id=None):
+    def build_tournament_type_section(self, parent: ttk.Frame, selected_type: tk.StringVar, current_type_id: str | None = None):
         for widget in parent.winfo_children():
             widget.destroy()
 
@@ -617,7 +663,7 @@ class TournamentsPage(ttk.Frame):
                 selected_type.set(current_type_id)
     
     # create tournament type subview
-    def open_add_type_view(self, parent_frame, selected_type):
+    def open_add_type_view(self, parent_frame: ttk.Frame, selected_type: tk.StringVar):
         win = tk.Toplevel(self)
         win.title("Add Tournament Type")
         win.grab_set()
@@ -636,7 +682,7 @@ class TournamentsPage(ttk.Frame):
         ttk.Checkbutton(win, text="Longer Style", variable=longer_var).grid(row=2, column=0, columnspan=2, padx=5, pady=5)
 
         def save_type():
-            self.controller.db.add_tournament_type(
+            self.controller.db.create_tournament_type(
                 int(cont_entry.get()),
                 int(gp_entry.get()),
                 longer_var.get()
@@ -646,6 +692,241 @@ class TournamentsPage(ttk.Frame):
 
         ttk.Button(win, text="Cancel", command=win.destroy).grid(row=3, column=0, pady=10)
         ttk.Button(win, text="Save", command=save_type).grid(row=3, column=1, pady=10)
+
+    # builds the list of accounts for tournament creator/editor
+    def build_accounts_section(self, t_id: str, parent: ttk.Frame, delete_mode=False):
+        # deleting previous text
+        for widget in parent.winfo_children():
+            widget.destroy()
+        
+        # function to confirm user intends to delete the accounts
+        def confirm_delete(account_id: str, username: str):
+            # showing the message box
+            confirm = messagebox.askyesno("Delete Account", f"Are you sure you want to delete the account for '{username}'?")
+            if confirm:
+                # if they say yes then delete the account
+                self.controller.db.delete_account(account_id)
+                # if the user deleted the account which was logged in then log them out
+                if username == self.login_status[t_id][1]:
+                    self.login_status[t_id] = (False, None)
+                # if there were 2 accounts and so there is only 1 now, then rebuild with delete_mode off to disable deleting
+                if len(accounts) == 2:
+                    self.build_accounts_section(t_id, parent, delete_mode=False)
+                else:
+                    # otherwise if more than 1 account then leave delete mode on in case user wants to delete another
+                    self.build_accounts_section(t_id, parent, delete_mode=True)
+
+        # frame for the title
+        header_frame = ttk.Frame(parent)
+        header_frame.pack(fill="x", pady=(0, 5))
+        ttk.Label(header_frame, text="Username", font=("TkDefaultFont", 10, "bold")).pack(anchor="w", padx=10)
+
+        # getting list of all accounts in the tournament
+        accounts = self.controller.db.read_tournament_accounts(t_id)
+
+        # for every account
+        for a in accounts:
+            # getting the account id and username from subscript
+            account_id = a[0]
+            username = a[2]
+
+            # if delete mode is on then text color should be red and underlined
+            if delete_mode:
+                # binding button to show confirmation
+                lbl = ttk.Label(parent, text=username, font=("TkDefaultFont", 10, "underline"), foreground="#df3832", cursor="hand2")
+                lbl.bind("<Button-1>", lambda e, a_id=account_id, u=username: confirm_delete(a_id, u))
+            else:
+                # otherwise listing the username
+                lbl = ttk.Label(parent, text=username, font=("TkDefaultFont", 10))
+            lbl.pack(anchor="w", padx=20, pady=2)
+        
+        # frame for action buttons
+        btn_frame = ttk.Frame(parent)
+        btn_frame.pack(fill="x", pady=(10, 5))
+
+        # settings the button title and styling if in delete mode or not
+        minus_style = "HoverDelete.TButton" if delete_mode else "UnHover.TButton"
+        minus_text = "Done" if delete_mode else "-"
+        
+        # if more than 1 account then the edit button is shown to allow user to delete accounts
+        if len(accounts) > 1:
+            minus_btn = ttk.Button(btn_frame, text=minus_text, command=lambda: self.build_accounts_section(t_id, parent, not delete_mode), style=minus_style, cursor="pirate")
+            minus_btn.pack(side="left", padx=5)
+
+        # if not in edit mode then show the add button to create an account
+        if not delete_mode:
+            add_btn = ttk.Button(btn_frame, text="+", command=lambda: self.open_create_account(t_id, parent), style="UnHover.TButton", cursor="plus")
+            add_btn.pack(side="right", padx=5)
+
+    # function to open the create account view
+    def open_create_account(self, t_id: str, parent_frame: ttk.Frame | None = None):
+        # creating a small pop up window for data entry
+        # blocking action on other windows, and blocking window closure using red x
+        win = tk.Toplevel(self)
+        win.title("Create Account")
+        win.grab_set()
+        win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
+        win.resizable(False, False)
+
+        # registering the username validation for only letters and numbers
+        vcmd_username = (win.register(self.controller.validate_only_letters_numbers), "%P")
+
+        # functions to clear the textfield when command backspace pressed
+        def clear_uname(event=None):
+            uname.delete(0, tk.END)
+        def clear_pword(event=None):
+            pword1.delete(0, tk.END)
+        def clear_pword2(event=None):
+            pword2.delete(0, tk.END)
+
+        # text box for username
+        # adding validation on every key press to only allow numbers and letters to be typed
+        # binding escape to deselect field
+        ttk.Label(win, text="Username:").grid(row=0, column=0, padx=(30,10), pady=(16,8), sticky="e")
+        uname = ttk.Entry(win, validate="key", validatecommand=vcmd_username)
+        uname.grid(row=0, column=1, padx=(5,30), pady=(16,8))
+        uname.bind("<Escape>", lambda e: win.focus())
+        uname.bind("<Command-BackSpace>", clear_uname)
+
+        # text box for password
+        ttk.Label(win, text="Password:").grid(row=1, column=0, padx=(30,10), pady=8, sticky="e")
+        pword1 = ttk.Entry(win)
+        pword1.grid(row=1, column=1, padx=(5,30), pady=8)
+        pword1.bind("<Escape>", lambda e: win.focus())
+        pword1.bind("<Command-BackSpace>", clear_pword)
+
+        # text box to reenter password (double erntry validation)
+        ttk.Label(win, text="Reenter Password:").grid(row=2, column=0, padx=(30,10), pady=8, sticky="e")
+        pword2 = ttk.Entry(win)
+        pword2.grid(row=2, column=1, padx=(5,30), pady=8)
+        pword2.bind("<Escape>", lambda e: win.focus())
+        pword2.bind("<Command-BackSpace>", clear_pword2)
+
+        # function to add account and close window
+        def create_password():
+            # fetching the data
+            username = uname.get()
+            password1 = pword1.get()
+            password2 = pword2.get()
+            # if passwords don't match then show error
+            if password1 != password2:
+                messagebox.showerror("Passwords don't match", "Please ensure you have typed both passwords correctly")
+                return
+            # if data is empty then show error
+            if username == "" or password1 == "" or password2 == "":
+                messagebox.showerror("Fill out all fields", "Please fill out all fields.")
+                return
+            # if password length incorrect then show error
+            if len(password1) < 10:
+                messagebox.showerror("Password not long enough", "Please make the password at least 10 characters.")
+                return
+            
+            # trying to add account to database
+            # username must be unique to the tournament
+            successful = self.controller.db.create_account(t_id, username, password1)
+            if successful:
+                # if addition was successful then close window
+                win.destroy()
+                if parent_frame:
+                    # if this window was opened from tournament settings then rebuild the accounts list
+                    self.build_accounts_section(t_id, parent_frame)
+                else:
+                    # if window opened acter tournament creating then log them in and open tournament overview
+                    self.login_status[t_id] = (True, username)
+                    self.open_tournament_overview(t_id)
+            else:
+                # if username not unique then show error
+                messagebox.showerror("Username already taken.", "Please ensure the username is unique for this tournament.")
+                return
+
+        # buttons to cancel or create account
+        # cancel closes this window, and create runs the above function
+        # when hovers over, the text is underlined
+        cancel_btn = ttk.Button(win, text="Cancel", command=win.destroy, style="UnHover.TButton", cursor="mouse")
+        cancel_btn.grid(row=3, column=0, padx=(30,0), pady=(10,16), ipadx=10, sticky="w")
+        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+
+        create_btn = ttk.Button(win, text="Create", command=create_password, style="UnHoverSubmit.TButton", cursor="mouse")
+        create_btn.grid(row=3, column=1, padx=(0,30), pady=(10,16), ipadx=10, sticky="e")
+        self.controller.make_hoverable_btn(create_btn, "HoverSubmit", "UnHoverSubmit")
+
+    # function to open the login view for a tournament
+    def open_login_view(self, t_id: str):
+        # creating a small pop up window for data entry
+        # blocking action on other windows, and blocking window closure using red x
+        win = tk.Toplevel(self)
+        win.title("Login Account")
+        win.grab_set()
+        win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
+        win.resizable(False, False)
+
+        # registering the validation for username, only letters and numbers
+        vcmd_username = (win.register(self.controller.validate_only_letters_numbers), "%P")
+
+        # functions to clear the textfield when command backspace pressed
+        def clear_uname(event=None):
+            uname.delete(0, tk.END)
+        def clear_pword(event=None):
+            pword.delete(0, tk.END)
+
+        # text box for username
+        ttk.Label(win, text="Username:").grid(row=0, column=0, padx=(0,10), pady=(16,8), sticky="e")
+        uname = ttk.Entry(win, validate="key", validatecommand=vcmd_username)
+        uname.grid(row=0, column=1, padx=(5,20), pady=(16,8))
+        uname.bind("<Escape>", lambda e: win.focus())
+        uname.bind("<Command-BackSpace>", clear_uname)
+
+        # text box for password
+        ttk.Label(win, text="Password:").grid(row=1, column=0, padx=(0,10), pady=8, sticky="e")
+        pword = ttk.Entry(win, show="")
+        pword.grid(row=1, column=1, padx=(5,20), pady=8)
+        pword.bind("<Escape>", lambda e: win.focus())
+        pword.bind("<Command-BackSpace>", clear_pword)
+
+        # check mark box to toggle showing the raw password or ***
+        # storing the value as integer
+        check_selection = tk.IntVar(value=1)
+        # function to toggle showing raw password or *** when check state changed
+        def toggle_pwd():
+            if check_selection.get() == 1:
+                pword.config(show="")
+            else:
+                pword.config(show="*")
+        # storing value to the variable above, when check selected variable is 1, when deselected variable is 0
+        checkbutton = tk.Checkbutton(win, text="Show Password", variable=check_selection, onvalue=1, offvalue=0, command=toggle_pwd)
+        checkbutton.grid(row=2, column=1)
+
+        # attempting to log the user in
+        def login(event=None):
+            # fetching data
+            username = uname.get()
+            password = pword.get()
+            # trying to log the user in
+            successful = self.controller.db.attempt_login(t_id, username, password)
+            if successful:
+                # if login successful then change dictionary value to show user is logged in, and reopen tournament overview
+                win.destroy()
+                self.login_status[t_id] = (True, username)
+                self.t_overview_win.destroy()
+                self.open_tournament_overview(t_id)
+            else:
+                # if login fails then show error
+                messagebox.showerror("Login unsuccessful.", "Incorrect username or password")
+                return
+        
+        # allowing user to click return button to simulate login button press
+        win.bind("<Return>", login)
+
+        # buttons to cancel or login
+        # cancel closes this window, and login runs the above function
+        # when hovers over, the text is underlined
+        cancel_btn = ttk.Button(win, text="Cancel", command=win.destroy, style="UnHover.TButton", cursor="mouse")
+        cancel_btn.grid(row=3, column=0, padx=(20,0), pady=(10,16), ipadx=10, sticky="e")
+        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+
+        login_btn = ttk.Button(win, text="Login", command=login, style="UnHoverSubmit.TButton", cursor="mouse")
+        login_btn.grid(row=3, column=1, padx=(0,20), pady=(10,16), ipadx=10, sticky="e")
+        self.controller.make_hoverable_btn(login_btn, "HoverSubmit", "UnHoverSubmit")
 
     # refreshing tournaments list
     def refresh_tournaments(self):
@@ -674,7 +955,7 @@ class TournamentsPage(ttk.Frame):
                     label.config(text=base)
 
         # function to get the arrow for a header field
-        def get_arrow(field):
+        def get_arrow(field: str):
             if self.sort_options[0] == field:
                 return " ▲" if self.sort_options[1] == "ASC" else " ▼"
             else:
@@ -727,17 +1008,19 @@ class TournamentsPage(ttk.Frame):
 
     # creates tournament overview subview
     def open_tournament_overview(self, t_id: str):
-        win = tk.Toplevel(self)
+        # applying self.t_overview_win as alternative name to win so view can be closed from another function: when user login or logout
+        self.t_overview_win = win = tk.Toplevel(self)
         win.title("Tournament Overview")
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
 
-        # functions to go to different views
-        def open_brackets():
-            self.open_tournament_brackets(t_id)
+        # function to open brackets
+        def open_brackets(login_data: tuple[bool, str | None]):
+            self.open_tournament_brackets(t_id, login_data)
             win.destroy()
 
+        # function to open settings
         def open_settings():
             self.open_edit_tournament_view(t_id)
             win.destroy()
@@ -746,50 +1029,85 @@ class TournamentsPage(ttk.Frame):
         t = self.controller.db.read_tournament(t_id)
         p_count = len(self.controller.db.read_tournament_players(t_id))
 
+        # function to logout
+        def logout():
+            # set status to logged out and then reopen tournament overview
+            self.login_status[t_id] = (False, None)
+            win.destroy()
+            self.open_tournament_overview(t_id)
+
+        # storing internally
+        login_status = self.login_status[t_id]
+        # if user is logged in
+        if login_status[0]:
+            # text showing who is logged in
+            # button for user to logout
+            ttk.Label(win, text=f"Logged in as {login_status[1]}").grid(row=0, column=0, columnspan=2, padx=10, pady=8)
+            logout_btn = ttk.Button(win, text="Logout", command=logout, cursor="pirate", style="UnHover.TButton")
+            logout_btn.grid(row=1, column=0, columnspan=2, padx=10, pady=8, ipadx=20)
+            self.controller.make_hoverable_btn(logout_btn, "Hover", "UnHover")
+        else:
+            # if user is logged out then show button to login
+            login_btn = ttk.Button(win, text="Login", command=lambda: self.open_login_view(t_id), cursor="spraycan", style="UnHover.TButton")
+            login_btn.grid(row=0, column=0, columnspan=2, padx=10, pady=8, ipadx=20)
+            self.controller.make_hoverable_btn(login_btn, "Hover", "UnHover")
+
         # button to open brackets
-        brackets_btn = ttk.Button(win, text="Brackets", command=open_brackets, style="UnHoverSubmit.TButton", cursor="mouse")
-        brackets_btn.grid(row=0, column=0, columnspan=2, padx=10, pady=8, ipadx=20)
+        brackets_btn = ttk.Button(win, text="Brackets", command=lambda: open_brackets(login_status), style="UnHoverSubmit.TButton", cursor="mouse")
+        brackets_btn.grid(row=2, column=0, columnspan=2, padx=10, pady=8, ipadx=20)
         self.controller.make_hoverable_btn(brackets_btn, "HoverSubmit", "UnHoverSubmit")
 
         # displaying info about the tournament
-        ttk.Label(win, text="Date:").grid(row=1, column=0, padx=(20,10), pady=8, sticky="e")
-        ttk.Label(win, text=t[1]).grid(row=1, column=1, padx=(5,10), pady=8, sticky="w")
+        ttk.Label(win, text="Date:").grid(row=3, column=0, padx=(20,10), pady=8, sticky="e")
+        ttk.Label(win, text=t[1]).grid(row=3, column=1, padx=(5,10), pady=8, sticky="w")
 
-        ttk.Label(win, text="Player count:").grid(row=2, column=0, padx=(20,10), pady=8, sticky="e")
-        ttk.Label(win, text=p_count).grid(row=2, column=1, padx=(5,10), pady=8, sticky="w")
+        ttk.Label(win, text="Player count:").grid(row=4, column=0, padx=(20,10), pady=8, sticky="e")
+        ttk.Label(win, text=p_count).grid(row=4, column=1, padx=(5,10), pady=8, sticky="w")
 
         # checking if there is a winner
         winner = self.controller.db.read_tournament_winner(t_id)
         if winner:
             # if winner then displaying the name
-            ttk.Label(win, text="Winner:").grid(row=3, column=0, padx=(20,10), pady=8, sticky="e")
-            ttk.Label(win, text=winner[1]).grid(row=3, column=1, padx=(5,10), pady=8, sticky="w")
+            ttk.Label(win, text="Winner:").grid(row=5, column=0, padx=(20,10), pady=8, sticky="e")
+            ttk.Label(win, text=winner[1]).grid(row=5, column=1, padx=(5,10), pady=8, sticky="w")
         else:
             # if no winner then displaying other details
             total_count = self.controller.db.get_player_count_in_tournament(t_id)
             eliminated_count = self.controller.db.get_players_count_eliminated(t_id)
             competing_count = total_count - eliminated_count
             current_round = self.controller.db.get_current_round(t_id)
-            ttk.Label(win, text="Round:").grid(row=3, column=0, padx=(20,10), pady=8, sticky="e")
-            ttk.Label(win, text=current_round if current_round > 0 else "Final").grid(row=3, column=1, padx=(5,10), pady=8, sticky="w")
-            ttk.Label(win, text="Players competing:").grid(row=4, column=0, padx=(20,10), pady=8, sticky="e")
-            ttk.Label(win, text=competing_count).grid(row=4, column=1, padx=(5,10), pady=8, sticky="w")
-            ttk.Label(win, text="Players eliminated:").grid(row=5, column=0, padx=(20,10), pady=8, sticky="e")
-            ttk.Label(win, text=eliminated_count).grid(row=5, column=1, padx=(5,10), pady=8, sticky="w")
+            ttk.Label(win, text="Round:").grid(row=5, column=0, padx=(20,10), pady=8, sticky="e")
+            ttk.Label(win, text=current_round if current_round > 0 else "Final").grid(row=5, column=1, padx=(5,10), pady=8, sticky="w")
+            ttk.Label(win, text="Players competing:").grid(row=6, column=0, padx=(20,10), pady=8, sticky="e")
+            ttk.Label(win, text=competing_count).grid(row=6, column=1, padx=(5,10), pady=8, sticky="w")
+            ttk.Label(win, text="Players eliminated:").grid(row=7, column=0, padx=(20,10), pady=8, sticky="e")
+            ttk.Label(win, text=eliminated_count).grid(row=7, column=1, padx=(5,10), pady=8, sticky="w")
 
         # action buttons
         back_btn = ttk.Button(win, text="Back", command=win.destroy, style="UnHover.TButton")
-        back_btn.grid(row=6, column=0, padx=(20,0), pady=8, ipadx=10, sticky="w")
+        back_btn.grid(row=8, column=0, padx=(20,0), pady=8, ipadx=10, sticky="w")
         self.controller.make_hoverable_btn(back_btn, "Hover", "UnHover")
 
-        settings_btn = ttk.Button(win, text="Settings", command=open_settings, style="UnHover.TButton", cursor="spraycan")
-        settings_btn.grid(row=6, column=1, padx=(5,20), pady=8, ipadx=5, sticky="w")
-        self.controller.make_hoverable_btn(settings_btn, "Hover", "UnHover")
+        # if user is logged in then show settings button
+        if login_status[0]:
+            settings_btn = ttk.Button(win, text="Settings", command=open_settings, style="UnHover.TButton", cursor="spraycan")
+            settings_btn.grid(row=8, column=1, padx=(5,20), pady=8, ipadx=5, sticky="w")
+            self.controller.make_hoverable_btn(settings_btn, "Hover", "UnHover")
+        else:
+            # otherwise show a spacer
+            spacer = tk.Frame(win, width=90, height=1)
+            spacer.grid(row=8, column=1, padx=(5,20), pady=8, sticky="w")
 
     # building brackets container view
-    def open_tournament_brackets(self, t_id: str):
+    def open_tournament_brackets(self, t_id: str, login_data: tuple[bool, str | None]):
+        # if user is logged in then window title includes the username
+        if login_data[0]:
+            title = f"Tournament Brackets - Logged in as {login_data[1]}"
+        else:
+            # otherwise displays guest user
+            title = "Tournament Brackets - Guest User"
         self.bracket_win = tk.Toplevel(self)
-        self.bracket_win.title("Tournament Brackets")
+        self.bracket_win.title(title)
         self.bracket_win.grab_set()
         self.bracket_win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         self.bracket_win.resizable(False, False)
@@ -799,10 +1117,10 @@ class TournamentsPage(ttk.Frame):
         self.brackets_container.pack(fill="both", expand=True)
 
         # building brackets with specified tournament id
-        self._build_brackets(t_id)
+        self._build_brackets(t_id, login_data)
 
     # building actual brackets content view
-    def _build_brackets(self, t_id: str):
+    def _build_brackets(self, t_id: str, login_data: tuple[bool, str | None]):
         # removing any previous items in view
         for widget in self.brackets_container.winfo_children():
             widget.destroy()
@@ -827,7 +1145,7 @@ class TournamentsPage(ttk.Frame):
         final_index = rounds_joined.index(999)
 
         # function to make a bracket frame
-        def make_frame(gp_id, round_frame):
+        def make_frame(gp_id: str, round_frame: ttk.Frame):
             # reading all players in the grand prix
             gp_players = self.controller.db.read_grand_prix_players(gp_id)
 
@@ -865,9 +1183,11 @@ class TournamentsPage(ttk.Frame):
             current_r_count = self.controller.db.get_race_count_in_gp(gp_id)
             current_p_count = self.controller.db.get_player_count_in_gp(gp_id)
 
-            # if not finished then button to input race results is shown
-            if current_r_count < 4 and current_p_count == 4:
-                ttk.Button(round_frame, text=f"Input race result {current_r_count+1}/4", command=lambda: self.open_input_race_results(gp_id, t_id)).pack(fill="x")
+            # if user is logged in then show input buttons
+            if login_data[0]:
+                # if not finished then button to input race results is shown
+                if current_r_count < 4 and current_p_count == 4:
+                    ttk.Button(round_frame, text=f"Input race result {current_r_count+1}/4", command=lambda: self.open_input_race_results(gp_id, t_id)).pack(fill="x")
 
         # iteration over the rounds
         for col, rn in enumerate(rounds_joined):
@@ -887,7 +1207,7 @@ class TournamentsPage(ttk.Frame):
                     if gp[2] == True: make_frame(gp[0], round_frame)
         
         # function to go to winner statistics view and close this current view
-        def goToWinner(w):
+        def goToWinner(w: tuple[str, str, str, int]):
             self.controller.open_statistics_player(w)
             self.bracket_win.destroy()
 

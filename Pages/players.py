@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 class PlayersPage(ttk.Frame):
-    def __init__(self, parent, controller):
+    def __init__(self, parent: ttk.Frame, controller):
         super().__init__(parent)
         self.controller = controller
         self.edit_mode = False
@@ -123,7 +123,7 @@ class PlayersPage(ttk.Frame):
             if fname == "" or sname == "" or dage == "":
                 messagebox.showerror("Missing Info", "Please fill in all fields.")
                 return
-            self.controller.db.add_player(fname, sname, int(dage))
+            self.controller.db.create_player(fname, sname, int(dage))
             win.destroy()
             self.show_results(self.controller.db.read_player_data())
 
@@ -157,7 +157,7 @@ class PlayersPage(ttk.Frame):
             self.clear_results_btn["cursor"] = "pirate"
 
     # opens the edit player view
-    def open_edit_player_view(self, player):
+    def open_edit_player_view(self, player: tuple[str, str, str, int]):
         # creating a small pop up window for data entry
         # blocking action on other windows, and blocking window closure using red x
         win = tk.Toplevel(self)
@@ -235,7 +235,7 @@ class PlayersPage(ttk.Frame):
         self.controller.make_hoverable_btn(update_btn, "HoverSubmit", "UnHoverSubmit")
 
     # function to display the search results
-    def show_results(self, results):
+    def show_results(self, results: list[tuple[str, str, str, int]]):
         # first clear current results
         self.clear_results()
         

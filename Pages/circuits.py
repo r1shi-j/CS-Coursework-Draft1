@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 
 class CircuitsPage(ttk.Frame):
-    def __init__(self, parent, controller):
+    def __init__(self, parent: ttk.Frame, controller):
         super().__init__(parent)
         self.controller = controller
         self.build_view()
@@ -58,7 +58,7 @@ class CircuitsPage(ttk.Frame):
         self.show_results(self.controller.db.read_circuit_data())
 
     # function to display the search results
-    def show_results(self, results):
+    def show_results(self, results: list[tuple[str, str]]):
         # first clear current results
         self.clear_results()
         

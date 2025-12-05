@@ -1,5 +1,6 @@
 import sqlite3
 import uuid
+import hashlib
 from datetime import datetime
 
 # function to generate UUID
@@ -9,8 +10,8 @@ def create_uuid() -> str:
 class Database:
     # MARK: - Initialisation
     # setting up connection
-    def __init__(self, path="tournament.db"):
-        self.connection = sqlite3.connect(path)
+    def __init__(self):
+        self.connection = sqlite3.connect("tournament.db")
         self.connection.execute("PRAGMA foreign_keys = ON;")
         self.cursor = self.connection.cursor()
 
@@ -129,6 +130,10 @@ class Database:
 
         self.connection.commit()
 
+        # asx = hashlib.sha256("password".encode()).hexdigest()
+        # self.cursor.execute("INSERT INTO Account (account_id, tournament_id, username, password_hash) VALUES (?, ?, ?, ?)", (create_uuid(), "9b4dabba-4b6d-4640-a96c-c969b85cf257", "username", asx))
+        # self.connection.commit()
+
     # MARK: - Tournaments
 
     # reads all tournament data
@@ -150,7 +155,7 @@ class Database:
         
         # function to sort a list by date
         # takes the order, and the lower and upper bounds of the indexes in the list to sort
-        def sort_by_date(o, lb, ub):
+        def sort_by_date(o: str, lb: int, ub: int):
             # classic bubble sort to sort the dates
             swapped = True
             while swapped == True:
@@ -180,16 +185,27 @@ class Database:
 
         # if the field to sort is winner
         if options[0] == "Winner":
-            # counting all the times there is no winner, and for each time moving the tournament to the end of the list
-            counter = 0
-            for i in range(len(t)-1):
+            # empty arrays for list of tournaments with winners and without winners (incomplete tournaments)
+            with_winners = []
+            without_winners = []
+
+            for tournament in t:
+                # for each tournament, trying to find the winner
                 try:
-                    curr = self.read_tournament_winner(t[i][0])[1]
+                    winner = self.read_tournament_winner(tournament[0])
+                    if winner:
+                        # if there is a winner then added the tournament to with winners array
+                        with_winners.append(tournament)
+                    else:
+                        # if no winner then add to without winners array
+                        without_winners.append(tournament)
                 except:
-                    temp = t[i]
-                    t.remove(t[i])
-                    t.append(temp)
-                    counter += 1
+                    # if fails then add to without winners array
+                    without_winners.append(tournament)
+
+            # merge the 2 arrays together, so the tournaments with no winners are at the end
+            t = with_winners + without_winners
+            counter = len(without_winners)
 
             # classic bubble sort to sort the tournaments by tournament name
             swapped = True
@@ -266,10 +282,46 @@ class Database:
         return self.cursor.fetchone()[0]
 
     # creating a new tournament type
-    def add_tournament_type(self, def_continuers: int, num_grandprix: int, longer_style: bool):
+    def create_tournament_type(self, def_continuers: int, num_grandprix: int, longer_style: bool):
         self.cursor.execute("INSERT INTO TournamentType (tournament_type_id, def_continuers, num_grandprix, longer_style) VALUES (?, ?, ?, ?)", (create_uuid(), def_continuers, num_grandprix, longer_style))
         self.connection.commit()
 
+    # reading all the accounts in a tournament
+    def read_tournament_accounts(self, t_id: str) -> list[tuple]:
+        self.cursor.execute("SELECT * FROM Account WHERE tournament_id = ?;", (t_id,))
+        return self.cursor.fetchall()
+    
+    # adding an account to a tournament
+    def create_account(self, t_id: str, username: str, password: str) -> bool:
+        # creating the password hash
+        hashed = hashlib.sha256(password.encode()).hexdigest()
+        try:
+            # trying to add the account
+            self.cursor.execute("INSERT INTO Account (account_id, tournament_id, username, password_hash) VALUES (?, ?, ?, ?)", (create_uuid(), t_id, username, hashed))
+            self.connection.commit()
+            # worked to returning true
+            return True
+        except sqlite3.IntegrityError:
+            # if didn't work becase userame isn't unique to tournament, return false
+            return False
+    
+    # deleting an account from a tournament
+    def delete_account(self, account_id: str):
+        self.cursor.execute("DELETE FROM Account WHERE account_id = ?", (account_id,))
+        self.connection.commit()
+
+    # trying to login
+    def attempt_login(self, t_id: str, username: str, password: str) -> bool:
+        self.cursor.execute("SELECT password_hash FROM Account WHERE tournament_id = ? AND username = ?", (t_id, username))
+        hash = self.cursor.fetchone()
+        # fetching the saved password hash for the tournament with that account name
+        # if no hash then account doesn't exist so return false
+        if not hash: return False
+        # hashing the password user entered
+        hashed = hashlib.sha256(password.encode()).hexdigest()
+        # if password hashes match then return true, if not then false
+        return True if hashed == hash[0] else False
+        
     # reading all the players in a tournament
     def read_tournament_players(self, t_id: str) -> list[tuple]:
         self.cursor.execute("""
@@ -549,7 +601,7 @@ class Database:
             results = {k: [] for k in range(base, base + len(sorted_round_results))}
 
             # recursive function to add the result to the dictionary
-            def add_data(position, offset):
+            def add_data(position: int, offset: int) -> tuple[int, int]:
                 # adding the result
                 # if the next result has same position then apply recursion
                 results[base+offset].append(sorted_round_results[position])
@@ -610,7 +662,7 @@ class Database:
         return self.cursor.fetchall()
     
     # creating a player with details
-    def add_player(self, forename: str, surname: str, age: int):
+    def create_player(self, forename: str, surname: str, age: int):
         self.cursor.execute("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", (create_uuid(), forename, surname, age))
         self.connection.commit()
 
@@ -693,6 +745,10 @@ class Database:
         """
         self.cursor.execute(query)
         res = self.cursor.fetchall()
+        # removing people with no results
+        for a in res:
+            if a[2] == 0 or a[1] == None:
+                res.remove(a)
         # finding the average tournament result for each player and sorting the list
         avg_res = [(x[0], x[1]/x[2]) for x in res]
         sorted_res = sorted(avg_res, key=lambda x: x[1])

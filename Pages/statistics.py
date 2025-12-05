@@ -15,7 +15,7 @@ def create_tooltip(widget, text):
     widget.bind("<Leave>", toolTip.hide_tip)
 
 class StatisticsPage(ttk.Frame):
-    def __init__(self, parent, controller):
+    def __init__(self, parent: ttk.Frame, controller):
         super().__init__(parent)
         self.controller = controller
         self.build_view()
@@ -38,10 +38,10 @@ class StatisticsPage(ttk.Frame):
         # Top players: players with most tournament wins: bar chart
         # Top rivalries: tournament results over time for top 5 playesrs: line graph, calculated by sum of their tournament results divided by number of tournaments played so the 5 players with smallest average tournament result
         # Circuit popularity: most played circuits pie chart
-        #* Circuit: who and how many times a player has won at that circuit
+        ## Circuit: who and how many times a player has won at that circuit
         # Player at a circuit: what positions a player has come in that circuit
-        #* Player: what positions a player has come in all tournaments, player consistency for race results: box plot
-        # * because when clicked on links in other part of the system, it opens these views directly with preselected values
+        ## Player: what positions a player has come in all tournaments, player consistency for race results: box plot
+        ## because when clicked on links in other part of the system, it opens these views directly with preselected values
 
         # As each button is the same except for the title, function called and tip text, using a for loop for simplicity
         buttons_data = [
@@ -61,7 +61,7 @@ class StatisticsPage(ttk.Frame):
             self.controller.make_hoverable_btn(btn, "Hover", "UnHover")
 
     # For the basic graphs, this function opens a new window and displays the graph
-    def open_graph_window(self, title, figure):
+    def open_graph_window(self, title: str, figure: Figure):
         # creating a new window
         win = tk.Toplevel(self)
         win.title(title)
@@ -171,7 +171,7 @@ class StatisticsPage(ttk.Frame):
             return
         
         # inner function to calculate the proportions for pie chart
-        def calculate_sizes(data) -> tuple[list, list]:
+        def calculate_sizes(data: list[tuple[str, str]]) -> tuple[list, list]:
             # Settings a max number of slices for the pie chart as 10
             # If there are more than 10 items from data then must group some into other category
             # But can't simply cut off at the end, must make sure count of last item is greater than max count of other items
@@ -237,7 +237,7 @@ class StatisticsPage(ttk.Frame):
         self.open_graph_window("Circuit Popularity", fig)
 
     # function to show who has most wins at a circuit
-    def open_circuit_analysis(self, circuit=None):
+    def open_circuit_analysis(self, circuit: tuple[str, str] | None = None):
         # getting the number of players, if no player created then showing message
         player_count = self.controller.db.get_player_count()
         if player_count == 0:
@@ -288,7 +288,7 @@ class StatisticsPage(ttk.Frame):
         if circuit: self.draw_circuit_winners(win, combo, circuit_ids)
 
     # function to draw the circuit winners graph
-    def draw_circuit_winners(self, win, combo, circuit_ids):
+    def draw_circuit_winners(self, win: tk.Toplevel, combo: ttk.Combobox, circuit_ids: list[str]):
         # getting the index of the selected circuit
         # if -1 then nothing selected so return
         idx = combo.current()
@@ -395,7 +395,7 @@ class StatisticsPage(ttk.Frame):
         p_combo.bind("<<ComboboxSelected>>", lambda e: self.draw_player_circuit_stats(win, c_combo, p_combo, c_ids, p_ids))
 
     # function to draw the player circuit performance graph
-    def draw_player_circuit_stats(self, win, c_combo, p_combo, c_ids, p_ids):
+    def draw_player_circuit_stats(self, win: tk.Toplevel, c_combo: ttk.Combobox, p_combo: ttk.Combobox, c_ids: list[str], p_ids: list[str]):
         # checking if both dropdowns have a selection
         c_idx = c_combo.current()
         p_idx = p_combo.current()
@@ -470,7 +470,7 @@ class StatisticsPage(ttk.Frame):
         win.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
     # function to show a player's past tournament results and their consistency
-    def open_player_analysis(self, player=None):
+    def open_player_analysis(self, player: tuple[str, str, str, int] | None = None):
         # getting the number of players, if no player created then showing message
         player_count = self.controller.db.get_player_count()
         if player_count == 0:
@@ -529,7 +529,7 @@ class StatisticsPage(ttk.Frame):
         if player: self.draw_player_analysis(win, combo, p_ids)
 
     # function to draw the player analysis graphs
-    def draw_player_analysis(self, win, combo, p_ids):
+    def draw_player_analysis(self, win: tk.Toplevel, combo: ttk.Combobox, p_ids: list[str]):
         # getting the index of the selected player
         # if -1 then nothing selected so return
         idx = combo.current()
@@ -624,8 +624,8 @@ class StatisticsPage(ttk.Frame):
             win.canvas_box = None
 
     # When hyperlinks clicked in other parts of the system, these functions open the relevant graphs directly with preselected values
-    def load_player_stats(self, player):
+    def load_player_stats(self, player:  tuple[str, str, str, int]):
         self.open_player_analysis(player)
 
-    def load_circuit_stats(self, circuit):
+    def load_circuit_stats(self, circuit: tuple[str, str]):
         self.open_circuit_analysis(circuit)
