@@ -13,9 +13,8 @@ class ToolTip:
             return
 
         # positioning the tip window with offsets from the original button
-        x, y, _, _ = self.widget.bbox("insert")
-        x = x + self.widget.winfo_rootx() + 50
-        y = y + self.widget.winfo_rooty() + 25
+        x = self.widget.winfo_rootx() + 50
+        y = self.widget.winfo_rooty() + self.widget.winfo_height()
         
         # creating the tip window
         self.tip_window = tw = tk.Toplevel(self.widget)

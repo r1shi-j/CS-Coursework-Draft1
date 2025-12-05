@@ -7,7 +7,7 @@ import matplotlib.dates as mdates
 from tooltip import ToolTip
 
 # function to create a tip over a widget
-def create_tooltip(widget, text):
+def create_tooltip(widget: ttk.Button, text: str):
     # creating the tip
     # binding enter and leave events to show and hide the tip
     toolTip = ToolTip(widget, text)
@@ -55,10 +55,9 @@ class StatisticsPage(ttk.Frame):
 
         # each button underlines on hover, and has a tip shown on hover
         for text, command, tooltip in buttons_data:
-            btn = ttk.Button(btn_frame, text=text, command=command, style="UnHover.TButton")
+            btn = ttk.Button(btn_frame, text=text, command=command)
             btn.pack(pady=10)
             create_tooltip(btn, tooltip)
-            self.controller.make_hoverable_btn(btn, "Hover", "UnHover")
 
     # For the basic graphs, this function opens a new window and displays the graph
     def open_graph_window(self, title: str, figure: Figure):

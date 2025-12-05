@@ -18,6 +18,7 @@ if __name__ == "__main__":
 # choosing tournament type (create and edit tournament)
 # creating tournament type (create and edit tournament)
 # brackets view
+# messagebox.showinfo("title", "message")
 
 # Sorting/searching algorithms
 # Validation

@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import re
 from storage import Database
 from Pages import tournaments, players, circuits, statistics
@@ -8,7 +8,7 @@ from Pages import tournaments, players, circuits, statistics
 class App(tk.Frame):
     # initialising the database and creating the layout
     # master protocol to run a function when closes window with red x
-    def __init__(self, master):
+    def __init__(self, master: tk.Tk):
         super().__init__(master)
         self.master = master
         self.master.protocol("WM_DELETE_WINDOW", self.on_app_close)
@@ -23,8 +23,10 @@ class App(tk.Frame):
     
     # when close window, first closing the database, and then close window
     def on_app_close(self):
-        self.db.close()
-        self.master.quit()
+        confirm = messagebox.askokcancel("Help", "Are you sure you want to close the system?", default="cancel")
+        if confirm:
+            self.db.close()
+            self.master.quit()
 
     def create_styling(self):
         self.style = ttk.Style()

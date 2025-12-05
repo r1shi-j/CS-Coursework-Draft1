@@ -215,9 +215,13 @@ class PlayersPage(ttk.Frame):
 
         # function to delete the data, and then go back
         def delete_player():
-            self.controller.db.delete_player(player[0])
-            win.destroy()
-            self.show_results(self.controller.db.read_player_data())
+            confirm = messagebox.askokcancel("Confirm", "Are you sure you want to delete this player?", default="cancel")
+            if confirm:
+                woroked = self.controller.db.delete_player(player[0])
+                if not woroked:
+                    messagebox.showinfo("Failed", "Could not delete the player at this time.")
+                win.destroy()
+                self.show_results(self.controller.db.read_player_data())
             
         # buttons to cancel, delete and update
         # cancel just closes the window

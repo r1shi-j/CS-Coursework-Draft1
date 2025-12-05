@@ -130,10 +130,6 @@ class Database:
 
         self.connection.commit()
 
-        # asx = hashlib.sha256("password".encode()).hexdigest()
-        # self.cursor.execute("INSERT INTO Account (account_id, tournament_id, username, password_hash) VALUES (?, ?, ?, ?)", (create_uuid(), "9b4dabba-4b6d-4640-a96c-c969b85cf257", "username", asx))
-        # self.connection.commit()
-
     # MARK: - Tournaments
 
     # reads all tournament data
@@ -672,9 +668,13 @@ class Database:
         self.connection.commit()
 
     # deleting a player
-    def delete_player(self, player_id: str):
-        self.cursor.execute("DELETE FROM Player WHERE player_id = ?", (player_id,))
-        self.connection.commit()
+    def delete_player(self, player_id: str) -> bool:
+        try:
+            self.cursor.execute("DELETE FROM Player WHERE player_id = ?", (player_id,))
+            self.connection.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
     
     # getting the number of players in database
     def get_player_count(self) -> int:
@@ -708,7 +708,7 @@ class Database:
         self.cursor.execute(query, params)
         return self.cursor.fetchall()
 
-    # linear search on circuits
+    #* temporary linear search on circuits
     # def search_circuits(self, query: str) -> list[tuple]:
     #     c = self.read_circuit_data()
     #     res = []
@@ -759,12 +759,13 @@ class Database:
         # for each player, fetches their tournament history
         for name in top_players:
             # fetching the date and tournament result for the player
+            # only if tournament result is recorded and so not null
             query = """
             SELECT t.date, tp.tournament_result
             FROM TournamentParticipation tp
             JOIN Tournament t ON tp.tournament_id = t.tournament_id
             JOIN Player p ON tp.player_id = p.player_id
-            WHERE (p.forename || ' ' || p.surname) = ? AND t.date IS NOT NULL
+            WHERE (p.forename || ' ' || p.surname) = ? AND t.date IS NOT NULL AND tp.tournament_result NOT NULL
             """
             self.cursor.execute(query, (name,))
             # adding the data to the dictionary of players
@@ -835,6 +836,7 @@ class Database:
     def close(self):
         self.connection.close()
 
+#* temporary manual database operations
 # db = Database()
 # db.connect()
 # db.close()
