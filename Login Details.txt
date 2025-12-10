@@ -1,0 +1,3 @@
+All pre-existing tournaments have username and password as follows.
+Username: username
+Password: password
