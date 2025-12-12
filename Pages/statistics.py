@@ -4,15 +4,7 @@ from datetime import datetime
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import matplotlib.dates as mdates
-from tooltip import ToolTip
-
-# function to create a tip over a widget
-def create_tooltip(widget: ttk.Button, text: str):
-    # creating the tip
-    # binding enter and leave events to show and hide the tip
-    toolTip = ToolTip(widget, text)
-    widget.bind("<Enter>", toolTip.show_tip)
-    widget.bind("<Leave>", toolTip.hide_tip)
+from tooltip import create_tooltip
 
 class StatisticsPage(ttk.Frame):
     def __init__(self, parent: ttk.Frame, controller):
@@ -57,7 +49,7 @@ class StatisticsPage(ttk.Frame):
         for text, command, tooltip in buttons_data:
             btn = ttk.Button(btn_frame, text=text, command=command)
             btn.pack(pady=10)
-            create_tooltip(btn, tooltip)
+            create_tooltip(btn, tooltip, True)
 
     # For the basic graphs, this function opens a new window and displays the graph
     def open_graph_window(self, title: str, figure: Figure):
@@ -253,11 +245,20 @@ class StatisticsPage(ttk.Frame):
         win = tk.Toplevel(self)
         win.title("Circuit Analysis")
         win.resizable(False, False)
-        win.geometry("800x650")
+        win.geometry("800x750")
 
-        # creating frame for circuit selection
-        control_frame = ttk.Frame(win)
-        control_frame.pack(side=tk.TOP, pady=(15,0))
+        # creating header frame for circuit selection and images
+        header_frame = ttk.Frame(win)
+        header_frame.pack(side=tk.TOP, fill="x", pady=10, padx=20)
+        header_frame.columnconfigure(1, weight=1)
+
+        # creating placeholder for circuit cover image, column 0 for left side
+        win.img_left_label = ttk.Label(header_frame)
+        win.img_left_label.grid(row=0, column=0, sticky="w")
+
+        # creating frame for circuit selection, column 1 for middle
+        control_frame = ttk.Frame(header_frame)
+        control_frame.grid(row=0, column=1)
         ttk.Label(control_frame, text="Circuit:").pack(side=tk.LEFT)
         
         # getting all circuits from database
@@ -273,6 +274,10 @@ class StatisticsPage(ttk.Frame):
         combo.bind("<<ComboboxSelected>>", lambda e: win.focus())
         # if a circuit is provided, preselect it (when hyperlink clicked in circuit view)
         if circuit: combo.set(f"{circuit[1]}")
+
+        # creating placeholder for circuit map image, column 2 for right side
+        win.img_right_label = ttk.Label(header_frame)
+        win.img_right_label.grid(row=0, column=2, sticky="e")
 
         # creating a placeholder for the canvas
         win.canvas = None
@@ -295,6 +300,26 @@ class StatisticsPage(ttk.Frame):
         # getting the circuit id and name based on the selected index
         c_id = circuit_ids[idx]
         c_name = combo.get()
+
+        # defining the path to the file
+        filename = "_".join(c_name.split(" "))
+        BASE_PATH = f"Mario Kart Images/Resized/{filename}_[] Small.png"
+
+        # function to load an image into the widget
+        def load_image_to_label(path, label_widget):
+            # trying to load photo from path
+            try:
+                photo = tk.PhotoImage(file=path)
+                label_widget.config(image=photo, text="")
+                label_widget.image = photo
+                # setting the label image to the photo file
+            except Exception:
+                # Fallback if image not found
+                label_widget.config(image="", text="No Image")
+
+        # loading the images to their placeholder labels defined in open_circuit_analysis above
+        load_image_to_label(BASE_PATH.replace("[]", "COVER"), win.img_left_label)
+        load_image_to_label(BASE_PATH.replace("[]", "MAP"), win.img_right_label)
 
         # getting the data from the database
         # data is in format [(player_name, wins), (player_name, wins), ...]

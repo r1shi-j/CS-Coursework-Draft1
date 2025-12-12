@@ -29,10 +29,6 @@ if __name__ == "__main__":
     app = App(root)
     app.mainloop()
 
-# MARK: Todo
-### Redo UI
-# tournaments brackets view
-
 # # user feedback: messagebox.showinfo("title", "message")
 # # more appropriate commenting
 # # more suitable variable names

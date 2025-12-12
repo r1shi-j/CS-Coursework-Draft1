@@ -51,24 +51,24 @@ class PlayersPage(ttk.Frame):
         # creating the scroll container
         container = ttk.Frame(self)
         container.pack(fill="both", expand=True)
-        canvas = tk.Canvas(container)
-        scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
-        canvas.configure(yscrollcommand=scrollbar.set)
-        canvas.pack(side="left", fill="both", expand=True)
+        self.canvas = tk.Canvas(container)
+        scrollbar = ttk.Scrollbar(container, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=scrollbar.set)
+        self.canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
         # the container for the search results
-        self.results_frame = ttk.Frame(canvas)
+        self.results_frame = ttk.Frame(self.canvas)
         self.results_frame.pack()
-        canvas_window = canvas.create_window((0, 0), window=self.results_frame, anchor="nw")
+        canvas_window = self.canvas.create_window((0, 0), window=self.results_frame, anchor="nw")
 
         def on_frame_configure(event):
-            canvas.configure(scrollregion=canvas.bbox("all"))
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         self.results_frame.bind("<Configure>", on_frame_configure)
 
         def on_canvas_configure(event):
-            canvas.itemconfig(canvas_window, width=event.width)
-        canvas.bind("<Configure>", on_canvas_configure)
+            self.canvas.itemconfig(canvas_window, width=event.width)
+        self.canvas.bind("<Configure>", on_canvas_configure)
 
         # initially showing all players (no search query)
         self.show_results(self.controller.db.read_player_data())
@@ -274,6 +274,10 @@ class PlayersPage(ttk.Frame):
 
     # function to search players
     def search_players(self, event=None):
+        # scrolling all the way up to top of search results
+        self.canvas.yview_moveto(0)
+
+        # fetching query
         query = self.search_field.get().strip()
 
         # if query is blank then fetch all players
