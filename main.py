@@ -30,16 +30,13 @@ if __name__ == "__main__":
     app.mainloop()
 
 #* split long lines up
-
-#* add try-catching input/validation/divide0/readwrite
-#* Sorting/searching algorithms - search players and circuits change 
 #* 2D Array
-#* Recursion
 
 # # add animations or subtle colours change on hover for buttons/labels
 # # add cursor styling, underline, colour change on hover
 
-# prefill with 1 tournament type, all circuits and demo players and tournaments
+# FOR DEMO
+# prefill with 20 players and 9 tournaments (6 complete 3 incomplete (1 fresh 2 part way (1 at final round, 1 at round 2)))
 
 # MARK: Bugs
 # Tournament type doesn't currently do anything: temporary solution is leave it as it is

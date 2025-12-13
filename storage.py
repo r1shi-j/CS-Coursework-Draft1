@@ -189,44 +189,71 @@ class Database:
                 # if the date is invalid for some reason then just quickly exit by returning false
                 return False
             # comparing the dates based on function input
-            if sign == ">":
-                return lhs_date > rhs_date
-            elif sign == "<":
-                return lhs_date < rhs_date
+            if sign == ">": return lhs_date > rhs_date
+            elif sign == "<": return lhs_date < rhs_date
+            return False
         
-        # function to sort a list by date
-        # takes the order, and the lower and upper bounds of the indexes in the list to sort
-        def sort_by_date(o: str, lb: int, ub: int):
-            # classic bubble sort to sort the dates
-            swapped = True
-            while swapped == True:
-                swapped = False
-                for i in range(lb, ub):
-                    curr = t[i][1]
-                    next = t[i+1][1]
-                    # storings the dates for the current and next tournaments in curr and next
+        # recursive quicksort function
+        # data: the list of tuples to sort
+        # key_func: a function that extracts the value to compare (e.g., date or winner name)
+        def quick_sort(data: list[tuple], key_func) -> list[tuple]:
+            # base case: A list of 0 or 1 elements is already sorted
+            if len(data) <= 1:
+                return data
             
-                    if o == "ASC":
-                        # comparing the dates to see if the current is larger then next
-                        # if so then swaps
-                        if compare_dates(curr, next, ">"):
-                            temp = t[i]
-                            t[i] = t[i+1]
-                            t[i+1] = temp
-                            swapped = True
-                    elif o == "DESC":
-                        if compare_dates(curr, next, "<"):
-                            temp = t[i]
-                            t[i] = t[i+1]
-                            t[i+1] = temp
-                            swapped = True
+            # defining the pivot to be the middle element (where the element is a tournament object)
+            # pivot_val is the tournament winner name if order by name otherwise the tournament date if no winner or order by date
+            pivot = data[len(data) // 2]
+            pivot_val = key_func(pivot)
 
-        # if the field to sort is winner
-        if options[0] == "Winner":
+            # empty arrays for the splits
+            left = []
+            middle = []
+            right = []
+
+            # partitioning loop
+            # for each item in the data
+            for item in data:
+                # getting the item to be sorted
+                val = key_func(item)
+                
+                # if sort option is date
+                if options[0] == "Date":
+                    # date comparison
+                    is_less = compare_dates(val, pivot_val, "<")
+                    is_greater = compare_dates(val, pivot_val, ">")
+                else:
+                    # winner name comparison
+                    is_less = val < pivot_val
+                    is_greater = val > pivot_val
+
+                # append to appropriate sub-list
+                if is_less:
+                    left.append(item)
+                elif is_greater:
+                    right.append(item)
+                else:
+                    middle.append(item) # equal to pivot
+
+            # recursive Step: sort left and right, then combine
+            return quick_sort(left, key_func) + middle + quick_sort(right, key_func)
+
+        # if the field to sort is date
+        if options[0] == "Date":
+            # sorting the list
+            sorted_list = quick_sort(t, lambda x: x[1])
+            
+            # quick_sort naturally sorts ascending so reverse if DESC is required
+            if options[1] == "DESC":
+                sorted_list.reverse()
+
+            return sorted_list
+        
+        elif options[0] == "Winner":
             # empty arrays for list of tournaments with winners and without winners (incomplete tournaments)
             with_winners = []
             without_winners = []
-
+            # partitioning with winners v no winners
             for tournament in t:
                 # for each tournament, trying to find the winner
                 try:
@@ -241,40 +268,19 @@ class Database:
                     # if fails then add to without winners array
                     without_winners.append(tournament)
 
-            # merge the 2 arrays together, so the tournaments with no winners are at the end
-            t = with_winners + without_winners
-            counter = len(without_winners)
+            # sorting the winners by name
+            # the closure takes a tournament object and gets the id and then finds the player name, and so sorting by winner name
+            sorted_winners = quick_sort(with_winners, lambda x: self.read_tournament_winner(x[0])[1])
 
-            # classic bubble sort to sort the tournaments by tournament name
-            swapped = True
-            while swapped == True:
-                swapped = False
-                # range is only for the tournaments with winners
-                for i in range(len(t)-1-counter):
-                    curr = self.read_tournament_winner(t[i][0])[1]
-                    next = self.read_tournament_winner(t[i+1][0])[1]
-            
-                    if options[1] == "ASC":
-                        if curr > next:
-                            temp = t[i]
-                            t[i] = t[i+1]
-                            t[i+1] = temp
-                            swapped = True
-                    elif options[1] == "DESC":
-                        if curr < next:
-                            temp = t[i]
-                            t[i] = t[i+1]
-                            t[i+1] = temp
-                            swapped = True
-            
-            # sort by date for the rest of the tournaments with no winner
-            sort_by_date("ASC", len(t)-counter, len(t)-1)
+            # Sort the incomplete tournaments by Date (always ASC by default convention)
+            sorted_losers = quick_sort(without_winners, lambda x: x[1])
 
-        # else if the field to sort is date, sort by date
-        elif options[0] == "Date":
-            sort_by_date(options[1], 0, len(t)-1)
-        
-        return t
+            # reverse winners if DESC required
+            if options[1] == "DESC":
+                sorted_winners.reverse()
+
+            # combine arrays: with winners first, then incomplete tournaments
+            return sorted_winners + sorted_losers
     
     # creates a new tournament with the specified data
     def create_tournament(self, t_id: str, date: str, p_count: int, ttype_id: str):
@@ -767,26 +773,42 @@ class Database:
     def read_player_data(self) -> list[tuple]:
         self.cursor.execute("SELECT * FROM Player;")
         return self.cursor.fetchall()
-
-    # searching players with a query
+    
+    # linear search on players with a query
     def search_players(self, search_term: str) -> list[tuple]:
-        # splitting the query into words
-        terms = search_term.split()
-        if not terms: return []
+        # fetching all players into a 2d array
+        all_players = self.read_player_data()
         
-        # making the query with checks for each word in query
-        column_check = "(forename LIKE ? OR surname LIKE ? OR CAST(age AS TEXT) LIKE ?)"
-        where_clause = " AND ".join([column_check] * len(terms))
-        query = f"SELECT * FROM Player WHERE {where_clause}"
+        # if no query, return everyone
+        if not search_term.strip():
+            return all_players
 
-        # creating the input parameters for each search term
-        params = []
-        for term in terms:
-            like_term = f"%{term}%"
-            params.extend([like_term, like_term, like_term])
+        # prepare search terms, split into lowercase words
+        terms = search_term.lower().split()
+        results = []
 
-        self.cursor.execute(query, params)
-        return self.cursor.fetchall()
+        # iterate through each player
+        for player in all_players:
+            # player structure: (id, forename, surname, age)
+            # creating a searchable string for this row
+            searchable_text = (player[1] + " " + player[2] + " " + str(player[3])).lower()
+            
+            # initially set match to true
+            match = True
+            # for each term
+            # we want all terms to be in the searchable_text
+            for term in terms:
+                # if the term is not in the searchable_text then break loop and so this player will not be in the results
+                if term not in searchable_text:
+                    # no match so set match to false
+                    match = False
+                    break
+            
+            # if match hasn't been set to false, means that all terms were in the searchable_text (so related to the player) therefore add player to results
+            if match:
+                results.append(player)
+                
+        return results
     
     # creating a player with details
     def create_player(self, forename: str, surname: str, age: int):
@@ -822,34 +844,41 @@ class Database:
         self.cursor.execute("SELECT * FROM Circuit;")
         return self.cursor.fetchall()
 
-    # searching circuits with a query
+    # linear search on circuits with a query
     def search_circuits(self, search_term: str) -> list[tuple]:
-        # splitting the query into words
-        terms = search_term.split()
-        if not terms: return []
+        # fetching all circuits into a 2d array
+        all_circuits = self.read_circuit_data()
         
-        # making the query with checks for each word in query
-        column_check = "(circuit_name LIKE ?)"
-        where_clause = " AND ".join([column_check] * len(terms))
-        query = f"SELECT * FROM Circuit WHERE {where_clause}"
+        # if no query, return everyone
+        if not search_term.strip():
+            return all_circuits
 
-        # creating the input parameters for each search term
-        params = []
-        for term in terms:
-            like_term = f"%{term}%"
-            params.extend([like_term])
+        # prepare search terms, split into lowercase words
+        terms = search_term.lower().split()
+        results = []
 
-        self.cursor.execute(query, params)
-        return self.cursor.fetchall()
-
-    #* temporary linear search on circuits
-    # def search_circuits(self, query: str) -> list[tuple]:
-    #     c = self.read_circuit_data()
-    #     res = []
-    #     for i in c:
-    #         if query in i[1].lower():
-    #             res.append(i)
-    #     return res
+        # iterate through each player
+        for circuit in all_circuits:
+            # circuit structure: (id, name)
+            # creating a searchable string for this row
+            searchable_text = circuit[1].lower()
+            
+            # initially set match to true
+            match = True
+            # for each term
+            # we want all terms to be in the searchable_text
+            for term in terms:
+                # if the term is not in the searchable_text then break loop and so this circuit will not be in the results
+                if term not in searchable_text:
+                    # no match so set match to false
+                    match = False
+                    break
+            
+            # if match hasn't been set to false, means that all terms were in the searchable_text (so related to the circuit) therefore add circuit to results
+            if match:
+                results.append(circuit)
+                
+        return results
 
     # MARK: - Statistics
 
