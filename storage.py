@@ -2,10 +2,17 @@ import sqlite3
 import uuid
 import hashlib
 from datetime import datetime
+# sqlite3 for database
+# uuid to generate unique identifiers
+# hashlib to encode password as a hash
+# datetime to convert string dates when sorting dates
 
-# function to generate UUID
+# function to generate a UUID
 def create_uuid() -> str:
     return str(uuid.uuid4())
+
+# array of all the standard circuits
+PAPER_CIRCUITS = ["Mario Kart Stadium", "Water Park", "Sweet Sweet Canyon", "Thwomp Ruins", "Mario Circuit", "Toad Harbor", "Twisted Mansion", "Shy Guy Falls", "Sunshine Airport", "Dolphin Shoals", "Electrodrome", "Mount Wario", "Cloudtop Cruise", "Bone-Dry Dunes", "Bowser's Castle", "Rainbow Road", "Moo Moo Meadows", "GBA Mario Circuit", "Cheep Cheep Beach", "Toad's Turnpike", "Dry Dry Desert", "Donut Plains 3", "Royal Raceway", "DK Jungle", "Wario Stadium", "Sherbet Land", "Music Park", "Yoshi Valley", "Tick-Tock Clock", "Piranha Plant Slide", "Grumble Volcano", "N64 Rainbow Road", "Yoshi Circuit", "Excitebike Arena", "Dragon Driftway", "Mute City", "Wario's Goldmine", "SNES Rainbow Road", "Ice Ice Outpost", "Hyrule Circuit", "Baby Park", "Cheese Land", "Wild Woods", "Animal Crossing", "Neo Bowser City", "Ribbon Road", "Super Bell Subway", "Big Blue"]
 
 class Database:
     # MARK: - Initialisation
@@ -118,17 +125,38 @@ class Database:
         );
         """)
 
+        # inserting demo circuits and tournament type if new database
+        self.insert_standard_circuits()
+        self.insert_standard_tournament_type()
+
+        # saving changes
+        self.connection.commit()
+    
+    # function to insert all standard circuits
+    def insert_standard_circuits(self):
         # getting number of circuits
         self.cursor.execute("SELECT COUNT(*) FROM Circuit")
         circuit_count = self.cursor.fetchone()[0]
 
         # if no circuits exist then add them
         if circuit_count == 0:
-            paper_circuits = ['Mario Kart Stadium', 'Water Park', 'Sweet Sweet Canyon', 'Thwomp Ruins', 'Mario Circuit', 'Toad Harbor', 'Twisted Mansion', 'Shy Guy Falls', 'Sunshine Airport', 'Dolphin Shoals', 'Electrodrome', 'Mount Wario', 'Cloudtop Cruise', 'Bone-Dry Dunes', 'Bowser’s Castle', 'Rainbow Road', 'Moo Moo Meadows', 'GBA Mario Circuit', 'Cheep Cheep Beach', 'Toad’s Turnpike', 'Dry Dry Desert', 'Donut Plains 3', 'Royal Raceway', 'DK Jungle', 'Wario Stadium', 'Sherbet Land', 'Music Park', 'Yoshi Valley', 'Tick-Tock Clock', 'Piranha Plant Slide', 'Grumble Volcano', 'N64 Rainbow Road', 'Yoshi Circuit', 'Excitebike Arena', 'Dragon Driftway', 'Mute City', "Wario's Goldmine", 'SNES Rainbow Road', 'Ice Ice Outpost', 'Hyrule Circuit', 'Baby Park', 'Cheese Land', 'Wild Woods', 'Animal Crossing', 'Neo Bowser City', 'Ribbon Road', 'Super Bell Subway', 'Big Blue']
-            print("adding)")
-            self.cursor.executemany("INSERT INTO Circuit (circuit_id, circuit_name) VALUES (?, ?)", [(create_uuid(), name) for name in paper_circuits])
+            print("adding demo circuits")
+            self.cursor.executemany("INSERT INTO Circuit (circuit_id, circuit_name) VALUES (?, ?)", [(create_uuid(), name) for name in PAPER_CIRCUITS])
 
-        self.connection.commit()
+    # function to insert the standard tournament type
+    def insert_standard_tournament_type(self):
+        # getting number of tournament types
+        self.cursor.execute("SELECT COUNT(*) FROM TournamentType")
+        ttype_count = self.cursor.fetchone()[0]
+
+        # if no tournament types then add demo one
+        if ttype_count == 0:
+            print("adding demo tournament type")
+            self.cursor.execute("INSERT INTO TournamentType (tournament_type_id, def_continuers, num_grandprix, longer_style) VALUES (?, ?, ?, ?)", (create_uuid(), 2, 4, False))
+
+    # closing the database
+    def close(self):
+        self.connection.close()
 
     # MARK: - Tournaments
 
@@ -139,11 +167,15 @@ class Database:
     
     # bubble sort on tournaments
     def sort_tournaments(self, options: tuple[str, str]) -> list[tuple]:
-        # internal function to convert string dates to date objects so can compare them
-        def compare_dates(lhs, rhs, sign) -> bool:
+        # reading all tournaments, the list to sort
+        t = self.read_tournament_data()
+
+        # internal function to compare 2 string dates
+        def compare_dates(lhs: str, rhs: str, sign: str) -> bool:
+            # converting the string to datetime objects
             lhs_date = datetime.strptime(lhs, "%d/%m/%y")
             rhs_date = datetime.strptime(rhs, "%d/%m/%y")
-
+            # comparing the dates based on function input
             if sign == ">":
                 return lhs_date > rhs_date
             elif sign == "<":
@@ -175,9 +207,6 @@ class Database:
                             t[i] = t[i+1]
                             t[i+1] = temp
                             swapped = True
-
-        # reading all tournaments, the list to sort
-        t = self.read_tournament_data()
 
         # if the field to sort is winner
         if options[0] == "Winner":
@@ -240,9 +269,9 @@ class Database:
         self.connection.commit()
     
     # creating the grand prixs for a new tournament and adding the respective players to them
-    #* FIXME: update for different tournament types
     def create_gps_for_tournament(self, t_id: str, players: list[tuple]):
         starter_ids = [create_uuid(), create_uuid(), create_uuid(), create_uuid()]
+        # creating the new grand prixs for all the different brackets
         self.cursor.execute("INSERT INTO GrandPrix (grandprix_id, tournament_id, round, inverse, bracket, continuers) VALUES (?, ?, ?, ?, ?, ?)", (starter_ids[0], t_id, 1, False, 1, 2))
         self.cursor.execute("INSERT INTO GrandPrix (grandprix_id, tournament_id, round, inverse, bracket, continuers) VALUES (?, ?, ?, ?, ?, ?)", (starter_ids[1], t_id, 1, False, 2, 2))
         self.cursor.execute("INSERT INTO GrandPrix (grandprix_id, tournament_id, round, inverse, bracket, continuers) VALUES (?, ?, ?, ?, ?, ?)", (starter_ids[2], t_id, 1, True, 1, 2))
@@ -252,6 +281,7 @@ class Database:
         self.cursor.execute("INSERT INTO GrandPrix (grandprix_id, tournament_id, round, inverse, bracket, continuers) VALUES (?, ?, ?, ?, ?, ?)", (create_uuid(), t_id, None, None, None, None))
         self.connection.commit()
 
+        # adding the respective players to their respective grand prix
         for p in players[0:4]: self.add_player_to_gp(starter_ids[0], p[0], None)
         for p in players[4:8]: self.add_player_to_gp(starter_ids[1], p[0], None)
         for p in players[8:12]: self.add_player_to_gp(starter_ids[2], p[0], None)
@@ -295,18 +325,25 @@ class Database:
             # trying to add the account
             self.cursor.execute("INSERT INTO Account (account_id, tournament_id, username, password_hash) VALUES (?, ?, ?, ?)", (create_uuid(), t_id, username, hashed))
             self.connection.commit()
-            # worked to returning true
+            # no errors so returning true
             return True
         except sqlite3.IntegrityError:
-            # if didn't work becase userame isn't unique to tournament, return false
+            # if didn't work because username isn't unique to tournament, return false
             return False
     
     # deleting an account from a tournament
-    def delete_account(self, account_id: str):
-        self.cursor.execute("DELETE FROM Account WHERE account_id = ?", (account_id,))
-        self.connection.commit()
+    def delete_account(self, account_id: str) -> bool:
+        # try except to check if account can be safely deleted
+        try:
+            self.cursor.execute("DELETE FROM Account WHERE account_id = ?", (account_id,))
+            self.connection.commit()
+            # if account deleted with no errors then return true
+            return True
+        except sqlite3.IntegrityError:
+            # else return false
+            return False
 
-    # trying to login
+    # trying to login to a tournament
     def attempt_login(self, t_id: str, username: str, password: str) -> bool:
         self.cursor.execute("SELECT password_hash FROM Account WHERE tournament_id = ? AND username = ?", (t_id, username))
         hash = self.cursor.fetchone()
@@ -339,9 +376,16 @@ class Database:
         self.connection.commit()
 
     # removing a player from a tournament
-    def remove_player_from_tournament(self, t_id: str, p_id: str):
-        self.cursor.execute("DELETE FROM TournamentParticipation WHERE tournament_id = ? AND player_id = ?;", (t_id, p_id))
-        self.connection.commit()
+    def remove_player_from_tournament(self, t_id: str, p_id: str) -> bool:
+        # try except to check if player can be safely deleted from tournament participation
+        try:
+            self.cursor.execute("DELETE FROM TournamentParticipation WHERE tournament_id = ? AND player_id = ?;", (t_id, p_id))
+            self.connection.commit()
+            # if entry deleted with no errors then return true
+            return True
+        except sqlite3.IntegrityError:
+            # else return false
+            return False
 
     # reading all grand prixs in a specific tournament
     def read_grand_prix(self, t_id: str) -> list[tuple]:
@@ -360,30 +404,33 @@ class Database:
     
     # creating a race and adding all the players to it
     def create_race(self, gp_id: str, c_id: str, players: list[tuple]):
+        # creating new id
         r_id = create_uuid()
+        # creating the Race entry
         self.cursor.execute("INSERT INTO Race (race_id, grandprix_id, circuit_id) VALUES (?, ?, ?)", (r_id, gp_id, c_id))
         for p in players:
+            # adding the players to the race via RaceParticipation
             self.cursor.execute("INSERT INTO RaceParticipation (race_id, player_id, race_result) VALUES (?, ?, ?)", (r_id, p[0], p[1]))
         self.connection.commit()
 
-    # getting the number of races in a grand prix
+    # getting the number of races currently in a grand prix
     def get_race_count_in_gp(self, gp_id: str) -> int:
         self.cursor.execute("SELECT COUNT(*) FROM Race WHERE grandprix_id = ?", (gp_id,))
         return self.cursor.fetchone()[0]
     
-    # getting the number of players in a grand prix
+    # getting the number of players currently in a grand prix
     def get_player_count_in_gp(self, gp_id: str) -> int:
         self.cursor.execute("SELECT COUNT(*) FROM GrandPrixParticipation WHERE grandprix_id = ?", (gp_id,))
         return self.cursor.fetchone()[0]
     
-    # getting the number of players in a tournament
+    # getting the number of players currently in a tournament
     def get_player_count_in_tournament(self, t_id: str) -> int:
         self.cursor.execute("SELECT player_count FROM Tournament WHERE tournament_id = ?", (t_id,))
         return self.cursor.fetchone()[0]
     
     # getting the current round in a tournament
     def get_current_round(self, t_id: str) -> int:
-        # first fetching all gp id and round in a tournament
+        # first fetching all gp_id and round in a tournament
         self.cursor.execute("""
             SELECT grandprix_id, round
             FROM GrandPrix
@@ -398,9 +445,11 @@ class Database:
             race_count = self.get_race_count_in_gp(gp_id)
 
             if race_count < 4:
+                # if grand prix is not finished then add the round of the grand prix to the array
                 current_rounds.append(round_num)
                 continue
-
+            
+            # fetching the number of players added to the grand prix
             self.cursor.execute("""
                 SELECT COUNT(*) 
                 FROM GrandPrixParticipation
@@ -409,13 +458,15 @@ class Database:
             unfilled = self.cursor.fetchone()[0]
 
             if unfilled > 0:
+                # if grand prix has more than 0 players then add the round of the grand prix to the array
                 current_rounds.append(round_num)
 
-        # if at least one grand prix not finished, then return the smallest round number for this grand prix
-        # otherwise return final
+        # if there is at elast 1 grand prix not finished
         if current_rounds:
+            # returning the smallest round number of grand prix that isnt finished
             return min(current_rounds)
         else:
+            # othewise returning the final round
             return -1
     
     # gets the number of players that are eliminated
@@ -428,6 +479,8 @@ class Database:
         """, (t_id,))
         
         gp_ids = self.cursor.fetchall()
+
+        # players as an empty set
         players = set()
 
         # for each grand prix in the tournament
@@ -435,14 +488,16 @@ class Database:
             # if the grand prix is finished
             if self.get_player_count_in_gp(gp[0]) == 4 and self.get_race_count_in_gp(gp[0]) == 4:
                 # add the losers to the set
-                losers = self.find_losers_for_gp(gp[0])
+                losers = self.find_losers_for_gp(gp[0], False)
                 players.update([x for x in losers])
 
-        # return the number of people in the set
+        # players now contains a list of all players that have been eliminated from each bracket
+        # but as it is a set, it removes duplicates and so is a list of all people who have been eliminated
+        # return the eliminated count
         return len(players)
     
     # finds the winners for a grand prix
-    def find_winners_for_gp(self, gp_id: str, internal=None) -> list[tuple]:
+    def find_winners_for_gp(self, gp_id: str, internal: bool) -> list[tuple]:
         # selects the continuers property for grand prix
         self.cursor.execute("""
             SELECT continuers
@@ -466,49 +521,48 @@ class Database:
         return self.cursor.fetchall()
     
     # finds the losers for a grand prix
-    def find_losers_for_gp(self, gp_id: str, internal=None) -> list[tuple]:
+    def find_losers_for_gp(self, gp_id: str, internal: bool) -> list[tuple]:
         # fetching all player ids in a grand prix
-        # fetching all winners in a grand prix
         self.cursor.execute("""
             SELECT player_id
             FROM GrandPrixParticipation
             WHERE grandprix_id = ?
         """, (gp_id,))
         player = self.cursor.fetchall()
+        # set of all player ids in a grand prix
         players = set([x[0] for x in player])
+
+        # fetching all winners in a grand prix
         winner = self.find_winners_for_gp(gp_id, internal)
-        if type(winner) == tuple:
-            winner = [winner]
+        # if only 1 winner because final gp, it returns a tuple, so convert this to an array of tuples to match other data
+        if type(winner) == tuple: winner = [winner]
+        # set of all player ids for winners
         winners = set([x[0] for x in winner])
-        # finding the players that didn't win so are the losers
+
+        # finding losers by the player ids that are not winners
         losers = players - winners
         return losers
     
     # finding the grand prix id for next round
-    def find_next_gp_id(self, gp_id: str) -> str:
+    def find_next_gp_id(self, gp_id: str, t_id: str) -> str:
         # selecting the current bracket and finding the next one
         self.cursor.execute("SELECT bracket FROM GrandPrix WHERE grandprix_id = ?", (gp_id,))
         bracket = self.cursor.fetchone()[0]
+        # if the current bracket is None then this is the final grand prix so return tournament finished
         if bracket is None: return "Tournament finished"
+        # calculate the new bracket
         newbracket = (bracket + 1) // 2
 
         # fetching the round of all grand prix in a tournament
-        self.cursor.execute("""
-            SELECT round
-            FROM GrandPrix
-            WHERE tournament_id = (SELECT tournament_id FROM GrandPrix WHERE grandprix_id = ?)
-        """, (gp_id,))
+        self.cursor.execute("SELECT round FROM GrandPrix WHERE tournament_id = ?", (t_id,))
         round = self.cursor.fetchall()
+        # removing the final round
         rounds = [r[0] for r in round if r[0] != None]
-        # finding the maximum round
+        # finding the maximum round in the tournament
         maxround = max(rounds)
 
         # fetching the round for current grand prix
-        self.cursor.execute("""
-            SELECT round
-            FROM GrandPrix
-            WHERE grandprix_id = ? AND tournament_id = (SELECT tournament_id FROM GrandPrix WHERE grandprix_id = ?)
-        """, (gp_id, gp_id))
+        self.cursor.execute("SELECT round FROM GrandPrix WHERE grandprix_id = ? AND tournament_id = ?", (gp_id, t_id))
         current_round = self.cursor.fetchone()[0]
 
         # if this is the last round
@@ -517,20 +571,20 @@ class Database:
             self.cursor.execute("""
                 SELECT grandprix_id
                 FROM GrandPrix
-                WHERE tournament_id = (SELECT tournament_id FROM GrandPrix WHERE grandprix_id = ?)
+                WHERE tournament_id = ?
                 AND (round IS NULL AND bracket IS NULL AND inverse IS NULL)
-            """, (gp_id,))
+            """, (t_id,))
             return self.cursor.fetchone()[0]
         else:
             # return the grand prix id of the next grand prix by increasing the round
             self.cursor.execute("""
                 SELECT grandprix_id
                 FROM GrandPrix
-                WHERE tournament_id = (SELECT tournament_id FROM GrandPrix WHERE grandprix_id = ?)
+                WHERE tournament_id = ?
                 AND round = (SELECT round FROM GrandPrix WHERE grandprix_id = ?) + 1
                 AND inverse = (SELECT inverse FROM GrandPrix WHERE grandprix_id = ?)
                 AND bracket = ?
-            """, (gp_id, gp_id, gp_id, newbracket))
+            """, (t_id, gp_id, gp_id, newbracket))
             return self.cursor.fetchone()[0]
     
     # inserting the grand prix results for players after grand prix finished
@@ -539,7 +593,7 @@ class Database:
             self.cursor.execute("UPDATE GrandPrixParticipation SET grandprix_result = ? WHERE grandprix_id = ? AND player_id = ?", (int(var.get()), gp_id, p_id))
         self.connection.commit()
         
-    # adding the winners to the next gp
+    # adding the winners to the next grand prix
     def add_winners_to_gp(self, players: list[tuple], gp_id: str):
         for p in players: self.add_player_to_gp(gp_id, p[0], None)
 
@@ -553,10 +607,10 @@ class Database:
             ORDER BY grandprix_result ASC
             LIMIT 1
         """, (gp_id,))
-        w_id = self.cursor.fetchone()[0]
+        p_id = self.cursor.fetchone()[0]
 
-        # returing the player with that id
-        self.cursor.execute("SELECT * FROM Player WHERE player_id = ?", (w_id,))
+        # returing the whole player object with the player_id found above
+        self.cursor.execute("SELECT * FROM Player WHERE player_id = ?", (p_id,))
         return self.cursor.fetchone()
     
     # finding the tournament winner from a tournament id
@@ -576,41 +630,49 @@ class Database:
             # selecting all the grand prix ids for that round
             self.cursor.execute("SELECT grandprix_id FROM GrandPrix WHERE tournament_id = ? AND round is ?", (t_id, round))
             round_ids = self.cursor.fetchall()
+            # turning list of tuples into array of gp_ids
+            gp_ids = [x[0] for x in round_ids]
             round_results = []
 
-            for id in round_ids:
+            # for each grand prix in this round
+            for gp_id in gp_ids:
                 # if this is final grand prix then adding all players to round_results
                 if round == None:
-                    self.cursor.execute("SELECT * FROM GrandPrixParticipation WHERE grandprix_id = ?", (id[0],))
+                    self.cursor.execute("SELECT * FROM GrandPrixParticipation WHERE grandprix_id = ?", (gp_id,))
                     round_results = self.cursor.fetchall()
                 else:
                     # otherwise adding the players which were eliminated to round_results
-                    bottom2 = self.find_losers_for_gp(id[0], True)
+                    # fetching the players eliminated for this grand prix
+                    bottom2 = self.find_losers_for_gp(gp_id, True)
                     for p in bottom2:
-                        self.cursor.execute("SELECT * FROM GrandPrixParticipation WHERE player_id = ? AND grandprix_id = ?", (p, id[0]))
+                        # fetching the GrandPrixParticipation object and adding to round_results
+                        self.cursor.execute("SELECT * FROM GrandPrixParticipation WHERE player_id = ? AND grandprix_id = ?", (p, gp_id))
                         full_player = self.cursor.fetchone()
                         round_results.append(full_player)
 
-            # sorting the results by result
-            # creating results dictionary with empty arrays for each results number
+            # sorting the round_results by result
+            # sorted_round_results is a list of all GrandPrixParticipation sorted by grandprix_result
+            # so it is a sorted array of players results who were eliminated in this round
             sorted_round_results = sorted(round_results, key=lambda x: x[2])
-            results = {k: [] for k in range(base, base + len(sorted_round_results))}
+            # creating results dictionary with key result and value empty array
+            results = {x: [] for x in range(base, base + len(sorted_round_results))}
 
-            # recursive function to add the result to the dictionary
+            # recursive function to add the player to the to the dictionary for key result
             def add_data(position: int, offset: int) -> tuple[int, int]:
                 # adding the result
-                # if the next result has same position then apply recursion
                 results[base+offset].append(sorted_round_results[position])
+                # if the next result has same position then apply recursion
                 if position+1 < len(sorted_round_results) and sorted_round_results[position+1][2] == sorted_round_results[position][2]:
                     pos, off = add_data(position+1, offset)
                     return pos, off+1
                 return position+1, offset+1
 
             # setting start variables to 0
-            # upperbound is calculated by the number of unique results
             position = 0
             offset = 0
-            upperbound = len(set([c[2] for c in sorted_round_results]))
+            # upperbound is calculated by the number of unique results
+            # first make array of all results, then encase in a set to remove duplicate result numbers, then apply len to get number of unique result numbers
+            upperbound = len(set([x[2] for x in sorted_round_results]))
             # calling the recursive function to add results to the dictionary for each position
             for _ in range(0, upperbound):
                 pos, off = add_data(position, offset)
@@ -664,16 +726,19 @@ class Database:
 
     # updating a player
     def update_player(self, player_id: str, forename: str, surname: str, age: int):
-        self.cursor.execute("UPDATE Player SET forename=?, surname=?, age=? WHERE player_id=?", (forename, surname, age, player_id))
+        self.cursor.execute("UPDATE Player SET forename = ?, surname = ?, age = ? WHERE player_id = ?", (forename, surname, age, player_id))
         self.connection.commit()
 
     # deleting a player
     def delete_player(self, player_id: str) -> bool:
+        # try except to handle sql errors
         try:
             self.cursor.execute("DELETE FROM Player WHERE player_id = ?", (player_id,))
             self.connection.commit()
+            # if player deleted without any errors then return true
             return True
         except sqlite3.IntegrityError:
+            # else return false
             return False
     
     # getting the number of players in database
@@ -721,7 +786,7 @@ class Database:
 
     # getting top winners stats
     def get_top_winners_stats(self) -> list[tuple]:
-        # fetches the first name and surname in a single string, and the number of tournament wins
+        # fetching the full name concatenated along with the number of tournaments come first in
         query = """
         SELECT p.forename || ' ' || p.surname, COUNT(tp.tournament_result) as wins
         FROM TournamentParticipation tp
@@ -735,7 +800,7 @@ class Database:
     
     # getting rivalry stats
     def get_rivalry_stats(self) -> dict[str: list[tuple]]:
-        # fetches the first name and surname in a single string, and the sum and number of tournament resultes
+        # fetches the first name and surname in a single string, the sum and number of tournament results
         query = """
         SELECT p.forename || ' ' || p.surname, SUM(tp.tournament_result) as sum, COUNT(tp.tournament_result) as count
         FROM TournamentParticipation tp
@@ -775,6 +840,7 @@ class Database:
     # getting circuit usage stats
     def get_circuit_usage_stats(self) -> list[tuple]:
         # getting the name of circuit and number of races that use that circuit
+        # ordering from highest to lowest (DESC)
         query = """
         SELECT c.circuit_name, COUNT(r.race_id)
         FROM Race r
@@ -788,6 +854,7 @@ class Database:
     # getting circuit winners stats
     def get_circuit_winners(self, circuit_id: str) -> list[tuple]:
         # getting the first and surname as a single string, and the number of wins the player has on that circuit
+        # ordering by number of wins highest to lowest
         query = """
         SELECT p.forename || ' ' || p.surname, COUNT(rp.race_result)
         FROM RaceParticipation rp
@@ -803,6 +870,7 @@ class Database:
     # getting player circuit results
     def get_player_circuit_results(self, circuit_id: str, player_id: str) -> list[tuple]:
         # getting the race result and the number of times the player has achieved that result on that circuit
+        # ordering by result ascending (1st place to 12th place)
         query = """
         SELECT rp.race_result, COUNT(rp.race_result)
         FROM RaceParticipation rp
@@ -828,13 +896,9 @@ class Database:
     
     # getting race results for a player
     def get_race_results(self, p_id: str) -> list[int]:
-        # getting the race results for the player
+        # returning as an array of raw results [2,4,6,3,7,3] instead of list of tuples
         self.cursor.execute("SELECT race_result FROM RaceParticipation WHERE player_id = ?", (p_id,))
         return [row[0] for row in self.cursor.fetchall()]
-    
-    # closing the database
-    def close(self):
-        self.connection.close()
 
 #* temporary manual database operations
 # db = Database()

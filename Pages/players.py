@@ -1,10 +1,12 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+# usual imports
 
 class PlayersPage(ttk.Frame):
     def __init__(self, parent: ttk.Frame, controller):
         super().__init__(parent)
         self.controller = controller
+        # defining edit mode to be off
         self.edit_mode = False
         self.build_view()
 
@@ -24,7 +26,7 @@ class PlayersPage(ttk.Frame):
         buttons_frame = ttk.Frame(self.form_frame)
         buttons_frame.pack(pady=(5, 10))
 
-        self.create_btn = ttk.Button(buttons_frame, text="Create Player", command=self.open_create_player_view, style="UnHover.TButton", cursor="plus")
+        self.create_btn = ttk.Button(buttons_frame, text="Create Player", command=self.open_create_player, style="UnHover.TButton", cursor="plus")
         self.create_btn.pack(side="left", padx=10, ipadx=10)
         self.controller.make_hoverable_btn(self.create_btn, "Hover", "UnHover")
 
@@ -74,7 +76,7 @@ class PlayersPage(ttk.Frame):
         self.show_results(self.controller.db.read_player_data())
 
     # opens the create player view
-    def open_create_player_view(self):
+    def open_create_player(self):
         # creating a small pop up window for data entry
         # blocking action on other windows, and blocking window closure using red x
         win = tk.Toplevel(self)
@@ -88,42 +90,48 @@ class PlayersPage(ttk.Frame):
 
         # functions to clear the textfield when command backspace pressed
         def clear_fname(event=None):
-            firstname.delete(0, tk.END)
+            fname_entry.delete(0, tk.END)
         def clear_sname(event=None):
-            surname.delete(0, tk.END)
+            sname_entry.delete(0, tk.END)
         def clear_age(event=None):
-            firstname.delete(0, tk.END)
+            age_entry.delete(0, tk.END)
 
         # text box for first name
         ttk.Label(win, text="First name:").grid(row=0, column=0, padx=10, pady=(16,8), sticky="e")
-        firstname = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
-        firstname.grid(row=0, column=1, padx=(5,20), pady=(16,8))
-        firstname.bind("<Escape>", lambda e: win.focus())
-        firstname.bind("<Command-BackSpace>", clear_fname)
+        fname_entry = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
+        fname_entry.grid(row=0, column=1, padx=(5,20), pady=(16,8))
+        fname_entry.bind("<Escape>", lambda e: win.focus())
+        fname_entry.bind("<Command-BackSpace>", clear_fname)
 
         # text box for surname
         ttk.Label(win, text="Surname:").grid(row=1, column=0, padx=10, pady=8, sticky="e")
-        surname = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
-        surname.grid(row=1, column=1, padx=(5,20), pady=8)
-        surname.bind("<Escape>", lambda e: win.focus())
-        surname.bind("<Command-BackSpace>", clear_sname)
+        sname_entry = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
+        sname_entry.grid(row=1, column=1, padx=(5,20), pady=8)
+        sname_entry.bind("<Escape>", lambda e: win.focus())
+        sname_entry.bind("<Command-BackSpace>", clear_sname)
 
         # text box for age
         ttk.Label(win, text="Age:").grid(row=2, column=0, padx=10, pady=8, sticky="e")
-        age = ttk.Entry(win, validate="key", validatecommand=vcmd_num)
-        age.grid(row=2, column=1, padx=(5,20), pady=8)
-        age.bind("<Escape>", lambda e: win.focus())
-        age.bind("<Command-BackSpace>", clear_age)
+        age_entry = ttk.Entry(win, validate="key", validatecommand=vcmd_num)
+        age_entry.grid(row=2, column=1, padx=(5,20), pady=8)
+        age_entry.bind("<Escape>", lambda e: win.focus())
+        age_entry.bind("<Command-BackSpace>", clear_age)
 
         # adding the player to the database, and then closing the window and refreshing the player view so that the new player is present
         def create_player():
-            fname = firstname.get()
-            sname = surname.get()
-            dage = age.get()
-            if fname == "" or sname == "" or dage == "":
+            firstname = fname_entry.get()
+            surname = sname_entry.get()
+            age = int(age_entry.get())
+            # validating if any fields are empty then showing error
+            if firstname == "" or surname == "" or age == "":
                 messagebox.showerror("Missing Info", "Please fill in all fields.")
                 return
             self.controller.db.create_player(fname, sname, int(dage))
+            self.controller.db.create_player(firstname, surname, age)
+            
+            # showing message saying success
+            messagebox.showinfo("title", "Player Created!")
+
             win.destroy()
             self.show_results(self.controller.db.read_player_data())
 
@@ -157,7 +165,7 @@ class PlayersPage(ttk.Frame):
             self.clear_results_btn["cursor"] = "pirate"
 
     # opens the edit player view
-    def open_edit_player_view(self, player: tuple[str, str, str, int]):
+    def open_edit_player(self, player: tuple[str, str, str, int]):
         # creating a small pop up window for data entry
         # blocking action on other windows, and blocking window closure using red x
         win = tk.Toplevel(self)
@@ -171,55 +179,64 @@ class PlayersPage(ttk.Frame):
 
         # functions to clear the textfield when command backspace pressed
         def clear_fname(event=None):
-            firstname.delete(0, tk.END)
+            fname_entry.delete(0, tk.END)
         def clear_sname(event=None):
-            surname.delete(0, tk.END)
+            sname_entry.delete(0, tk.END)
         def clear_age(event=None):
-            firstname.delete(0, tk.END)
+            age_entry.delete(0, tk.END)
 
         # text box for first name, prefilling with the original data
         ttk.Label(win, text="First name:").grid(row=0, column=0, padx=10, pady=(16,8), sticky="e")
-        firstname = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
-        firstname.insert(0, player[1])
-        firstname.grid(row=0, column=1, columnspan=2, padx=(5,20), pady=(16,8))
-        firstname.bind("<Escape>", lambda e: win.focus())
-        firstname.bind("<Command-BackSpace>", clear_fname)
+        fname_entry = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
+        fname_entry.insert(0, player[1])
+        fname_entry.grid(row=0, column=1, columnspan=2, padx=(5,20), pady=(16,8))
+        fname_entry.bind("<Escape>", lambda e: win.focus())
+        fname_entry.bind("<Command-BackSpace>", clear_fname)
 
         # text box for surname, prefilling with the original data
         ttk.Label(win, text="Surname:").grid(row=1, column=0, padx=10, pady=8, sticky="e")
-        surname = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
-        surname.insert(0, player[2])
-        surname.grid(row=1, column=1, columnspan=2, padx=(5,20), pady=8)
-        surname.bind("<Escape>", lambda e: win.focus())
-        surname.bind("<Command-BackSpace>", clear_sname)
+        sname_entry = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
+        sname_entry.insert(0, player[2])
+        sname_entry.grid(row=1, column=1, columnspan=2, padx=(5,20), pady=8)
+        sname_entry.bind("<Escape>", lambda e: win.focus())
+        sname_entry.bind("<Command-BackSpace>", clear_sname)
 
         # text box for age, prefilling with the original data
         ttk.Label(win, text="Age:").grid(row=2, column=0, padx=10, pady=8, sticky="e")
-        age = ttk.Entry(win, validate="key", validatecommand=vcmd_num)
-        age.insert(0, player[3])
-        age.grid(row=2, column=1, columnspan=2, padx=(5,20), pady=8)
-        age.bind("<Escape>", lambda e: win.focus())
-        age.bind("<Command-BackSpace>", clear_age)
+        age_entry = ttk.Entry(win, validate="key", validatecommand=vcmd_num)
+        age_entry.insert(0, player[3])
+        age_entry.grid(row=2, column=1, columnspan=2, padx=(5,20), pady=8)
+        age_entry.bind("<Escape>", lambda e: win.focus())
+        age_entry.bind("<Command-BackSpace>", clear_age)
 
         # function to update the data, and then go back
         def update_player():
-            fname = firstname.get()
-            sname = surname.get()
-            dage = age.get()
-            if fname == "" or sname == "" or dage == "":
+            firstname = fname_entry.get()
+            surname = sname_entry.get()
+            age = int(age_entry.get())
+            # presence check on all fields
+            if firstname == "" or surname == "" or age == "":
                 messagebox.showerror("Missing Info", "Please fill in all fields.")
                 return
             self.controller.db.update_player(player[0], fname, sname, int(dage))
+            self.controller.db.update_player(player[0], firstname, surname, age)
+
+            # showing message saying success
+            messagebox.showinfo("title", "Player Updated!")
+
             win.destroy()
             self.show_results(self.controller.db.read_player_data())
 
         # function to delete the data, and then go back
         def delete_player():
-            confirm = messagebox.askokcancel("Confirm", "Are you sure you want to delete this player?", default="cancel")
-            if confirm:
-                woroked = self.controller.db.delete_player(player[0])
-                if not woroked:
-                    messagebox.showinfo("Failed", "Could not delete the player at this time.")
+            confirmed = messagebox.askokcancel("Confirm", "Are you sure you want to delete this player?", default="cancel")
+            if confirmed:
+                did_work = self.controller.db.delete_player(player[0])
+                if did_work:
+                    messagebox.showinfo("Success", "Player deleted!")
+                else:
+                    messagebox.showerror("Failed", "Could not delete the player at this time.")
+                    return
                 win.destroy()
                 self.show_results(self.controller.db.read_player_data())
             
@@ -260,7 +277,7 @@ class PlayersPage(ttk.Frame):
         for row in results:
             name = ttk.Label(self.results_frame, text=f"{row[1]} {row[2]}", anchor="center")
             name.pack(pady=(2 if results.index(row) != len(results)-1 else (2,20)))
-            name.bind("<Button-1>", lambda e, r=row: self.open_edit_player_view(r) if self.edit_mode else self.controller.open_statistics_player(r))
+            name.bind("<Button-1>", lambda e, r=row: self.open_edit_player(r) if self.edit_mode else self.controller.open_statistics_player(r))
             self.controller.make_hoverable(name)
 
     # function to clear the search field by deleting content in the text box

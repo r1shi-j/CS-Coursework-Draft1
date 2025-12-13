@@ -4,8 +4,8 @@ from tkinter import ttk
 # function to create a tip over a widget
 def create_tooltip(widget: ttk.Button | ttk.Label, text: str, is_stats: bool):
     # creating the tip
-    # binding enter and leave events to show and hide the tip
     toolTip = ToolTip(widget, text, is_stats)
+    # binding enter and leave hover events to show and hide the tip
     widget.bind("<Enter>", toolTip.show_tip)
     widget.bind("<Leave>", toolTip.hide_tip)
 
@@ -24,6 +24,7 @@ class ToolTip:
 
         # positioning the tip window with offsets from the original button
         x = self.widget.winfo_rootx() + 50
+        # if tip is being shown from circuits then increase x by a further 50 because the image is large and don't want to hide rows below
         if not self.is_stats: x += 50
         y = self.widget.winfo_rooty() + self.widget.winfo_height()
         
@@ -39,8 +40,9 @@ class ToolTip:
             # adding the hover
             self.widget.config(style="Hover.TButton")
         else:
-            # show image
+            # replacing spaces with _ in the circuit name
             filename = "_".join(self.text.split(" "))
+            # making file path
             image_path = f"Mario Kart Images/{filename}_COVER Small.png"
             # trying to show the image
             try:

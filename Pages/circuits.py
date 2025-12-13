@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from tooltip import create_tooltip
+# importing tooltip to show the circuit cover on hover
 
 class CircuitsPage(ttk.Frame):
     def __init__(self, parent: ttk.Frame, controller):
@@ -23,7 +24,7 @@ class CircuitsPage(ttk.Frame):
         search_frame.pack(pady=(5, 10))
 
         # subtitle, search field and clear button
-        # binding keyboard buttons to clear and unfocus search field, with every key release triggering a search for real time searching
+        # binding keyboard buttons to clear and unfocus search field, with every keypress triggering a search for real time searching
         ttk.Label(search_frame, text="Search circuits:").pack(side="left", padx=5)
         vcmd = (search_frame.register(self.controller.validate_only_letters), "%P")
         self.search_field = ttk.Entry(search_frame, width=20, validate="key", validatecommand=vcmd)

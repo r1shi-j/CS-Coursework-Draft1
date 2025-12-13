@@ -11,7 +11,7 @@ def show_error_message(exc_type, exc_value, exc_traceback):
     # printing the error
     print(error_details, file=sys.stderr)
     # if error is not during main view/app load
-    if 'root' not in globals() or not root.winfo_exists():
+    if "root" not in globals() or not root.winfo_exists():
         # creating new window and showing error message
         temp_root = tk.Tk()
         temp_root.withdraw()
@@ -29,21 +29,19 @@ if __name__ == "__main__":
     app = App(root)
     app.mainloop()
 
-# # user feedback: messagebox.showinfo("title", "message")
-# # more appropriate commenting
-# # more suitable variable names
-# # add animations or subtle color change on hover for buttons/labels
-# # add cursor styling, underline, color change on hover
 
-# # Sorting/searching algorithms
-# # Validation (add other validation for range check and lookup check)
-# # 2D Array
-# # Recursion
-# # Commenting
-# add try-catching input/validation/divide0/readwrite
+#* split long lines up
+#* Validation (add other validation for range check and lookup check)
+#* add try-catching input/validation/divide0/readwrite
+
+#* Sorting/searching algorithms - search players and circuits change 
+#* 2D Array
+#* Recursion
+
+# # add animations or subtle colours change on hover for buttons/labels
+# # add cursor styling, underline, colour change on hover
 
 # prefill with 1 tournament type, all circuits and demo players and tournaments
-
 
 # MARK: Bugs
 # Tournament type doesn't currently do anything: temporary solution is leave it as it is

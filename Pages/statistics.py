@@ -5,6 +5,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import matplotlib.dates as mdates
 from tooltip import create_tooltip
+# matplotlib libraries to show graphs
+# importing tooltip to show tip of what the graph represents in the stats homeview
 
 class StatisticsPage(ttk.Frame):
     def __init__(self, parent: ttk.Frame, controller):
@@ -14,16 +16,16 @@ class StatisticsPage(ttk.Frame):
 
     # function that builds the main view
     def build_view(self):
-        self.main_frame = ttk.Frame(self)
-        self.main_frame.pack()
+        main_frame = ttk.Frame(self)
+        main_frame.pack()
 
         # creating the title frame and title
-        title_frame = ttk.Frame(self.main_frame)
+        title_frame = ttk.Frame(main_frame)
         title_frame.pack(pady=(10, 5))
         ttk.Label(title_frame, text="Statistics Dashboard", font=("TkDefaultFont", 14, "bold")).pack()
 
         # creating button frame to hold all the statistics button options
-        btn_frame = ttk.Frame(self.main_frame)
+        btn_frame = ttk.Frame(main_frame)
         btn_frame.pack(pady=10, padx=20, fill="both", expand=True)
         
         # The different statistics views to show
@@ -45,15 +47,16 @@ class StatisticsPage(ttk.Frame):
             ("Player Analysis", self.open_player_analysis, "Displays tournament results for a player\nand a box plot showing their consistency.")
         ]
 
+        # for loop over all the buttons
         # each button underlines on hover, and has a tip shown on hover
         for text, command, tooltip in buttons_data:
             btn = ttk.Button(btn_frame, text=text, command=command)
             btn.pack(pady=10)
             create_tooltip(btn, tooltip, True)
 
-    # For the basic graphs, this function opens a new window and displays the graph
+    # for the basic graphs, this function opens a new window and displays the graph
     def open_graph_window(self, title: str, figure: Figure):
-        # creating a new window
+        # creating a new window with a fixed size
         win = tk.Toplevel(self)
         win.title(title)
         win.resizable(False, False)
@@ -94,7 +97,7 @@ class StatisticsPage(ttk.Frame):
         ax.set_xlabel("Player")
         ax.yaxis.get_major_locator().set_params(integer=True)
         
-        # Rotate labels if names are long
+        # rotate labels if names are long
         ax.tick_params(axis="x", rotation=45)
         fig.tight_layout()
 
@@ -132,14 +135,14 @@ class StatisticsPage(ttk.Frame):
             ax.plot(dates, results, marker="o", label=name)
 
         # setting titles and labels
-        ax.set_title("Tournament Results Over Time (Top 5 Players)")
-        ax.set_ylabel("Position")
-        ax.set_xlabel("Date")
+        ax.set_title("Tournament Results Over Time (Top 5 Players)") # graph title
+        ax.set_ylabel("Position") # y axis title
+        ax.set_xlabel("Date") # x axis title
         ax.invert_yaxis() # 1st place at top
-        ax.set_yticks(range(1, 17))
-        ax.set_ylim(16.5, 0.5)
-        ax.legend()
-        ax.tick_params(axis="x", rotation=45)
+        ax.set_yticks(range(1, 17)) # showing y axis ticks 1-16
+        ax.set_ylim(16.5, 0.5) # so that there is spacing on bottom and top
+        ax.legend() # showing legend
+        ax.tick_params(axis="x", rotation=45) # rotating x axis data titles
         fig.tight_layout()
 
         # calling function to show the graph in a new window
@@ -163,48 +166,48 @@ class StatisticsPage(ttk.Frame):
         
         # inner function to calculate the proportions for pie chart
         def calculate_sizes(data: list[tuple[str, str]]) -> tuple[list, list]:
-            # Settings a max number of slices for the pie chart as 10
-            # If there are more than 10 items from data then must group some into other category
-            # But can't simply cut off at the end, must make sure count of last item is greater than max count of other items
+            # setting a max number of slices for the pie chart as 10
+            # if there are more than 10 items from data then must group some into other category
+            # but can't simply cut off at the end, must make sure count of last item is greater than max count of other items
             MAX_TOTAL_SLICES = 10
             MAX_SPECIFIC_SLICES = 9 # Indices 0 to 8
 
+            # empty arrays of labels and sizes
             labels = []
             sizes = []
 
-            # Case 1: There is 10 or fewer items, so we can show all directly
+            # case 1: there is 10 or fewer items, so we can show all directly
             if len(data) <= MAX_TOTAL_SLICES:
                 # array for labels and sizes for pie chart
                 labels = [row[0] for row in data]
                 sizes = [row[1] for row in data]
-            
-            # Case 2: There are more than 10 items, so we need to group some into other category
+
+            # case 2: there are more than 10 items, so we need to group some into other category
             else:
-                # We want to verify that the last item we keep is strictly greater than the first item we drop into other
-                
-                # Start assuming we keep the top 9
+                # we want to verify that the last item we keep is strictly greater than the first item we drop into other
+                # start assuming we keep the top 9
                 split_index = MAX_SPECIFIC_SLICES
                 
-                # The value of the first item that would normally go into "Other"
-                cutoff_value = data[split_index][1] # Count of the 10th item
+                # the value of the first item that would normally go into "Other"
+                cutoff_value = data[split_index][1] # count of the 10th item
 
-                # Decrementing the split index while the count of the last kept item equals the cutoff
-                # We continue until we find an item that is larger than the cutoff
+                # decrementing the split index while the count of the last kept item equals the cutoff
+                # we continue until we find an item that is larger than the cutoff
                 while split_index > 0 and data[split_index - 1][1] == cutoff_value:
                     split_index -= 1
 
-                # If split_index becomes 0, it means all items are equal (or top 10 are equal)
-                # In that case it better to just show the top 9, instead of showing 1 great other slice
-                # But assuming normal data, split_index will be somewhere between 1 and 9
+                # if split_index becomes 0, it means all items are equal (or top 10 are equal)
+                # in that case it better to just show the top 9, instead of showing 1 great other slice
+                # but assuming normal data, split_index will be somewhere between 1 and 9
                 if split_index == 0:
                     # reverting back to use top 9, and then rest into other
                     split_index = MAX_SPECIFIC_SLICES
 
-                # Slice the data based on our calculated fair point
+                # slice the data based on our calculated fair point
                 top_data = data[:split_index]
                 remaining_data = data[split_index:]
                 
-                # Calculate sum of count for other category
+                # calculate sum of count for other category
                 other_count = sum(row[1] for row in remaining_data)
                 
                 # creating the labels and sizes arrays
@@ -301,8 +304,9 @@ class StatisticsPage(ttk.Frame):
         c_id = circuit_ids[idx]
         c_name = combo.get()
 
-        # defining the path to the file
+        # replacing spaces with _ in circuit name for filename
         filename = "_".join(c_name.split(" "))
+        # defining the path to the file
         BASE_PATH = f"Mario Kart Images/Resized/{filename}_[] Small.png"
 
         # function to load an image into the widget
@@ -458,7 +462,7 @@ class StatisticsPage(ttk.Frame):
                 # for each position and count
                 pos = row[0] 
                 count = row[1]
-                # Ensure pos is an integer and within range
+                # ensure pos is an integer and within range
                 if isinstance(pos, int) and 1 <= pos <= 3:
                     counts[pos-1] = count
         
@@ -478,9 +482,9 @@ class StatisticsPage(ttk.Frame):
         fig = Figure(figsize=(6, 5), dpi=100)
         ax = fig.add_subplot(111)
         
-        # defining bar colors for 1st, 2nd and 3rd places
-        colors = ["#FFD700", "#C0C0C0", "#CD7F32"]
-        bars = ax.bar(positions, counts, color=colors)
+        # defining bar colours for 1st, 2nd and 3rd places
+        colours = ["#FFD700", "#C0C0C0", "#CD7F32"]
+        bars = ax.bar(positions, counts, color=colours)
         
         # creating bar chart with titles and labels
         ax.set_title(f"{p_name}'s Top Results at {c_combo.get()}")
