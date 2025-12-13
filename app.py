@@ -1,10 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-import re
 from storage import Database
 from Pages import tournaments, players, circuits, statistics
 # importing relevant tkinter packages
-# importing re for regex validation
 # importing Database class from storage file
 # importing the view files from Pages folder
 
@@ -181,21 +179,3 @@ class App(tk.Frame):
         stats_page.load_circuit_stats(circuit)
         # loading the statistics view
         self.show_frame("Statistics")
-        
-    # function to valdidate input to only allow letters
-    @staticmethod
-    def validate_only_letters(s):
-        # only allowing a-z A-Z and spaces
-        return re.fullmatch(r"[a-zA-Z ]*", s) is not None
-    
-    # function to valdidate input to only allow letters and numbers
-    @staticmethod
-    def validate_only_letters_numbers(s):
-        # only allowing a-z A-Z spaces and 0-9 numbers
-        return re.fullmatch(r"[a-zA-Z 0-9]*", s) is not None
-    
-    # function to valdidate input to only allow numbers
-    @staticmethod
-    def validate_only_numbers(s):
-        # only allowing 0-9 numbers
-        return re.fullmatch(r"[0-9]*", s) is not None

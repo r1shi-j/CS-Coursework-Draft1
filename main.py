@@ -29,11 +29,9 @@ if __name__ == "__main__":
     app = App(root)
     app.mainloop()
 
-
 #* split long lines up
-#* Validation (add other validation for range check and lookup check)
-#* add try-catching input/validation/divide0/readwrite
 
+#* add try-catching input/validation/divide0/readwrite
 #* Sorting/searching algorithms - search players and circuits change 
 #* 2D Array
 #* Recursion

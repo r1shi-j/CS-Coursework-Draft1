@@ -1,7 +1,9 @@
+import os
 import sqlite3
 import uuid
 import hashlib
 from datetime import datetime
+# os needed to check if db file exists
 # sqlite3 for database
 # uuid to generate unique identifiers
 # hashlib to encode password as a hash
@@ -17,10 +19,17 @@ PAPER_CIRCUITS = ["Mario Kart Stadium", "Water Park", "Sweet Sweet Canyon", "Thw
 class Database:
     # MARK: - Initialisation
     # setting up connection
-    def __init__(self):
-        self.connection = sqlite3.connect("tournament.db")
-        self.connection.execute("PRAGMA foreign_keys = ON;")
-        self.cursor = self.connection.cursor()
+    def __init__(self, filename="tournament.db"):
+        try:
+            if os.path.isfile(filename):
+                self.connection = sqlite3.connect(filename)
+                self.connection.execute("PRAGMA foreign_keys = ON;")
+                self.cursor = self.connection.cursor()
+            else:
+                raise FileNotFoundError
+        except Exception as e:
+            print("Database not found: ", e)
+            quit(0)
 
     # creating all the tables if they don't exist
     def connect(self):
@@ -172,9 +181,13 @@ class Database:
 
         # internal function to compare 2 string dates
         def compare_dates(lhs: str, rhs: str, sign: str) -> bool:
-            # converting the string to datetime objects
-            lhs_date = datetime.strptime(lhs, "%d/%m/%y")
-            rhs_date = datetime.strptime(rhs, "%d/%m/%y")
+            # trying converting the string to datetime objects
+            try:
+                lhs_date = datetime.strptime(lhs, "%d/%m/%y")
+                rhs_date = datetime.strptime(rhs, "%d/%m/%y")
+            except (ValueError, TypeError):
+                # if the date is invalid for some reason then just quickly exit by returning false
+                return False
             # comparing the dates based on function input
             if sign == ">":
                 return lhs_date > rhs_date
@@ -305,7 +318,13 @@ class Database:
     # reading the tournament type id for a specific tournament
     def read_tournament_type(self, t_id: str) -> str:
         self.cursor.execute("SELECT tournament_type_id FROM Tournament WHERE tournament_id = ?;", (t_id,))
-        return self.cursor.fetchone()[0]
+        # trying to find it
+        try:
+            return self.cursor.fetchone()[0]
+        except (TypeError, AttributeError):
+            # if no value then can't subscript
+            print(f"Error: Tournament ID {t_id} not found.")
+            return ""
 
     # creating a new tournament type
     def create_tournament_type(self, def_continuers: int, num_grandprix: int, longer_style: bool):
@@ -426,7 +445,13 @@ class Database:
     # getting the number of players currently in a tournament
     def get_player_count_in_tournament(self, t_id: str) -> int:
         self.cursor.execute("SELECT player_count FROM Tournament WHERE tournament_id = ?", (t_id,))
-        return self.cursor.fetchone()[0]
+        # trying to find it
+        try:
+            return self.cursor.fetchone()[0]
+        except (TypeError, AttributeError):
+            # if no value then can't subscript 
+            print(f"Error: Tournament ID {t_id} not found.")
+            return ""
     
     # getting the current round in a tournament
     def get_current_round(self, t_id: str) -> int:
@@ -504,7 +529,14 @@ class Database:
             FROM GrandPrix
             WHERE grandprix_id = ?
         """, (gp_id,))
-        limit = self.cursor.fetchone()[0]
+        # trying to find it
+        try:
+            limit = self.cursor.fetchone()[0]
+        except (TypeError, AttributeError):
+            # if no value then can't subscript 
+            print(f"Error: Grandprix ID {gp_id} not found.")
+            return []
+        
         # if this is none then this is final gp, calculate winner if this is not called internally eg so from tournaments file
         if limit is None and not internal:
             return self.calculate_tournament_winner(gp_id)
@@ -547,7 +579,14 @@ class Database:
     def find_next_gp_id(self, gp_id: str, t_id: str) -> str:
         # selecting the current bracket and finding the next one
         self.cursor.execute("SELECT bracket FROM GrandPrix WHERE grandprix_id = ?", (gp_id,))
-        bracket = self.cursor.fetchone()[0]
+        # trying to find it
+        try:
+            bracket = self.cursor.fetchone()[0]
+        except (TypeError, AttributeError):
+            # if no value then can't subscript 
+            print(f"Error: Grandprix ID {gp_id} not found.")
+            return ""
+        
         # if the current bracket is None then this is the final grand prix so return tournament finished
         if bracket is None: return "Tournament finished"
         # calculate the new bracket
@@ -563,7 +602,13 @@ class Database:
 
         # fetching the round for current grand prix
         self.cursor.execute("SELECT round FROM GrandPrix WHERE grandprix_id = ? AND tournament_id = ?", (gp_id, t_id))
-        current_round = self.cursor.fetchone()[0]
+        # trying to find it
+        try:
+            current_round = self.cursor.fetchone()[0]
+        except (TypeError, AttributeError):
+            # if no value then can't subscript 
+            print(f"Error: Tournament ID {t_id} or Grandprix ID {gp_id} not found.")
+            return ""
 
         # if this is the last round
         if current_round == maxround:
@@ -574,7 +619,13 @@ class Database:
                 WHERE tournament_id = ?
                 AND (round IS NULL AND bracket IS NULL AND inverse IS NULL)
             """, (t_id,))
-            return self.cursor.fetchone()[0]
+            # trying to find it
+            try:
+                return self.cursor.fetchone()[0]
+            except (TypeError, AttributeError):
+                # if no value then can't subscript 
+                print(f"Error: Grandprix ID {gp_id} not found.")
+                return ""
         else:
             # return the grand prix id of the next grand prix by increasing the round
             self.cursor.execute("""
@@ -585,7 +636,13 @@ class Database:
                 AND inverse = (SELECT inverse FROM GrandPrix WHERE grandprix_id = ?)
                 AND bracket = ?
             """, (t_id, gp_id, gp_id, newbracket))
-            return self.cursor.fetchone()[0]
+            # trying to find it
+            try:
+                return self.cursor.fetchone()[0]
+            except (TypeError, AttributeError):
+                # if no value then can't subscript 
+                print(f"Error: Tournament ID {t_id} or Grandprix ID {gp_id} not found.")
+                return ""
     
     # inserting the grand prix results for players after grand prix finished
     def insert_gp_results(self, gp_id: str, results: list[tuple]):
@@ -607,7 +664,13 @@ class Database:
             ORDER BY grandprix_result ASC
             LIMIT 1
         """, (gp_id,))
-        p_id = self.cursor.fetchone()[0]
+        # trying to find it
+        try:
+            p_id = self.cursor.fetchone()[0]
+        except (TypeError, AttributeError):
+            # if no value then can't subscript 
+            print(f"Error: Grandprix ID {gp_id} not found.")
+            return ()
 
         # returing the whole player object with the player_id found above
         self.cursor.execute("SELECT * FROM Player WHERE player_id = ?", (p_id,))
@@ -621,7 +684,13 @@ class Database:
     # reading the tournament result for a player
     def get_tournament_result(self, t_id: str, p_id: str) -> int:
         self.cursor.execute("SELECT tournament_result FROM TournamentParticipation WHERE tournament_id = ? AND player_id = ?", (t_id, p_id))
-        return self.cursor.fetchone()[0]
+        # trying to find it
+        try:
+            return self.cursor.fetchone()[0]
+        except (TypeError, AttributeError):
+            # if no value then can't subscript 
+            print(f"Error: Tournament ID {t_id} or Player ID {p_id} not found.")
+            return ""
 
     # function to calculate what position eveyone came and then update it in TournamentParticipation
     def set_tournament_results(self, t_id: str):
@@ -810,12 +879,19 @@ class Database:
         """
         self.cursor.execute(query)
         res = self.cursor.fetchall()
-        # removing people with no results
-        for a in res:
-            if a[2] == 0 or a[1] == None:
-                res.remove(a)
-        # finding the average tournament result for each player and sorting the list
-        avg_res = [(x[0], x[1]/x[2]) for x in res]
+
+        # calculating the average result for each player
+        avg_res = []
+        for row in res:
+            # trying to divide the sum of results by the number of results (number of individual data so the number of tournaments with results)
+            try:
+                average = row[1] / row[2]
+                avg_res.append((row[0], average))
+            except (ZeroDivisionError, TypeError):
+                # if either is 0 or Null/None then continue
+                # this will be if the player hasnt finished tournament yet
+                continue
+        # sorting the list by average result highest to lowest
         sorted_res = sorted(avg_res, key=lambda x: x[1])
         # taking the top 5 players with the best average result
         top_players = [p[0] for p in sorted_res[:5]]

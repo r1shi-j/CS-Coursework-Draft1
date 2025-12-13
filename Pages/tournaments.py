@@ -1,10 +1,12 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from tkcalendar import Calendar
+import re
 import datetime
 from collections import defaultdict
 from storage import create_uuid
 # usual tk imports, new tkcalendar import to show the calendar
+# importing re for regex validation
 # importing datetime and defaultdict
 # importing the create uuid function from storage
 
@@ -158,9 +160,7 @@ class TournamentsPage(ttk.Frame):
         search_frame = ttk.LabelFrame(step2, text="Search Players")
         search_frame.pack(fill="both", expand=True)
         search_var = tk.StringVar()
-        # registering validation command
-        vcmd = (win.register(self.controller.validate_only_letters), "%P")
-        search_field = ttk.Entry(search_frame, textvariable=search_var, validate="key", validatecommand=vcmd)
+        search_field = ttk.Entry(search_frame, textvariable=search_var)
         search_field.pack(fill="x", padx=5, pady=5)
         # binding escape to deselect search field and command delete to clear search field
         search_field.bind("<Escape>", lambda e: win.focus())
@@ -463,8 +463,7 @@ class TournamentsPage(ttk.Frame):
         search_frame = ttk.LabelFrame(step2, text="Search Players")
         search_frame.pack(fill="both", expand=True)
         search_var = tk.StringVar()
-        vcmd = (win.register(self.controller.validate_only_letters), "%P")
-        search_field = ttk.Entry(search_frame, textvariable=search_var, validate="key", validatecommand=vcmd)
+        search_field = ttk.Entry(search_frame, textvariable=search_var)
         search_field.pack(fill="x", padx=5, pady=5)
         search_field.bind("<Escape>", lambda e: win.focus())
         search_field.bind("<Command-BackSpace>", clear_query)
@@ -616,6 +615,7 @@ class TournamentsPage(ttk.Frame):
         # function to check if user has selected a tournament type, if they have then show the next step otherwise show an error
         def validate_ttype():
             ttype = selected_type.get()
+            # presence check
             if ttype == "":
                 messagebox.showerror("Missing Info", "Please select a tournament type.")
                 return
@@ -733,9 +733,6 @@ class TournamentsPage(ttk.Frame):
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
 
-        # registering the validation for fields: only numbers
-        vcmd = (win.register(self.controller.validate_only_numbers), "%P")
-
         # functions to clear the textfield when command backspace pressed
         def clear_field1(event=None):
             field1.delete(0, tk.END)
@@ -743,17 +740,15 @@ class TournamentsPage(ttk.Frame):
             field2.delete(0, tk.END)
 
         # text box for the default number of continuers
-        # adding validation command on every keypress, it will only allow the user to type in numbers
         ttk.Label(win, text="Default Continuers:").grid(row=0, column=0, padx=(0,10), pady=(16,8), sticky="e")
-        field1 = ttk.Entry(win, validate="key", validatecommand=vcmd)
+        field1 = ttk.Entry(win)
         field1.grid(row=0, column=1, padx=(5,20), pady=(16,8))
         field1.bind("<Escape>", lambda e: win.focus())
         field1.bind("<Command-BackSpace>", clear_field1)
 
         # text box for the number of grand prixs to be used per round
-        # adding validation command on every keypress, it will only allow the user to type in numbers
         ttk.Label(win, text="Number of Grand Prix:").grid(row=1, column=0, padx=(20,10), pady=8, sticky="e")
-        field2 = ttk.Entry(win, validate="key", validatecommand=vcmd)
+        field2 = ttk.Entry(win)
         field2.grid(row=1, column=1, padx=(5,20), pady=8)
         field2.bind("<Escape>", lambda e: win.focus())
         field2.bind("<Command-BackSpace>", clear_field2)
@@ -764,13 +759,34 @@ class TournamentsPage(ttk.Frame):
 
         # function called when user clicks save
         def create_type():
-            # getting the first 2 data variables
-            data1 = int(field1.get())
-            data2 = int(field2.get())
-            # checking if either are empty, if so a warning message is showed and function exits
+            # fetching the raw data
+            data1 = field1.get()
+            data2 = field2.get()
+
+            # presence check on all fields
             if data1 == "" or data2 == "":
-                messagebox.showerror("Fill out all fields", "Please fill out all fields.")
+                messagebox.showerror("Missing Info", "Please fill in all fields.")
                 return
+            # type check on both fields
+            # trying to convert the text to an integer, if fails then show error
+            try:
+                data1 = int(data1)
+            except ValueError:
+                messagebox.showerror("Invalid data", "Default continuers must be a valid whole number.")
+                return
+            try:
+                data2 = int(data2)
+            except ValueError:
+                messagebox.showerror("Invalid data", "Number of Grand Prix must be a valid whole number.")
+                return
+            # range check on both fields
+            if data1 < 1 or data1 > 4:
+                messagebox.showerror("Bad data", "Please enter a reasonable number of default continuers between 1 and 4")
+                return
+            if data2 < 1 or data2 > 4:
+                messagebox.showerror("Bad data", "Please enter a reasonable number of grand prix per round between 1 and 4")
+                return
+
             # creating the tournament type, closing this window and updating the tournament type section where this view was opened from
             self.controller.db.create_tournament_type(data1, data2, longer_var.get())
 
@@ -874,9 +890,6 @@ class TournamentsPage(ttk.Frame):
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
 
-        # registering the username validation for only letters and numbers
-        vcmd_username = (win.register(self.controller.validate_only_letters_numbers), "%P")
-
         # functions to clear the textfield when command backspace pressed
         def clear_uname(event=None):
             uname.delete(0, tk.END)
@@ -886,10 +899,9 @@ class TournamentsPage(ttk.Frame):
             pword2.delete(0, tk.END)
 
         # text box for username
-        # adding validation on every key press to only allow numbers and letters to be typed
         # binding escape to deselect field
         ttk.Label(win, text="Username:").grid(row=0, column=0, padx=(30,10), pady=(16,8), sticky="e")
-        uname = ttk.Entry(win, validate="key", validatecommand=vcmd_username)
+        uname = ttk.Entry(win)
         uname.grid(row=0, column=1, padx=(5,30), pady=(16,8))
         uname.bind("<Escape>", lambda e: win.focus())
         uname.bind("<Command-BackSpace>", clear_uname)
@@ -901,7 +913,7 @@ class TournamentsPage(ttk.Frame):
         pword1.bind("<Escape>", lambda e: win.focus())
         pword1.bind("<Command-BackSpace>", clear_pword)
 
-        # text box to reenter password (double erntry validation)
+        # text box to reenter password (double entry validation)
         ttk.Label(win, text="Reenter Password:").grid(row=2, column=0, padx=(30,10), pady=8, sticky="e")
         pword2 = ttk.Entry(win)
         pword2.grid(row=2, column=1, padx=(5,30), pady=8)
@@ -910,21 +922,35 @@ class TournamentsPage(ttk.Frame):
 
         # function to add account and close window
         def create_account():
-            # fetching the data
+            # fetching the raw data
             username = uname.get()
             password1 = pword1.get()
             password2 = pword2.get()
+
+            # presence check on all fields
+            if username == "" or password1 == "" or password2 == "":
+                messagebox.showerror("Missing Info", "Please fill in all fields.")
+                return
+            # length check on username and password1 fields
+            # don't need to check password2 as all we need to check is that is is the same as password1
+            if len(username) < 2 or len(username) > 20:
+                messagebox.showerror("Invalid username length", "Please make the username between 2 and 20 characters.")
+                return
+            # type check on username to ensure only letters
+            if re.fullmatch(r"[a-zA-Z0-9._-]*", username) is None:
+                messagebox.showerror("Bad data", "Please make a username using only letters, numbers and ._- with no spaces")
+                return
+            # length check on password1 to ensure password is at least 10 characters
+            if len(password1) < 10:
+                messagebox.showerror("Password not long enough", "Please make the password at least 10 characters.")
+                return
+            # validating that there are no spaces in password1
+            if re.fullmatch(r"[^\s]+", password1) is None:
+                messagebox.showerror("Password contains spaces", "Please make a password without spaces")
+                return
             # if passwords don't match then show error
             if password1 != password2:
                 messagebox.showerror("Passwords don't match", "Please ensure you have typed both passwords correctly")
-                return
-            # if data is empty then show error
-            if username == "" or password1 == "" or password2 == "":
-                messagebox.showerror("Fill out all fields", "Please fill out all fields.")
-                return
-            # if password length incorrect then show error
-            if len(password1) < 10:
-                messagebox.showerror("Password not long enough", "Please make the password at least 10 characters.")
                 return
             
             # trying to add account to database
@@ -969,9 +995,6 @@ class TournamentsPage(ttk.Frame):
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
 
-        # registering the validation for username, only letters and numbers
-        vcmd_username = (win.register(self.controller.validate_only_letters_numbers), "%P")
-
         # functions to clear the textfield when command backspace pressed
         def clear_uname(event=None):
             uname.delete(0, tk.END)
@@ -980,7 +1003,7 @@ class TournamentsPage(ttk.Frame):
 
         # text box for username
         ttk.Label(win, text="Username:").grid(row=0, column=0, padx=(0,10), pady=(16,8), sticky="e")
-        uname = ttk.Entry(win, validate="key", validatecommand=vcmd_username)
+        uname = ttk.Entry(win)
         uname.grid(row=0, column=1, padx=(5,20), pady=(16,8))
         uname.bind("<Escape>", lambda e: win.focus())
         uname.bind("<Command-BackSpace>", clear_uname)
@@ -1218,7 +1241,7 @@ class TournamentsPage(ttk.Frame):
             self.controller.make_hoverable_btn(settings_btn, "Hover", "UnHover")
         else:
             # otherwise show a spacer
-            spacer = tk.Frame(win, width=90, height=1)
+            spacer = tk.Frame(win, width=96, height=1)
             spacer.grid(row=8, column=1, padx=(5,20), pady=8, sticky="w")
 
     # building brackets container view
@@ -1428,6 +1451,7 @@ class TournamentsPage(ttk.Frame):
         def insert_results():
             # fetching the chosen circuit
             chosen_name = circuit_var.get()
+            # presence check
             # if selection is nothing then shows error to select a circuit
             if chosen_name == "":
                 messagebox.showerror("Missing Info", "Please select a circuit.")

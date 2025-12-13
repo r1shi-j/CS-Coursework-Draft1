@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+import re
 # usual imports
+# importing re for regex validation
 
 class PlayersPage(ttk.Frame):
     def __init__(self, parent: ttk.Frame, controller):
@@ -41,8 +43,7 @@ class PlayersPage(ttk.Frame):
         # subtitle, search field and clear button
         # binding keyboard buttons to clear and unfocus search field, with every key release triggering a search for real time searching
         ttk.Label(search_frame, text="Search players:").pack(side="left", padx=5)
-        vcmd = (search_frame.register(self.controller.validate_only_letters_numbers), "%P")
-        self.search_field = ttk.Entry(search_frame, width=20, validate="key", validatecommand=vcmd)
+        self.search_field = ttk.Entry(search_frame, width=20)
         self.search_field.pack(side="left", padx=5)
         self.search_field.bind("<KeyRelease>", self.search_players)
         self.search_field.bind("<Command-BackSpace>", self.clear_entry)
@@ -85,9 +86,6 @@ class PlayersPage(ttk.Frame):
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
 
-        vcmd_letters = (win.register(self.controller.validate_only_letters), "%P")
-        vcmd_num = (win.register(self.controller.validate_only_numbers), "%P")
-
         # functions to clear the textfield when command backspace pressed
         def clear_fname(event=None):
             fname_entry.delete(0, tk.END)
@@ -98,21 +96,21 @@ class PlayersPage(ttk.Frame):
 
         # text box for first name
         ttk.Label(win, text="First name:").grid(row=0, column=0, padx=10, pady=(16,8), sticky="e")
-        fname_entry = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
+        fname_entry = ttk.Entry(win)
         fname_entry.grid(row=0, column=1, padx=(5,20), pady=(16,8))
         fname_entry.bind("<Escape>", lambda e: win.focus())
         fname_entry.bind("<Command-BackSpace>", clear_fname)
 
         # text box for surname
         ttk.Label(win, text="Surname:").grid(row=1, column=0, padx=10, pady=8, sticky="e")
-        sname_entry = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
+        sname_entry = ttk.Entry(win)
         sname_entry.grid(row=1, column=1, padx=(5,20), pady=8)
         sname_entry.bind("<Escape>", lambda e: win.focus())
         sname_entry.bind("<Command-BackSpace>", clear_sname)
 
         # text box for age
         ttk.Label(win, text="Age:").grid(row=2, column=0, padx=10, pady=8, sticky="e")
-        age_entry = ttk.Entry(win, validate="key", validatecommand=vcmd_num)
+        age_entry = ttk.Entry(win)
         age_entry.grid(row=2, column=1, padx=(5,20), pady=8)
         age_entry.bind("<Escape>", lambda e: win.focus())
         age_entry.bind("<Command-BackSpace>", clear_age)
@@ -121,12 +119,38 @@ class PlayersPage(ttk.Frame):
         def create_player():
             firstname = fname_entry.get()
             surname = sname_entry.get()
-            age = int(age_entry.get())
-            # validating if any fields are empty then showing error
+            age = age_entry.get()
+
+            # presence check on all fields
             if firstname == "" or surname == "" or age == "":
                 messagebox.showerror("Missing Info", "Please fill in all fields.")
                 return
-            self.controller.db.create_player(fname, sname, int(dage))
+            # type check on age
+            # trying to convert the text to an integer, if fails then show error
+            try:
+                age = int(age)
+            except ValueError:
+                messagebox.showerror("Invalid age", "Age must be a valid whole number.")
+                return
+            # range check on age
+            if age < 5 or age > 100:
+                messagebox.showerror("Bad data", "Please enter a reasonable age between 5 and 100")
+                return
+            # length check on names
+            if len(firstname) < 2 or len(firstname) > 35:
+                messagebox.showerror("Bad data", "Please enter a reasonable first name length between 2 and 35 characters")
+                return
+            if len(surname) < 2 or len(surname) > 35:
+                messagebox.showerror("Bad data", "Please enter a reasonable surname length between 2 and 35 characters")
+                return
+            # type check on names to ensure only letters
+            if re.fullmatch(r"[a-zA-Z ]*", firstname) is None:
+                messagebox.showerror("Bad data", "Please enter a firstname using only letters")
+                return
+            if re.fullmatch(r"[a-zA-Z ]*", surname) is None:
+                messagebox.showerror("Bad data", "Please enter a surname using only letters")
+                return
+            
             self.controller.db.create_player(firstname, surname, age)
             
             # showing message saying success
@@ -174,9 +198,6 @@ class PlayersPage(ttk.Frame):
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
 
-        vcmd_letters = (win.register(self.controller.validate_only_letters), "%P")
-        vcmd_num = (win.register(self.controller.validate_only_numbers), "%P")
-
         # functions to clear the textfield when command backspace pressed
         def clear_fname(event=None):
             fname_entry.delete(0, tk.END)
@@ -187,7 +208,7 @@ class PlayersPage(ttk.Frame):
 
         # text box for first name, prefilling with the original data
         ttk.Label(win, text="First name:").grid(row=0, column=0, padx=10, pady=(16,8), sticky="e")
-        fname_entry = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
+        fname_entry = ttk.Entry(win)
         fname_entry.insert(0, player[1])
         fname_entry.grid(row=0, column=1, columnspan=2, padx=(5,20), pady=(16,8))
         fname_entry.bind("<Escape>", lambda e: win.focus())
@@ -195,7 +216,7 @@ class PlayersPage(ttk.Frame):
 
         # text box for surname, prefilling with the original data
         ttk.Label(win, text="Surname:").grid(row=1, column=0, padx=10, pady=8, sticky="e")
-        sname_entry = ttk.Entry(win, validate="key", validatecommand=vcmd_letters)
+        sname_entry = ttk.Entry(win)
         sname_entry.insert(0, player[2])
         sname_entry.grid(row=1, column=1, columnspan=2, padx=(5,20), pady=8)
         sname_entry.bind("<Escape>", lambda e: win.focus())
@@ -203,7 +224,7 @@ class PlayersPage(ttk.Frame):
 
         # text box for age, prefilling with the original data
         ttk.Label(win, text="Age:").grid(row=2, column=0, padx=10, pady=8, sticky="e")
-        age_entry = ttk.Entry(win, validate="key", validatecommand=vcmd_num)
+        age_entry = ttk.Entry(win)
         age_entry.insert(0, player[3])
         age_entry.grid(row=2, column=1, columnspan=2, padx=(5,20), pady=8)
         age_entry.bind("<Escape>", lambda e: win.focus())
@@ -213,12 +234,38 @@ class PlayersPage(ttk.Frame):
         def update_player():
             firstname = fname_entry.get()
             surname = sname_entry.get()
-            age = int(age_entry.get())
+            age = age_entry.get()
+
             # presence check on all fields
             if firstname == "" or surname == "" or age == "":
                 messagebox.showerror("Missing Info", "Please fill in all fields.")
                 return
-            self.controller.db.update_player(player[0], fname, sname, int(dage))
+            # type check on age
+            # trying to convert the text to an integer, if fails then show error
+            try:
+                age = int(age)
+            except ValueError:
+                messagebox.showerror("Invalid age", "Age must be a valid whole number.")
+                return
+            # range check on age
+            if age < 5 or age > 100:
+                messagebox.showerror("Bad data", "Please enter a reasonable age between 5 and 100")
+                return
+            # length check on names
+            if len(firstname) < 2 or len(firstname) > 35:
+                messagebox.showerror("Bad data", "Please enter a reasonable first name length between 2 and 35 characters")
+                return
+            if len(surname) < 2 or len(surname) > 35:
+                messagebox.showerror("Bad data", "Please enter a reasonable surname length between 2 and 35 characters")
+                return
+            # type check on names to ensure only letters
+            if re.fullmatch(r"[a-zA-Z ]*", firstname) is None:
+                messagebox.showerror("Bad data", "Please enter a firstname using only letters")
+                return
+            if re.fullmatch(r"[a-zA-Z ]*", surname) is None:
+                messagebox.showerror("Bad data", "Please enter a surname using only letters")
+                return
+            
             self.controller.db.update_player(player[0], firstname, surname, age)
 
             # showing message saying success
