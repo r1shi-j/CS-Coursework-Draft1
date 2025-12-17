@@ -29,11 +29,9 @@ if __name__ == "__main__":
     app = App(root)
     app.mainloop()
 
-#* split long lines up
+# split long lines up
+# implement full type hint (vscode build in)
 #* 2D Array
-
-# # add animations or subtle colours change on hover for buttons/labels
-# # add cursor styling, underline, colour change on hover
 
 # FOR DEMO
 # prefill with 20 players and 9 tournaments (6 complete 3 incomplete (1 fresh 2 part way (1 at final round, 1 at round 2)))
@@ -50,3 +48,4 @@ if __name__ == "__main__":
 # using "" instead of '' for strings
 # use (,) instead of [] in sql
 # all functions have return and type hints
+# use colour english spelling

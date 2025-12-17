@@ -4,9 +4,15 @@ from datetime import datetime
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import matplotlib.dates as mdates
-from tooltip import create_tooltip
+from Utilities.tooltip import create_tooltip
+from Utilities.animatedButton import AnimatedButton
+from Utilities.FontStyling import Fonts as FS, Colours as FC
+# importing relevant tkinter packages
+# datetime to convert string dates to datetime objects so can compare the dates in time
 # matplotlib libraries to show graphs
 # importing tooltip to show tip of what the graph represents in the stats homeview
+# importing animatedButton to use custom coloured button
+# importing FontStyling to use custom fonts and colours
 
 class StatisticsPage(ttk.Frame):
     def __init__(self, parent: ttk.Frame, controller):
@@ -18,11 +24,6 @@ class StatisticsPage(ttk.Frame):
     def build_view(self):
         main_frame = ttk.Frame(self)
         main_frame.pack()
-
-        # creating the title frame and title
-        title_frame = ttk.Frame(main_frame)
-        title_frame.pack(pady=(10, 5))
-        ttk.Label(title_frame, text="Statistics Dashboard", font=("TkDefaultFont", 14, "bold")).pack()
 
         # creating button frame to hold all the statistics button options
         btn_frame = ttk.Frame(main_frame)
@@ -37,20 +38,25 @@ class StatisticsPage(ttk.Frame):
         ## Player: what positions a player has come in all tournaments, player consistency for race results: box plot
         ## because when clicked on links in other part of the system, it opens these views directly with preselected values
 
-        # As each button is the same except for the title, function called and tip text, using a for loop for simplicity
+        # defining the button data such as title, function to open, tip text and colour
         buttons_data = [
-            ("Top Players", self.show_top_players, "Displays the players with the most\ntournament wins as a bar chart."),
-            ("Top Rivalries", self.show_rivalry, "Displays the past tournament results\nfor the top 3 players as a line graph."),
-            ("Circuit Popularity", self.show_circuit_popularity, "Displays the most raced\ncircuits as a pie chart."),
-            ("Circuit Analysis", self.open_circuit_analysis, "Displays who has won a circuit\nthe most times as a bar chart."),
-            ("Player-Circuit Performance", self.open_player_circuit_performance, "Displays a player's performance\nfor a circuit as a bar chart."),
-            ("Player Analysis", self.open_player_analysis, "Displays tournament results for a player\nand a box plot showing their consistency.")
+            ("Top Players", self.show_top_players, "Displays the players with the most\ntournament wins as a bar chart.", FC.blue),
+            ("Top Rivalries", self.show_rivalry, "Displays the past tournament results\nfor the top 3 players as a line graph.", FC.green),
+            ("Circuit Popularity", self.show_circuit_popularity, "Displays the most raced\ncircuits as a pie chart.", FC.red),
+            ("Circuit Analysis", self.open_circuit_analysis, "Displays who has won a circuit\nthe most times as a bar chart.", FC.purple),
+            ("Player-Circuit Performance", self.open_player_circuit_performance, "Displays a player's performance\nfor a circuit as a bar chart.", FC.gold),
+            ("Player Analysis", self.open_player_analysis, "Displays tournament results for a player\nand a box plot showing their consistency.", FC.dblue)
         ]
 
         # for loop over all the buttons
-        # each button underlines on hover, and has a tip shown on hover
-        for text, command, tooltip in buttons_data:
-            btn = ttk.Button(btn_frame, text=text, command=command)
+        # each button has a tip shown on hover
+        for text, command, tooltip, hover_colour in buttons_data:
+            # custom width based on the length of text
+            btn = AnimatedButton(
+                btn_frame, text=text, command=command,
+                width=20+len(text)*8, height=40, corner_radius=20,
+                base_colour=hover_colour[0], hover_colour=hover_colour[1]
+            )
             btn.pack(pady=10)
             create_tooltip(btn, tooltip, True)
 
@@ -80,7 +86,7 @@ class StatisticsPage(ttk.Frame):
             window.geometry("400x200")
             window.resizable(False, False)
             
-            tk.Label(window, text="No data recorded.\nYou haven't finished a tournament yet!", font=("TkDefaultFont", 12)).pack(expand=True)
+            tk.Label(window, text="No data recorded.\nYou haven't finished a tournament yet!", font=FS.base2).pack(expand=True)
             return
 
         # arrays for all names and wins, so can plot on x and y axis
@@ -91,7 +97,7 @@ class StatisticsPage(ttk.Frame):
         fig = Figure(figsize=(6, 5), dpi=100)
         ax = fig.add_subplot(111)
         # adding the data to chart, and setting titles and labels
-        ax.bar(names, wins, color="skyblue")
+        ax.bar(names, wins, color=FC.blue[0])
         ax.set_title("Top Players by Tournament Wins")
         ax.set_ylabel("Wins")
         ax.set_xlabel("Player")
@@ -117,7 +123,7 @@ class StatisticsPage(ttk.Frame):
             window.geometry("400x200")
             window.resizable(False, False)
             
-            tk.Label(window, text="No data recorded.\nYou haven't finished a tournament yet!", font=("TkDefaultFont", 12)).pack(expand=True)
+            tk.Label(window, text="No data recorded.\nYou haven't finished a tournament yet!", font=FS.base2).pack(expand=True)
             return
 
         # creating the figure
@@ -161,7 +167,7 @@ class StatisticsPage(ttk.Frame):
             window.geometry("400x200")
             window.resizable(False, False)
             
-            tk.Label(window, text="No races recorded.\nYou haven't raced on any circuits yet!", font=("TkDefaultFont", 12)).pack(expand=True)
+            tk.Label(window, text="No races recorded.\nYou haven't raced on any circuits yet!", font=FS.base2).pack(expand=True)
             return
         
         # inner function to calculate the proportions for pie chart
@@ -241,7 +247,7 @@ class StatisticsPage(ttk.Frame):
             window.geometry("400x200")
             window.resizable(False, False)
             
-            tk.Label(window, text="You haven't created any players.\nNo one has raced yet!", font=("TkDefaultFont", 12)).pack(expand=True)
+            tk.Label(window, text="You haven't created any players.\nNo one has raced yet!", font=FS.base2).pack(expand=True)
             return
         
         # creating a new window
@@ -286,7 +292,7 @@ class StatisticsPage(ttk.Frame):
         win.canvas = None
 
         # initial error message informing user to select a circuit
-        win.error_label = tk.Label(win, text="Please select a circuit to analyse.", font=("TkDefaultFont", 12, "italic"), fg="gray")
+        win.error_label = tk.Label(win, text="Please select a circuit to analyse.", font=FS.base2_i, fg=FC.cancel)
         win.error_label.pack(expand=True)
 
         # when dropdown selected then draw the graph
@@ -341,7 +347,7 @@ class StatisticsPage(ttk.Frame):
 
         # if no data then show error message, indicates that no one has won at that circuit yet
         if not data:
-            win.error_label = tk.Label(win, text=f"No one has come 1st place in {c_name} yet.", font=("TkDefaultFont", 12))
+            win.error_label = tk.Label(win, text=f"No one has come 1st place in {c_name} yet.", font=FS.base2)
             win.error_label.pack(pady=50, expand=True)
             return
 
@@ -353,7 +359,7 @@ class StatisticsPage(ttk.Frame):
         fig = Figure(figsize=(6, 5), dpi=100)
         ax = fig.add_subplot(111)
         # creating the bar chart with the data, and setting titles and labels
-        bars = ax.bar(names, wins, color="gold", edgecolor="black")
+        bars = ax.bar(names, wins, color=FC.gold[0], edgecolor=FC.gold[1])
         ax.set_title(f"Most Wins at {c_name}")
         ax.set_ylabel("Wins")
         ax.yaxis.get_major_locator().set_params(integer=True)
@@ -376,7 +382,7 @@ class StatisticsPage(ttk.Frame):
             window.geometry("400x200")
             window.resizable(False, False)
             
-            tk.Label(window, text="You haven't created any players.\nThere isn't any data to view statistics on yet!", font=("TkDefaultFont", 12)).pack(expand=True)
+            tk.Label(window, text="You haven't created any players.\nThere isn't any data to view statistics on yet!", font=FS.base2).pack(expand=True)
             return
         
         # creating a new window
@@ -415,7 +421,7 @@ class StatisticsPage(ttk.Frame):
         win.canvas = None
 
         # initial error message informing user to select a circuit
-        win.error_label = tk.Label(win, text="Please select both a Circuit and a Player to view performance stats.", font=("TkDefaultFont", 12, "italic"), fg="gray")
+        win.error_label = tk.Label(win, text="Please select both a Circuit and a Player to view performance stats.", font=FS.base2_i, fg=FC.cancel)
         win.error_label.pack(expand=True)
 
         # when dropdowns selected then draw the graph
@@ -468,13 +474,13 @@ class StatisticsPage(ttk.Frame):
         
         # if no data then show error message, indicates that the player hasn't raced at that circuit yet
         if not data:
-            win.error_label = tk.Label(win, text=f"No race results found for {p_name} at {c_name}.", font=("TkDefaultFont", 12))
+            win.error_label = tk.Label(win, text=f"No race results found for {p_name} at {c_name}.", font=FS.base2)
             win.error_label.pack(pady=50, expand=True)
             return
 
         # if sum of counts is 0, indicates that the player has raced but never finished in top 3
         if sum(counts) == 0:
-            win.error_label = tk.Label(win, text=f"{p_name} has raced at {c_name},\nbut never finished in the Top 3.", font=("TkDefaultFont", 12))
+            win.error_label = tk.Label(win, text=f"{p_name} has raced at {c_name},\nbut never finished in the Top 3.", font=FS.base2)
             win.error_label.pack(pady=50, expand=True)
             return
         
@@ -482,11 +488,8 @@ class StatisticsPage(ttk.Frame):
         fig = Figure(figsize=(6, 5), dpi=100)
         ax = fig.add_subplot(111)
         
-        # defining bar colours for 1st, 2nd and 3rd places
-        colours = ["#FFD700", "#C0C0C0", "#CD7F32"]
-        bars = ax.bar(positions, counts, color=colours)
-        
         # creating bar chart with titles and labels
+        bars = ax.bar(positions, counts, color=FC.gold_silver_bronze)        
         ax.set_title(f"{p_name}'s Top Results at {c_combo.get()}")
         ax.set_ylabel("Times Achieved")
         ax.yaxis.get_major_locator().set_params(integer=True)
@@ -508,7 +511,7 @@ class StatisticsPage(ttk.Frame):
             window.geometry("400x200")
             window.resizable(False, False)
             
-            tk.Label(window, text="You haven't created any players.\nThere is no data to view analyse yet!", font=("TkDefaultFont", 12)).pack(expand=True)
+            tk.Label(window, text="You haven't created any players.\nThere is no data to view analyse yet!", font=FS.base2).pack(expand=True)
             return
         
         # creating a new window
@@ -548,7 +551,7 @@ class StatisticsPage(ttk.Frame):
         win.canvas_box = None
 
         # initial error message informing user to select a player
-        win.error_label = tk.Label(win, text="Please select a player to analyse.", font=("TkDefaultFont", 12, "italic"), fg="gray")
+        win.error_label = tk.Label(win, text="Please select a player to analyse.", font=FS.base2_i, fg=FC.cancel)
         win.error_label.pack(expand=True)
 
         # when dropdown selected then draw the graphs
@@ -588,7 +591,7 @@ class StatisticsPage(ttk.Frame):
             # Hide the graph frames
             win.top_graph_frame.pack_forget()
             win.bottom_graph_frame.pack_forget()
-            win.error_label = tk.Label(win, text=f"No data found for {p_name}.", font=("TkDefaultFont", 12))
+            win.error_label = tk.Label(win, text=f"No data found for {p_name}.", font=FS.base2)
             win.error_label.pack(expand=True)
             return
         
@@ -612,7 +615,7 @@ class StatisticsPage(ttk.Frame):
         # creating the line graph figure
         fig1 = Figure(figsize=(8, 4), dpi=100)
         ax1 = fig1.add_subplot(111)
-        ax1.plot(dates, results, marker="o", linestyle="-", color="blue")
+        ax1.plot(dates, results, marker="o", linestyle="-", color=FC.blue[0])
         # adding titles and labels
         ax1.set_title(f"Tournament Placement History: {p_name}")
         ax1.set_ylabel("Position (Lower is Better)")

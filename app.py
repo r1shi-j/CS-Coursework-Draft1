@@ -2,9 +2,11 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from storage import Database
 from Pages import tournaments, players, circuits, statistics
+from Utilities.FontStyling import Fonts as FS, Colours as FC
 # importing relevant tkinter packages
 # importing Database class from storage file
 # importing the view files from Pages folder
+# importing custom font styling, font as FS and colours as FC
 
 # creating the frame
 class App(tk.Frame):
@@ -30,7 +32,7 @@ class App(tk.Frame):
     # function called when window is tried to be closed
     def on_app_close(self):
         # showing confirmation dialogue to check they want to close the system
-        confirmed = messagebox.askokcancel("Help", "Are you sure you want to close the system?", default="cancel")
+        confirmed = messagebox.askokcancel("Help", "Are you sure you want to close the system?")
         if confirmed:
             # if they say ok then first close the database and then close the window
             self.db.close()
@@ -39,16 +41,25 @@ class App(tk.Frame):
     # function to creating styling to use for different buttons
     def create_styling(self):
         style = ttk.Style()
-        style.configure("HoverDelete.TButton", foreground="#df3832", font=("TkDefaultFont", 10, "underline"))
-        style.configure("UnHoverDelete.TButton", foreground="#df3832", font=("TkDefaultFont", 10, "normal"))
-        style.configure("HoverSubmit.TButton", foreground="#00a2ff", font=("TkDefaultFont", 10, "underline"))
-        style.configure("UnHoverSubmit.TButton", foreground="#00a2ff", font=("TkDefaultFont", 10, "normal"))
-        style.configure("Hover.TButton", font=("TkDefaultFont", 10, "underline"))
-        style.configure("UnHover.TButton", font=("TkDefaultFont", 10, "normal"))
-        style.configure("Black.TLabel", foreground="#000000")
-        style.configure("Green.TLabel", foreground="#11DF11")
-        # creating hover and non hover variants with underline and no underline respectively
+        # creating coloured buttons (black, green and red)
+        style.configure("Black.TLabel", foreground=FC.black)
+        style.configure("Green.TLabel", foreground=FC.winner)
+        style.configure("Red.TButton", foreground=FC.red[1])
 
+        # making a style called subtitle which uses base2 size (12)
+        style.configure("Subtitle.TLabel", font=FS.base2)
+        
+        # setting the default font size for all ttk widgets to base which is 11
+        style.configure("TLabel", font=FS.base)
+        style.configure("TButton", font=FS.base)
+        style.configure("TCheckbutton", font=FS.base)
+        style.configure("TRadiobutton", font=FS.base)
+        style.configure("TEntry", font=FS.base)
+        # this is the same but for any tk widgets used
+        self.master.option_add("*Label.font", FS.base)
+        self.master.option_add("*Button.font", FS.base)
+        self.master.option_add("*Checkbutton.font", FS.base)
+        
     # creating the layout
     def create_layout(self):
         # setting name, minimum size and disabling user resizing of the window
@@ -75,21 +86,17 @@ class App(tk.Frame):
 
         # function to make navigation label
         def make_nav_label(parent: ttk.Frame, view_name: str):
-            # creating the title
-            label = ttk.Label(parent, text=view_name, font=("TkDefaultFont", 12))
-            label.pack(side="left", padx=40)
+            # creating the title with the header font
+            label = ttk.Label(parent, text=view_name, font=FS.header)
+            label.pack(side="left", padx=36)
 
-            # adding underline when hover
+            # when hover change font to add underline
             def on_enter(e):
-                # if hovered title is not the current page then underline it
-                if self.current_page != view_name:
-                    label.configure(font=("TkDefaultFont", 12, "underline"))
+                label.configure(font=FS.header_u)
 
-            # remove underline when not hovering
+            # when unhovers change font to remove underline
             def on_leave(e):
-                # if hovered title is not the current page then remove underline
-                if self.current_page != view_name:
-                    label.configure(font=("TkDefaultFont", 12))
+                label.configure(font=FS.header)
 
             # when label clicked call function to show that view
             def on_click(e): self.show_frame(view_name)
@@ -138,31 +145,31 @@ class App(tk.Frame):
         for name, label in self.nav_labels.items():
             # getting the name and label for all nav titles
             if name == page_name:
-                # making the foreground blue for the selected view
-                label.configure(font=("TkDefaultFont", 12, "underline"), foreground="blue")
+                # if this is the selected page then set the font colour foreground to blue
+                label.configure(font=FS.header, foreground=FC.blue[1])
             else:
-                # making the foreground black for the selected view
-                label.configure(font=("TkDefaultFont", 12), foreground="black")
+                # setting black text colour for other titles
+                label.configure(font=FS.header, foreground=FC.black)
 
         # setting the current page to selected page
         self.current_page = page_name
 
     # function to underline a label on hover
-    # takes optional parameters for font size and weight
-    def make_hoverable(self, label: ttk.Label, size: int | None = None, weight: str | None = None):
-        # defining the base and hover font where hover has an underline
-        base_font = ("TkDefaultFont", size if size else 10, weight if weight else "normal")
-        hover_font = ("TkDefaultFont", size if size else 10, f"{weight} underline" if weight else "underline")
+    def make_hoverable(self, label: ttk.Label):
+        # fetching the font the label uses
+        font = str(label["font"]).split(" ")
+        # if no font is specified then use defaults with underline on hover
+        if font == [""]:
+            base_font = FS.base
+            hover_font = FS.base_u
+        else:
+            # otherwise change to customised with underline on hover
+            base_font = (font[0], font[1], font[2])
+            hover_font = (font[0], font[1], f"{font[2]} underline")
+
         # binding enter and leave hover actions over the label to change the font
         label.bind("<Enter>", lambda e: label.config(font=hover_font))
         label.bind("<Leave>", lambda e: label.config(font=base_font))
-
-    # function to underline a button on hover
-    def make_hoverable_btn(self, button: ttk.Button, h: str, uh: str):
-        # binding enter and leave hover actions over the button to change the button style
-        # parameters for differnt styles, could have delete, submit or standard styles
-        button.bind("<Enter>", lambda e: button.config(style=f"{h}.TButton"))
-        button.bind("<Leave>", lambda e: button.config(style=f"{uh}.TButton"))
 
     # function to open statistics view with player data
     def open_statistics_player(self, player: tuple[str, str, str, int]):

@@ -1,13 +1,18 @@
 import tkinter as tk
 from tkinter import ttk
+from Utilities.animatedButton import AnimatedButton
+from Utilities.FontStyling import Fonts as FS, Colours as FC
+# importing relevant tkinter packages
+# importing animatedButton to use as type in function below
+# importing custom font styling to use for tip window text
 
 # function to create a tip over a widget
-def create_tooltip(widget: ttk.Button | ttk.Label, text: str, is_stats: bool):
-    # creating the tip
+def create_tooltip(widget: AnimatedButton | ttk.Label, text: str, is_stats: bool):
     toolTip = ToolTip(widget, text, is_stats)
     # binding enter and leave hover events to show and hide the tip
-    widget.bind("<Enter>", toolTip.show_tip)
-    widget.bind("<Leave>", toolTip.hide_tip)
+    # add="+" allows to use existing bindings to the widget
+    widget.bind("<Enter>", toolTip.show_tip, add="+")
+    widget.bind("<Leave>", toolTip.hide_tip, add="+")
 
 # Class to show a tip over a button
 class ToolTip:
@@ -23,9 +28,9 @@ class ToolTip:
             return
 
         # positioning the tip window with offsets from the original button
-        x = self.widget.winfo_rootx() + 50
-        # if tip is being shown from circuits then increase x by a further 50 because the image is large and don't want to hide rows below
-        if not self.is_stats: x += 50
+        x = self.widget.winfo_rootx() + 80
+        # if tip is being shown from circuits then increase x by a further 20 because the image is large and don't want to hide rows below
+        if not self.is_stats: x += 20
         y = self.widget.winfo_rooty() + self.widget.winfo_height()
         
         # creating the tip window
@@ -35,10 +40,8 @@ class ToolTip:
         
         if self.is_stats:
             # creating the label with custom background and font
-            label = tk.Label(tw, text=self.text, justify=tk.LEFT, background="#ffffe0", font=("tahoma", "9", "normal"))
+            label = tk.Label(tw, text=self.text, justify=tk.LEFT, background=FC.tip, font=FS.tip)
             label.pack(ipadx=10, ipady=10)
-            # adding the hover
-            self.widget.config(style="Hover.TButton")
         else:
             # replacing spaces with _ in the circuit name
             filename = "_".join(self.text.split(" "))
@@ -53,14 +56,8 @@ class ToolTip:
                 # fails because image isn't in assets
                 tk.Label(tw, text="Image not found").pack(pady=15, padx=8)
 
-            # adding the hover
-            self.widget.config(font=("TkDefaultFont", 10, "underline"))
-
     def hide_tip(self, event=None):
         # destroying the tip window
         tw = self.tip_window
         self.tip_window = None
         if tw: tw.destroy()
-        # removing the underline when unhover
-        if self.is_stats: self.widget.config(style="UnHover.TButton")
-        else: self.widget.config(font=("TkDefaultFont", 10, "normal"))

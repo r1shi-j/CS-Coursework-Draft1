@@ -5,10 +5,14 @@ import re
 import datetime
 from collections import defaultdict
 from storage import create_uuid
+from Utilities.animatedButton import AnimatedButton
+from Utilities.FontStyling import Fonts as FS, Colours as FC
 # usual tk imports, new tkcalendar import to show the calendar
 # importing re for regex validation
 # importing datetime and defaultdict
 # importing the create uuid function from storage
+# importing animatedButton to use custom coloured button
+# importing FontStyling to use custom fonts and colours
 
 class TournamentsPage(ttk.Frame):
     # initialiser building the view
@@ -25,19 +29,18 @@ class TournamentsPage(ttk.Frame):
         self.form_frame = ttk.Frame(self)
         self.form_frame.pack()
         
-        # creating the title, vertical padding of 10 top and 5 bottom
-        title_frame = ttk.Frame(self.form_frame)
-        title_frame.pack(pady=(10, 5))
-        ttk.Label(title_frame, text="Tournaments Dashboard", font=("TkDefaultFont", 14, "bold")).pack()
-        
-        # creating button frame and adding create button to it
+        # creating button frame
         buttons_frame = ttk.Frame(self.form_frame)
-        buttons_frame.pack(pady=(5, 10))
-        # cursor is a plus shape
-        create_btn = ttk.Button(buttons_frame, text="Create Tournament", command=self.open_create_tournament, style="UnHover.TButton", cursor="plus")
-        # ipadx is horizontal internal padding
-        create_btn.pack(side="left", padx=10, ipadx=10)
-        self.controller.make_hoverable_btn(create_btn, "Hover", "UnHover")
+        buttons_frame.pack(pady=(15, 8))
+
+        # create button with custom base and hover colours
+        create_btn = AnimatedButton(
+            buttons_frame, text="Create Tournament", command=self.open_create_tournament,
+            width=190, height=40, corner_radius=20,
+            base_colour=FC.base, hover_colour=FC.blue[1], font=FS.base2,
+            hover_cursor="crosshair"
+        )
+        create_btn.pack(side="left", padx=10)
 
         # creating the scroll container
         container = ttk.Frame(self)
@@ -82,6 +85,10 @@ class TournamentsPage(ttk.Frame):
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
+        # forcing the window to appear on top
+        win.transient(self.controller) 
+        win.lift()
+        win.focus_force()
 
         # storing the steps to create tournament as differrent views
         # settings current step index to 0
@@ -109,15 +116,15 @@ class TournamentsPage(ttk.Frame):
         maxdate = today + datetime.timedelta(days=365)
 
         # creating the calendar
-        # setting the date range and colours for headers
+        # setting the date range and colours for specific headers
         cal = Calendar(
             step1,
             selectmode="day",
             year=today.year, month=today.month, day=today.day,
             mindate=mindate, maxdate=maxdate, 
-            background="#FAFAFA", foreground="black", disabledbackground="#FAFAFA",
-            headersforeground="purple", selectforeground="red", normalforeground="black",
-            weekendforeground="black", othermonthforeground="gray", othermonthweforeground="gray"
+            background=FC.base_l, foreground=FC.black, disabledbackground=FC.base_l,
+            headersforeground=FC.purple[1], selectforeground=FC.red[1], normalforeground=FC.black,
+            weekendforeground=FC.black, othermonthforeground=FC.cancel, othermonthweforeground=FC.cancel
         )
         cal.pack(padx=10, pady=10)
 
@@ -135,15 +142,16 @@ class TournamentsPage(ttk.Frame):
         bottom_bar.pack(fill="x", pady=(10,0))
 
         # cancel button closes window
-        # next button shows next step
-        # underlines on hover
-        cancel_btn = ttk.Button(bottom_bar, text="Cancel", command=win.destroy, style="UnHover.TButton")
-        cancel_btn.pack(side="left", padx=5)
-        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+        AnimatedButton(
+            bottom_bar, text="Cancel", command=win.destroy,
+            width=80, base_colour=FC.base, hover_colour=FC.cancel, frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=0, side="left")
 
-        next_btn = ttk.Button(bottom_bar, text="Next", command=lambda: show_step(1), style="UnHoverSubmit.TButton")
-        next_btn.pack(side="right", padx=5)
-        self.controller.make_hoverable_btn(next_btn, "HoverSubmit", "UnHoverSubmit")
+        # next button shows next step
+        AnimatedButton(
+            bottom_bar, text="Next", command=lambda: show_step(1),
+            width=80, base_colour=FC.blue[0], hover_colour=FC.blue[1], frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=0, side="right")
 
         # Step 2: Select players
         step2_frame = ttk.LabelFrame(win, text="Select the tournament players")
@@ -171,7 +179,7 @@ class TournamentsPage(ttk.Frame):
         results_outer.pack()
 
         # creating the search results scrollview container
-        results_canvas = tk.Canvas(results_outer, height=150, width=250, bg="#F7F7F7", highlightthickness=0)
+        results_canvas = tk.Canvas(results_outer, height=150, width=250, bg=FC.base, highlightthickness=0)
         results_scrollbar = ttk.Scrollbar(results_outer, orient="vertical", command=results_canvas.yview)
         results_canvas.configure(yscrollcommand=results_scrollbar.set)
         results_canvas.pack(side="left", fill="both")
@@ -192,7 +200,7 @@ class TournamentsPage(ttk.Frame):
         current_players_outer.pack()
 
         # creating the current players scrollview container
-        current_players_canvas = tk.Canvas(current_players_outer, height=150, width=250, bg="#F7F7F7", highlightthickness=0)
+        current_players_canvas = tk.Canvas(current_players_outer, height=150, width=250, bg=FC.base, highlightthickness=0)
         current_players_scrollbar = ttk.Scrollbar(current_players_outer, orient="vertical", command=current_players_canvas.yview)
         current_players_canvas.configure(yscrollcommand=current_players_scrollbar.set)
         current_players_canvas.pack(side="left", fill="both")
@@ -288,19 +296,22 @@ class TournamentsPage(ttk.Frame):
         bottom_bar.pack(fill="x", pady=(10,0))
 
         # back button shows the previous step
-        back_btn = ttk.Button(bottom_bar, text="Back", command=lambda: show_step(0), style="UnHover.TButton")
-        back_btn.pack(side="left", padx=5)
-        self.controller.make_hoverable_btn(back_btn, "Hover", "UnHover")
+        AnimatedButton(
+            bottom_bar, text="Back", command=lambda: show_step(0),
+            width=80, base_colour=FC.base, hover_colour=FC.back, frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=0, side="left")
 
         # next button first validates data and then goes to the next step
-        next_btn = ttk.Button(bottom_bar, text="Next", command=validate_player_count, style="UnHoverSubmit.TButton")
-        next_btn.pack(side="right", padx=5)
-        self.controller.make_hoverable_btn(next_btn, "HoverSubmit", "UnHoverSubmit")
+        AnimatedButton(
+            bottom_bar, text="Next", command=validate_player_count,
+            width=80, base_colour=FC.blue[0], hover_colour=FC.blue[1], frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=0, side="right")
 
         # cancel closes the window
-        cancel_btn = ttk.Button(bottom_bar, text="Cancel", command=win.destroy, style="UnHover.TButton")
-        cancel_btn.pack(padx=5)
-        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+        AnimatedButton(
+            bottom_bar, text="Cancel", command=win.destroy,
+            width=80, base_colour=FC.base, hover_colour=FC.cancel, frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=10)
 
         # Step 3: Select tournament type
         step3_frame = ttk.LabelFrame(win, text="Select the tournament type")
@@ -316,7 +327,7 @@ class TournamentsPage(ttk.Frame):
         # using a function because when user creates a tournament type this list needs to be refreshed, so the function can be called to rebuild the list
         self.build_tournament_type_section(types_container, selected_type)
         # add button to open the create ttype view
-        ttk.Button(step3, text="+", command=lambda: self.open_add_type(types_container, selected_type), style="UnHover.TButton", cursor="plus").pack(anchor="ne", padx=5, pady=2)
+        ttk.Button(step3, text="+", command=lambda: self.open_create_ttype(types_container, selected_type), cursor="crosshair").pack(anchor="ne", padx=5, pady=2)
 
         # Creating the tournament
         def create_tournament():
@@ -350,20 +361,27 @@ class TournamentsPage(ttk.Frame):
             self.open_create_account(new_t_id)
             win.destroy()
 
+        # frame for the bottom bar action buttons
         bottom_bar = ttk.Frame(step3)
         bottom_bar.pack(fill="x", pady=(10,0))
 
-        back_btn = ttk.Button(bottom_bar, text="Back", command=lambda: show_step(1), style="UnHover.TButton")
-        back_btn.pack(side="left", padx=5)
-        self.controller.make_hoverable_btn(back_btn, "Hover", "UnHover")
+        # back goes to the previous step
+        AnimatedButton(
+            bottom_bar, text="Back", command=lambda: show_step(1),
+            width=80, base_colour=FC.base, hover_colour=FC.back, frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=0, side="left")
 
-        create_btn = ttk.Button(bottom_bar, text="Create", command=create_tournament, style="UnHoverSubmit.TButton")
-        create_btn.pack(side="right", padx=5)
-        self.controller.make_hoverable_btn(create_btn, "HoverSubmit", "UnHoverSubmit")
+        # create creates the tournament by first validating the data
+        AnimatedButton(
+            bottom_bar, text="Create", command=create_tournament,
+            width=80, base_colour=FC.green[0], hover_colour=FC.green[1], frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=0, side="right")
 
-        cancel_btn = ttk.Button(bottom_bar, text="Cancel", command=win.destroy, style="UnHover.TButton")
-        cancel_btn.pack(padx=5)
-        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+        # cancel closes the window
+        AnimatedButton(
+            bottom_bar, text="Cancel", command=win.destroy,
+            width=80, base_colour=FC.base, hover_colour=FC.cancel, frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=10)
 
         # adding the frames to the steps view array and then showing the first step
         steps.extend([step1, step2, step3, step1_frame, step2_frame, step3_frame])
@@ -409,15 +427,15 @@ class TournamentsPage(ttk.Frame):
         mindate = original_date - datetime.timedelta(days=365)
         maxdate = original_date + datetime.timedelta(days=365)
 
-        # creating the calendar with colours for headings
+        # creating the calendar with colours for specific headings
         cal = Calendar(
             step1,
             selectmode="day",
             year=original_date.year, month=original_date.month, day=original_date.day,
             mindate=mindate, maxdate=maxdate, 
-            background="#FAFAFA", foreground="black", disabledbackground="#FAFAFA",
-            headersforeground="purple", selectforeground="red", normalforeground="black",
-            weekendforeground="black", othermonthforeground="gray", othermonthweforeground="gray"
+            background=FC.base_l, foreground=FC.black, disabledbackground=FC.base_l,
+            headersforeground=FC.purple[1], selectforeground=FC.red[1], normalforeground=FC.black,
+            weekendforeground=FC.black, othermonthforeground=FC.cancel, othermonthweforeground=FC.cancel
         )
         cal.pack(padx=10, pady=10)
 
@@ -435,15 +453,16 @@ class TournamentsPage(ttk.Frame):
         bottom_bar.pack(fill="x", pady=(10,0))
 
         # cancel button closes window
-        # next button shows next step
-        # underlines on hover
-        cancel_btn = ttk.Button(bottom_bar, text="Cancel", command=go_back, style="UnHover.TButton")
-        cancel_btn.pack(side="left", padx=5)
-        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+        AnimatedButton(
+            bottom_bar, text="Cancel", command=go_back,
+            width=80, base_colour=FC.base, hover_colour=FC.cancel, frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=0, side="left")
 
-        next_btn = ttk.Button(bottom_bar, text="Next", command=lambda: show_step(1), style="UnHoverSubmit.TButton")
-        next_btn.pack(side="right", padx=5)
-        self.controller.make_hoverable_btn(next_btn, "HoverSubmit", "UnHoverSubmit")
+        # next button shows next step
+        AnimatedButton(
+            bottom_bar, text="Next", command=lambda: show_step(1),
+            width=80, base_colour=FC.blue[0], hover_colour=FC.blue[1], frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=0, side="right")
 
         # Step 2: Select players
         step2_frame = ttk.LabelFrame(win, text="Select the tournament players")
@@ -473,7 +492,7 @@ class TournamentsPage(ttk.Frame):
         results_outer.pack()
 
         # creating the search results scrollview container
-        results_canvas = tk.Canvas(results_outer, height=150, width=250, bg="#F7F7F7", highlightthickness=0)
+        results_canvas = tk.Canvas(results_outer, height=150, width=250, bg=FC.base, highlightthickness=0)
         results_scrollbar = ttk.Scrollbar(results_outer, orient="vertical", command=results_canvas.yview)
         results_canvas.configure(yscrollcommand=results_scrollbar.set)
         results_canvas.pack(side="left", fill="both")
@@ -494,7 +513,7 @@ class TournamentsPage(ttk.Frame):
         current_players_outer.pack()
 
         # creating the current players scrollview container
-        current_players_canvas = tk.Canvas(current_players_outer, height=150, width=250, bg="#F7F7F7", highlightthickness=0)
+        current_players_canvas = tk.Canvas(current_players_outer, height=150, width=250, bg=FC.base, highlightthickness=0)
         current_players_scrollbar = ttk.Scrollbar(current_players_outer, orient="vertical", command=current_players_canvas.yview)
         current_players_canvas.configure(yscrollcommand=current_players_scrollbar.set)
         current_players_canvas.pack(side="left", fill="both")
@@ -588,20 +607,27 @@ class TournamentsPage(ttk.Frame):
             else:
                 messagebox.showerror("Incorrect number of players", f"Number of players should be 16.\nCurrently {len(tournament_players)} players added.")
 
+        # making frame for the actions buttons
         bottom_bar = ttk.Frame(step2)
         bottom_bar.pack(fill="x", pady=(10,0))
 
-        back_btn = ttk.Button(bottom_bar, text="Back", command=lambda: show_step(0), style="UnHover.TButton")
-        back_btn.pack(side="left", padx=5)
-        self.controller.make_hoverable_btn(back_btn, "Hover", "UnHover")
+        # back button that shows the previous step
+        AnimatedButton(
+            bottom_bar, text="Back", command=lambda: show_step(0),
+            width=80, base_colour=FC.base, hover_colour=FC.back, frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=0, side="left")
 
-        next_btn = ttk.Button(bottom_bar, text="Next", command=validate_player_count, style="UnHoverSubmit.TButton")
-        next_btn.pack(side="right", padx=5)
-        self.controller.make_hoverable_btn(next_btn, "HoverSubmit", "UnHoverSubmit")
+        # next button that validates and shows the next step
+        AnimatedButton(
+            bottom_bar, text="Next", command=validate_player_count,
+            width=80, base_colour=FC.blue[0], hover_colour=FC.blue[1], frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=0, side="right")
 
-        cancel_btn = ttk.Button(bottom_bar, text="Cancel", command=go_back, style="UnHover.TButton")
-        cancel_btn.pack(padx=5)
-        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+        # cancel button which closes the window
+        AnimatedButton(
+            bottom_bar, text="Cancel", command=go_back,
+            width=80, base_colour=FC.base, hover_colour=FC.cancel, frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=10)
 
         # Step 3: Select tournament type
         step3_frame = ttk.LabelFrame(win, text="Select the tournament type")
@@ -624,26 +650,29 @@ class TournamentsPage(ttk.Frame):
         
         # building the tournament type list and the add button
         self.build_tournament_type_section(types_container, selected_type, current_type_id)
-        ttk.Button(step3, text="+", command=lambda: self.open_add_type(types_container, selected_type), style="UnHover.TButton", cursor="plus").pack(anchor="ne", padx=5, pady=2)
+        ttk.Button(step3, text="+", command=lambda: self.open_create_ttype(types_container, selected_type), cursor="crosshair").pack(anchor="ne", padx=5, pady=2)
 
         # making frame for the actions buttons
         bottom_bar = ttk.Frame(step3)
         bottom_bar.pack(fill="x", pady=(10,0))
 
         # back button that shows the previous step
-        back_btn = ttk.Button(bottom_bar, text="Back", command=lambda: show_step(1), style="UnHover.TButton")
-        back_btn.pack(side="left", padx=5)
-        self.controller.make_hoverable_btn(back_btn, "Hover", "UnHover")
+        AnimatedButton(
+            bottom_bar, text="Back", command=lambda: show_step(1),
+            width=80, base_colour=FC.base, hover_colour=FC.back, frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=0, side="left")
 
         # next button that validates and shows the next step
-        next_btn = ttk.Button(bottom_bar, text="Next", command=validate_ttype, style="UnHoverSubmit.TButton")
-        next_btn.pack(side="right", padx=5)
-        self.controller.make_hoverable_btn(next_btn, "HoverSubmit", "UnHoverSubmit")
+        AnimatedButton(
+            bottom_bar, text="Next", command=validate_ttype,
+            width=80, base_colour=FC.blue[0], hover_colour=FC.blue[1], frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=0, side="right")
 
-        # cancel button which closes the create view
-        cancel_btn = ttk.Button(bottom_bar, text="Cancel", command=go_back, style="UnHover.TButton")
-        cancel_btn.pack(padx=5)
-        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+        # cancel button which closes the window
+        AnimatedButton(
+            bottom_bar, text="Cancel", command=go_back,
+            width=80, base_colour=FC.base, hover_colour=FC.cancel, frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=10)
 
         # Step 4: Manage accounts
         step4_frame = ttk.LabelFrame(win, text="Manage accounts")
@@ -684,20 +713,23 @@ class TournamentsPage(ttk.Frame):
         bottom_bar = ttk.Frame(step4)
         bottom_bar.pack(fill="x", pady=(10,0))
 
-        # back button
-        back_btn = ttk.Button(bottom_bar, text="Back", command=lambda: show_step(2), style="UnHover.TButton")
-        back_btn.pack(side="left", padx=5)
-        self.controller.make_hoverable_btn(back_btn, "Hover", "UnHover")
+        # back button shows the previous step
+        AnimatedButton(
+            bottom_bar, text="Back", command=lambda: show_step(2),
+            width=80, base_colour=FC.base, hover_colour=FC.back, frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=0, side="left")
 
-        # update button
-        update_btn = ttk.Button(bottom_bar, text="Update", command=update_tournament, style="UnHoverSubmit.TButton")
-        update_btn.pack(side="right", padx=5)
-        self.controller.make_hoverable_btn(update_btn, "HoverSubmit", "UnHoverSubmit")
+        # update button updates the tournament by first validating the data
+        AnimatedButton(
+            bottom_bar, text="Update", command=update_tournament,
+            width=80, base_colour=FC.green[0], hover_colour=FC.green[1], frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=0, side="right")
 
-        # cancel button
-        cancel_btn = ttk.Button(bottom_bar, text="Cancel", command=go_back, style="UnHover.TButton")
-        cancel_btn.pack(padx=5)
-        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+        # cancel button which closes the window
+        AnimatedButton(
+            bottom_bar, text="Cancel", command=go_back,
+            width=80, base_colour=FC.base, hover_colour=FC.cancel, frame_colour=FC.base_l
+        ).pack(pady=(5,0), padx=10)
 
         # adding the frames to the steps view array and then showing step 1
         steps.extend([step1, step2, step3, step4, step1_frame, step2_frame, step3_frame, step4_frame])
@@ -714,9 +746,9 @@ class TournamentsPage(ttk.Frame):
         types = self.controller.db.read_tournament_types()
         for t in types:
             # adding s for plural if more than 1 grand prix for correct grammar
-            description = f"{t[1]} continuers, {t[2]} Grand Prix{"" if t[2] == 1 else "'s"}, {"Longer" if t[3] else "Normal"} Style"
-            # adding the radio button
-            ttk.Radiobutton(parent, text=description, value=t[0], variable=selected_type).pack(anchor="w")
+            description = f"{t[1]} continuers\n {t[2]} Grand Prix{"" if t[2] == 1 else "'s"}\n{"Longer" if t[3] else "Normal"} Style"
+            # adding the radio button with justify and anchor centre so the text is aligned centrally
+            ttk.Radiobutton(parent, text=description, value=t[0], variable=selected_type, padding=3, justify="center").pack(anchor="center", pady=5)
 
             # if an id is passed in as an argument then preselect this radio button
             # this is used in edit tournament view because the user already has selected a tournament type
@@ -724,7 +756,7 @@ class TournamentsPage(ttk.Frame):
                 selected_type.set(current_type_id)
     
     # create tournament type subview
-    def open_add_type(self, parent_frame: ttk.Frame, selected_type: tk.StringVar):
+    def open_create_ttype(self, parent_frame: ttk.Frame, selected_type: tk.StringVar):
         # creating a small pop up window for data entry
         # blocking action on other windows, and blocking window closure using red x
         win = tk.Toplevel(self)
@@ -732,6 +764,11 @@ class TournamentsPage(ttk.Frame):
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
+        # forcing the window to appear on top only if parent is inherited: from tournament settings not creation
+        if parent_frame:
+            win.transient(parent_frame) 
+            win.lift()
+            win.focus_force()
 
         # functions to clear the textfield when command backspace pressed
         def clear_field1(event=None):
@@ -740,22 +777,22 @@ class TournamentsPage(ttk.Frame):
             field2.delete(0, tk.END)
 
         # text box for the default number of continuers
-        ttk.Label(win, text="Default Continuers:").grid(row=0, column=0, padx=(0,10), pady=(16,8), sticky="e")
-        field1 = ttk.Entry(win)
+        ttk.Label(win, text="Default Continuers:").grid(row=0, column=0, padx=(0,5), pady=(16,8), sticky="e")
+        field1 = ttk.Entry(win, width=10)
         field1.grid(row=0, column=1, padx=(5,20), pady=(16,8))
         field1.bind("<Escape>", lambda e: win.focus())
         field1.bind("<Command-BackSpace>", clear_field1)
 
         # text box for the number of grand prixs to be used per round
-        ttk.Label(win, text="Number of Grand Prix:").grid(row=1, column=0, padx=(20,10), pady=8, sticky="e")
-        field2 = ttk.Entry(win)
+        ttk.Label(win, text="Number of Grand Prix:").grid(row=1, column=0, padx=(20,5), pady=8, sticky="e")
+        field2 = ttk.Entry(win, width=10)
         field2.grid(row=1, column=1, padx=(5,20), pady=8)
         field2.bind("<Escape>", lambda e: win.focus())
         field2.bind("<Command-BackSpace>", clear_field2)
 
         # check box whether the tournament is normal or longer style
         longer_var = tk.BooleanVar()
-        ttk.Checkbutton(win, text="Longer Style", variable=longer_var).grid(row=2, column=1)
+        ttk.Checkbutton(win, text="Longer Style", variable=longer_var, padding=(3,0,0,0)).grid(row=2, column=0, columnspan=2, pady=(5,0))
 
         # function called when user clicks save
         def create_type():
@@ -801,14 +838,15 @@ class TournamentsPage(ttk.Frame):
 
         # buttons to cancel or create
         # cancel closes this window, and create runs the above function
-        # when hovers over, the text is underlined
-        cancel_btn = ttk.Button(win, text="Cancel", command=win.destroy, style="UnHover.TButton", cursor="mouse")
-        cancel_btn.grid(row=3, column=0, padx=(20,0), pady=(10,16), ipadx=10, sticky="w")
-        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+        AnimatedButton(
+            win, text="Cancel", command=win.destroy,
+            width=100, base_colour=FC.base, hover_colour=FC.cancel
+        ).grid(row=3, column=0, padx=(15,0), pady=15, sticky="w")
 
-        create_btn = ttk.Button(win, text="Save", command=create_type, style="UnHoverSubmit.TButton", cursor="mouse")
-        create_btn.grid(row=3, column=1, padx=(0,20), pady=(10,16), ipadx=10, sticky="e")
-        self.controller.make_hoverable_btn(create_btn, "HoverSubmit", "UnHoverSubmit")
+        AnimatedButton(
+            win, text="Create", command=create_type, hover_cursor="mouse",
+            width=100, base_colour=FC.green[0], hover_colour=FC.green[1]
+        ).grid(row=3, column=1, padx=(0,15), pady=15, sticky="e")
 
     # builds the list of accounts for tournament creator/editor
     def build_accounts_section(self, t_id: str, parent: ttk.Frame, delete_mode: bool = False):
@@ -819,7 +857,8 @@ class TournamentsPage(ttk.Frame):
         # function to confirm user intends to delete the account
         def confirm_delete(account_id: str, username: str):
             # showing the message box
-            confirmed = messagebox.askyesno("Delete Account", f"Are you sure you want to delete the account for '{username}'?")
+            # default is no, which is the prominent option (highlighted in blue)
+            confirmed = messagebox.askyesno("Delete Account", f"Are you sure you want to delete the account for '{username}'?", default="no")
             if confirmed:
                 # if they say yes then delete the account
                 did_work = self.controller.db.delete_account(account_id)
@@ -841,7 +880,8 @@ class TournamentsPage(ttk.Frame):
         # frame for the title
         header_frame = ttk.Frame(parent)
         header_frame.pack(fill="x", pady=(0, 5))
-        ttk.Label(header_frame, text="Username", font=("TkDefaultFont", 10, "bold")).pack(anchor="w", padx=10)
+        # titled Username, with bold font
+        ttk.Label(header_frame, text="Username", font=FS.base_b).pack(anchor="w", padx=10)
 
         # getting list of all accounts in the tournament
         accounts = self.controller.db.read_tournament_accounts(t_id)
@@ -852,33 +892,33 @@ class TournamentsPage(ttk.Frame):
             account_id = a[0]
             username = a[2]
 
-            # if delete mode is on then text colour should be red and underlined
+            # if delete mode is on
             if delete_mode:
+                # text colour should be red and underlined
                 # binding button to show confirmation
-                lbl = ttk.Label(parent, text=username, font=("TkDefaultFont", 10, "underline"), foreground="#df3832", cursor="hand2")
+                lbl = ttk.Label(parent, text=username, font=FS.base_u, foreground=FC.red[1], cursor="hand2")
                 lbl.bind("<Button-1>", lambda e, a_id=account_id, u=username: confirm_delete(a_id, u))
             else:
                 # otherwise listing the username
-                lbl = ttk.Label(parent, text=username, font=("TkDefaultFont", 10))
+                lbl = ttk.Label(parent, text=username)
             lbl.pack(anchor="w", padx=20, pady=2)
         
         # frame for action buttons
         btn_frame = ttk.Frame(parent)
         btn_frame.pack(fill="x", pady=(10, 5))
 
-        # settings the button title and styling if in delete mode or not
-        minus_style = "HoverDelete.TButton" if delete_mode else "UnHover.TButton"
+        # settings the button title, styling and cursor for the delete account button depending on whether delete mode is active
+        minus_style = "Red.TButton" if delete_mode else "TButton"
         minus_text = "Done" if delete_mode else "-"
+        minus_cursor = "arrow" if delete_mode else "pirate"
         
         # if more than 1 account then the edit button is shown to allow user to delete accounts
         if len(accounts) > 1:
-            minus_btn = ttk.Button(btn_frame, text=minus_text, command=lambda: self.build_accounts_section(t_id, parent, not delete_mode), style=minus_style, cursor="pirate")
-            minus_btn.pack(side="left", padx=5)
+            ttk.Button(btn_frame, text=minus_text, command=lambda: self.build_accounts_section(t_id, parent, not delete_mode), style=minus_style, cursor=minus_cursor).pack(side="left", padx=5)
 
         # if not in edit mode then show the add button to create an account
         if not delete_mode:
-            add_btn = ttk.Button(btn_frame, text="+", command=lambda: self.open_create_account(t_id, parent), style="UnHover.TButton", cursor="plus")
-            add_btn.pack(side="right", padx=5)
+            ttk.Button(btn_frame, text="+", command=lambda: self.open_create_account(t_id, parent), cursor="crosshair").pack(side="right", padx=5)
 
     # function to open the create account view
     def open_create_account(self, t_id: str, parent_frame: ttk.Frame | None = None):
@@ -889,6 +929,10 @@ class TournamentsPage(ttk.Frame):
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
+        # forcing the window to appear on top, using inherited parent if from settings, else if from tournament creation using main view as parent
+        win.transient(parent_frame if parent_frame else self.controller) 
+        win.lift()
+        win.focus_force()
 
         # functions to clear the textfield when command backspace pressed
         def clear_uname(event=None):
@@ -900,23 +944,23 @@ class TournamentsPage(ttk.Frame):
 
         # text box for username
         # binding escape to deselect field
-        ttk.Label(win, text="Username:").grid(row=0, column=0, padx=(30,10), pady=(16,8), sticky="e")
+        ttk.Label(win, text="Username:").grid(row=0, column=0, padx=(20,10), pady=(16,8), sticky="e")
         uname = ttk.Entry(win)
-        uname.grid(row=0, column=1, padx=(5,30), pady=(16,8))
+        uname.grid(row=0, column=1, padx=(5,20), pady=(16,8))
         uname.bind("<Escape>", lambda e: win.focus())
         uname.bind("<Command-BackSpace>", clear_uname)
 
         # text box for password
-        ttk.Label(win, text="Password:").grid(row=1, column=0, padx=(30,10), pady=8, sticky="e")
+        ttk.Label(win, text="Password:").grid(row=1, column=0, padx=(20,10), pady=8, sticky="e")
         pword1 = ttk.Entry(win)
-        pword1.grid(row=1, column=1, padx=(5,30), pady=8)
+        pword1.grid(row=1, column=1, padx=(5,20), pady=8)
         pword1.bind("<Escape>", lambda e: win.focus())
         pword1.bind("<Command-BackSpace>", clear_pword)
 
         # text box to reenter password (double entry validation)
-        ttk.Label(win, text="Reenter Password:").grid(row=2, column=0, padx=(30,10), pady=8, sticky="e")
+        ttk.Label(win, text="Reenter Password:").grid(row=2, column=0, padx=(20,10), pady=8, sticky="e")
         pword2 = ttk.Entry(win)
-        pword2.grid(row=2, column=1, padx=(5,30), pady=8)
+        pword2.grid(row=2, column=1, padx=(5,20), pady=8)
         pword2.bind("<Escape>", lambda e: win.focus())
         pword2.bind("<Command-BackSpace>", clear_pword2)
 
@@ -976,14 +1020,15 @@ class TournamentsPage(ttk.Frame):
 
         # buttons to cancel or create account
         # cancel closes this window, and create runs the above function
-        # when hovers over, the text is underlined
-        cancel_btn = ttk.Button(win, text="Cancel", command=win.destroy, style="UnHover.TButton", cursor="mouse")
-        cancel_btn.grid(row=3, column=0, padx=(30,0), pady=(10,16), ipadx=10, sticky="w")
-        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+        AnimatedButton(
+            win, text="Cancel", command=win.destroy,
+            width=100, base_colour=FC.base, hover_colour=FC.cancel
+        ).grid(row=3, column=0, padx=20, pady=(10,15), sticky="w")
 
-        create_btn = ttk.Button(win, text="Create", command=create_account, style="UnHoverSubmit.TButton", cursor="mouse")
-        create_btn.grid(row=3, column=1, padx=(0,30), pady=(10,16), ipadx=10, sticky="e")
-        self.controller.make_hoverable_btn(create_btn, "HoverSubmit", "UnHoverSubmit")
+        AnimatedButton(
+            win, text="Create", command=create_account, hover_cursor="mouse",
+            width=100, base_colour=FC.green[0], hover_colour=FC.green[1]
+        ).grid(row=3, column=1, padx=20, pady=(10,15), sticky="e")
 
     # function to open the login view for a tournament
     def open_login(self, t_id: str):
@@ -994,6 +1039,10 @@ class TournamentsPage(ttk.Frame):
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
+        # forcing the window to appear on top, using parent tournament overview
+        win.transient(self.t_overview_win) 
+        win.lift()
+        win.focus_force()
 
         # functions to clear the textfield when command backspace pressed
         def clear_uname(event=None):
@@ -1026,7 +1075,7 @@ class TournamentsPage(ttk.Frame):
             else:
                 pword.config(show="*")
         # storing value to the variable above, when check selected variable is 1, when deselected variable is 0
-        checkbutton = tk.Checkbutton(win, text="Show Password", variable=check_selection, onvalue=1, offvalue=0, command=toggle_pwd)
+        checkbutton = tk.Checkbutton(win, text="Show Password", variable=check_selection, onvalue=1, offvalue=0, command=toggle_pwd, padx=3)
         checkbutton.grid(row=2, column=1)
 
         # attempting to log the user in
@@ -1052,14 +1101,15 @@ class TournamentsPage(ttk.Frame):
 
         # buttons to cancel or login
         # cancel closes this window, and login runs the above function
-        # when hovers over, the text is underlined
-        cancel_btn = ttk.Button(win, text="Cancel", command=win.destroy, style="UnHover.TButton", cursor="mouse")
-        cancel_btn.grid(row=3, column=0, padx=(20,0), pady=(10,16), ipadx=10, sticky="e")
-        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+        AnimatedButton(
+            win, text="Cancel", command=win.destroy,
+            width=100, base_colour=FC.base, hover_colour=FC.cancel
+        ).grid(row=3, column=0, padx=(15,0), pady=(10,15), sticky="w")
 
-        login_btn = ttk.Button(win, text="Login", command=login, style="UnHoverSubmit.TButton", cursor="mouse")
-        login_btn.grid(row=3, column=1, padx=(0,20), pady=(10,16), ipadx=10, sticky="e")
-        self.controller.make_hoverable_btn(login_btn, "HoverSubmit", "UnHoverSubmit")
+        AnimatedButton(
+            win, text="Login", command=login, hover_cursor="mouse",
+            width=100, base_colour=FC.green[0], hover_colour=FC.green[1]
+        ).grid(row=3, column=1, padx=15, pady=(10,15), sticky="e")
 
     # refreshing tournaments list when tournament is created, finished or is being sorted
     def refresh_tournaments(self):
@@ -1130,19 +1180,37 @@ class TournamentsPage(ttk.Frame):
 
         # iterating over all results with start index 1 to account for header row
         for i, row in enumerate(results, start=1):
-            # alternating background colour for row
-            bg = "#f0f0f0" if i % 2 == 0 else "#d9d9d9"
+            # alternating background colour for row (stripe effect)
+            original_bg = FC.base if i % 2 == 0 else FC.base_d
 
-            # Date column
-            date_label = tk.Label(self.results_frame, text=row[1], width=32, anchor="center", bg=bg, pady=4)
+            # date column
+            date_label = tk.Label(self.results_frame, text=row[1], width=32, anchor="center", bg=original_bg, pady=6)
             date_label.grid(row=i, column=0, pady=2)
 
-            # Winner column
-            # fetching winner and displaying name otherwise dash if no winner
+            # winner column
             winner = self.controller.db.read_tournament_winner(row[0])
+            # fetching winner and displaying name otherwise dash if no winner
             winner_text = winner[1] if winner else "—"
-            winner_label = tk.Label(self.results_frame, text=winner_text, width=32, anchor="center", bg=bg, pady=4)
+            winner_label = tk.Label(self.results_frame, text=winner_text, width=32, anchor="center", bg=original_bg, pady=6)
             winner_label.grid(row=i, column=1, pady=2)
+            
+            # this function changes both labels bg to the hover colour
+            def on_enter(e, d=date_label, w=winner_label):
+                d.config(bg=FC.hover)
+                w.config(bg=FC.hover)
+
+            # this function changes both labels bg to the original colour
+            def on_leave(e, d=date_label, w=winner_label, orig=original_bg):
+                d.config(bg=orig)
+                w.config(bg=orig)
+
+            # binding hover for both labels to call on_enter
+            date_label.bind("<Enter>", on_enter)
+            winner_label.bind("<Enter>", on_enter)
+            # binding unhover for both labels to call on_enter
+            date_label.bind("<Leave>", on_leave)
+            winner_label.bind("<Leave>", on_leave)
+            # because the labels have seperate backgrounds, when hover over either label both bacgrounds are updated
 
             # clicking any column opens tournament overview
             date_label.bind("<Button-1>", lambda e, t_id=row[0]: self.open_tournament_overview(t_id))
@@ -1175,10 +1243,8 @@ class TournamentsPage(ttk.Frame):
         def logout():
             # set status to logged out and then reopen tournament overview
             self.login_status[t_id] = (False, None)
-
             # showing message saying success
             messagebox.showinfo("title", "Logged out")
-
             win.destroy()
             self.open_tournament_overview(t_id)
 
@@ -1187,21 +1253,24 @@ class TournamentsPage(ttk.Frame):
         # if user is logged in
         if login_data[0]:
             # text showing who is logged in
+            ttk.Label(win, text=f"Logged in as {login_data[1]}").grid(row=0, column=0, columnspan=2, padx=10, pady=(8,4))
             # button for user to logout
-            ttk.Label(win, text=f"Logged in as {login_data[1]}").grid(row=0, column=0, columnspan=2, padx=10, pady=8)
-            logout_btn = ttk.Button(win, text="Logout", command=logout, cursor="pirate", style="UnHover.TButton")
-            logout_btn.grid(row=1, column=0, columnspan=2, padx=10, pady=8, ipadx=20)
-            self.controller.make_hoverable_btn(logout_btn, "Hover", "UnHover")
+            AnimatedButton(
+                win, text="Logout", command=logout,
+                base_colour=FC.base, hover_colour=FC.logout, hover_cursor="pirate"
+            ).grid(row=1, column=0, columnspan=2, pady=5)
         else:
             # if user is logged out then show button to login
-            login_btn = ttk.Button(win, text="Login", command=lambda: self.open_login(t_id), cursor="spraycan", style="UnHover.TButton")
-            login_btn.grid(row=0, column=0, columnspan=2, padx=10, pady=8, ipadx=20)
-            self.controller.make_hoverable_btn(login_btn, "Hover", "UnHover")
+            AnimatedButton(
+                win, text="Login", command=lambda: self.open_login(t_id),
+                base_colour=FC.red[0], hover_colour=FC.red[1], hover_cursor="mouse"
+            ).grid(row=0, column=0, columnspan=2, pady=(12,5))
 
         # button to open brackets
-        brackets_btn = ttk.Button(win, text="Brackets", command=lambda: open_brackets(login_data), style="UnHoverSubmit.TButton", cursor="mouse")
-        brackets_btn.grid(row=2, column=0, columnspan=2, padx=10, pady=8, ipadx=20)
-        self.controller.make_hoverable_btn(brackets_btn, "HoverSubmit", "UnHoverSubmit")
+        AnimatedButton(
+            win, text="Brackets", command=lambda: open_brackets(login_data),
+            base_colour=FC.blue[0], hover_colour=FC.blue[1], hover_cursor="mouse"
+        ).grid(row=2, column=0, columnspan=2, pady=5)
 
         # displaying info about the tournament
         ttk.Label(win, text="Date:").grid(row=3, column=0, padx=(20,10), pady=8, sticky="e")
@@ -1213,9 +1282,18 @@ class TournamentsPage(ttk.Frame):
         # checking if there is a winner
         winner = self.controller.db.read_tournament_winner(t_id)
         if winner:
+            # function to go to statistics view for player analysis on the tournament winner
+            def goToWinner(w: tuple[str, str, str, int]):
+                self.controller.open_statistics_player(w)
+                win.destroy()
+
             # if winner then displaying the name
             ttk.Label(win, text="Winner:").grid(row=5, column=0, padx=(20,10), pady=8, sticky="e")
-            ttk.Label(win, text=winner[1]).grid(row=5, column=1, padx=(5,10), pady=8, sticky="w")
+            winner_label = ttk.Label(win, text=winner[1], foreground=FC.winner)
+            winner_label.grid(row=5, column=1, padx=(5,10), pady=8, sticky="w")
+            # binding the label click to open statistics
+            winner_label.bind("<Button-1>", lambda e, w=winner: goToWinner(w))
+            self.controller.make_hoverable(winner_label)
         else:
             # if no winner then displaying other details
             total_count = self.controller.db.get_player_count_in_tournament(t_id)
@@ -1229,20 +1307,22 @@ class TournamentsPage(ttk.Frame):
             ttk.Label(win, text="Players eliminated:").grid(row=7, column=0, padx=(20,10), pady=8, sticky="e")
             ttk.Label(win, text=eliminated_count).grid(row=7, column=1, padx=(5,10), pady=8, sticky="w")
 
-        # action buttons
-        back_btn = ttk.Button(win, text="Back", command=win.destroy, style="UnHover.TButton")
-        back_btn.grid(row=8, column=0, padx=(20,0), pady=8, ipadx=10, sticky="w")
-        self.controller.make_hoverable_btn(back_btn, "Hover", "UnHover")
+        # back button to close window
+        AnimatedButton(
+            win, text="Back", command=win.destroy,
+            width=80, base_colour=FC.base, hover_colour=FC.back
+        ).grid(row=8, column=0, pady=(10,15), padx=(15,0), sticky="w")
 
         # if user is logged in then show settings button
         if login_data[0]:
-            settings_btn = ttk.Button(win, text="Settings", command=open_settings, style="UnHover.TButton", cursor="spraycan")
-            settings_btn.grid(row=8, column=1, padx=(5,20), pady=8, ipadx=5, sticky="w")
-            self.controller.make_hoverable_btn(settings_btn, "Hover", "UnHover")
+            AnimatedButton(
+                win, text="Settings", command=open_settings, hover_cursor="spraycan",
+                width=100, base_colour=FC.base, hover_colour=FC.dblue[1]
+            ).grid(row=8, column=1, pady=(10,15), padx=(0,15), sticky="w")
         else:
             # otherwise show a spacer
             spacer = tk.Frame(win, width=96, height=1)
-            spacer.grid(row=8, column=1, padx=(5,20), pady=8, sticky="w")
+            spacer.grid(row=8, column=1, padx=(0,20), pady=8, sticky="w")
 
     # building brackets container view
     def open_tournament_brackets(self, t_id: str, login_data: tuple[bool, str | None]):
@@ -1337,17 +1417,21 @@ class TournamentsPage(ttk.Frame):
             if current_r_count < 4 and current_p_count == 4:
                 # if user is logged in then show input button
                 if login_data[0]:
-                    ttk.Button(round_frame, text=f"Input race result {current_r_count+1}/4", command=lambda: self.open_input_race_results(gp_id, t_id)).pack(fill="x", padx=5, pady=5)
+                    AnimatedButton(
+                        round_frame, text=f"Input race result {current_r_count+1}/4", command=lambda: self.open_input_race_results(gp_id, t_id),
+                        width=170, base_colour=FC.base, hover_colour=FC.dblue[0]
+                    ).pack(fill="x", padx=5, pady=(0,10))
                 else:
                     # otherwise just show the status - number of races complete
-                    ttk.Label(round_frame, text=f"{current_r_count}/4 Races Complete").pack(fill="x", padx=5, pady=5)
+                    ttk.Label(round_frame, text=f"{current_r_count}/4 Races Complete").pack(fill="x", padx=5, pady=(0,10))
 
         # iteration over the rounds
         for col, rn in enumerate(rounds_joined):
             # title for round name
             title = f"Round {rn}" if rn != 999 else "Final"
-            # creating the box frame for the players, with white background to override the default off white with the label frame, and set the title to bold
-            round_frame = tk.LabelFrame(self.brackets_container, text=title, bg="#FFFFFF", font=("TkDefaultFont", 10, "bold"))
+            # creating the box frame for the players, with white background to override the default off white with the label frame
+            # caption font style which is smaller and bold
+            round_frame = tk.LabelFrame(self.brackets_container, text=title, bg=FC.white, font=FS.caption)
             round_frame.grid(row=0, column=col, padx=40, pady=20, sticky="n")
 
             # building the brackets for each round
@@ -1378,17 +1462,20 @@ class TournamentsPage(ttk.Frame):
             # if there is a winner then show the name
             # binding the name to open statistics view with the player data
             # making the label clickable and showing the underline on hover
-            winner_label = ttk.Label(self.brackets_container, text=f"Winner: {winner[1]}", font=("TkDefaultFont", 12, "bold"))
-            winner_label.grid(row=1, column=len(rounds_joined)//2, pady=20)
+            winner_label = ttk.Label(self.brackets_container, text=f"Winner: {winner[1]}", font=FS.base2_b)
+            winner_label.grid(row=1, column=len(rounds_joined)//2, pady=(20,0))
             winner_label.bind("<Button-1>", lambda e, w=winner: goToWinner(w))
-            self.controller.make_hoverable(winner_label, size=12, weight="bold")
+            self.controller.make_hoverable(winner_label)
 
         def go_back():
             self.open_tournament_overview(t_id)
             self.bracket_win.destroy()
         
         # button to go back to tournament overview
-        ttk.Button(self.brackets_container, text="Back", command=go_back).grid(row=2, column=0, padx=20, pady=20, sticky="w")
+        AnimatedButton(
+            self.brackets_container, text="Back", command=go_back,
+            width=80, base_colour=FC.base, hover_colour=FC.back
+        ).grid(row=2, column=0, pady=20, padx=20, sticky="w")
 
     # refreshing the brackets after grand prix result input
     def refresh_brackets(self, t_id: str):
@@ -1403,6 +1490,10 @@ class TournamentsPage(ttk.Frame):
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
+        # forcing the window to appear on top, using parent brackets window
+        win.transient(self.bracket_win) 
+        win.lift()
+        win.focus_force()
 
         # getting all the circuit names
         # mapping all the circuit names to the circuit
@@ -1434,7 +1525,7 @@ class TournamentsPage(ttk.Frame):
         for p in players:
             # creating a row frame to position the name and dropdown
             row_frame = ttk.Frame(inp_results_frame)
-            row_frame.pack(padx=30, fill="x")
+            row_frame.pack(padx=30, pady=2, fill="x")
 
             # name label and the dropdown box
             # width 5 as only numbers in the dropdown
@@ -1488,15 +1579,19 @@ class TournamentsPage(ttk.Frame):
 
         # action buttons
         bottom_bar = ttk.Frame(win)
-        bottom_bar.pack(fill="x", pady=(6,12))
+        bottom_bar.pack(fill="x")
 
-        cancel_btn = ttk.Button(bottom_bar, text="Cancel", command=win.destroy, style="UnHover.TButton")
-        cancel_btn.pack(side="left", padx=10)
-        self.controller.make_hoverable_btn(cancel_btn, "Hover", "UnHover")
+        # cancel button to close input view
+        AnimatedButton(
+            bottom_bar, text="Cancel", command=win.destroy,
+            width=90, base_colour=FC.base_l, hover_colour=FC.cancel
+        ).pack(pady=(10,15), padx=10, side="left")
 
-        submit_btn = ttk.Button(bottom_bar, text="Insert Resuts", command=insert_results, style="UnHoverSubmit.TButton")
-        submit_btn.pack(side="right", padx=10)
-        self.controller.make_hoverable_btn(submit_btn, "HoverSubmit", "UnHoverSubmit")
+        # insert results button which first validates the input
+        AnimatedButton(
+            bottom_bar, text="Insert Resuts", command=insert_results, hover_cursor="mouse",
+            width=130, base_colour=FC.green[0], hover_colour=FC.green[1]
+        ).pack(pady=(10,15), padx=10, side="right")
 
     # opens subview to input grand prix results
     def open_input_gp_results(self, gp_id: str, t_id: str):
@@ -1505,6 +1600,10 @@ class TournamentsPage(ttk.Frame):
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
+        # forcing the window to appear on top, using parent brackets window
+        win.transient(self.bracket_win) 
+        win.lift()
+        win.focus_force()
 
         # getting list of players in the grand prix
         players = self.controller.db.read_grand_prix_players(gp_id)
@@ -1517,7 +1616,7 @@ class TournamentsPage(ttk.Frame):
         for p in players:
             # creating a row frame to position the name and dropdown
             row_frame = ttk.Frame(inp_results_frame)
-            row_frame.pack(padx=30, fill="x")
+            row_frame.pack(padx=30, pady=2, fill="x")
 
             # name label and the dropdown box
             # width 5 as only numbers in the dropdown
@@ -1573,7 +1672,8 @@ class TournamentsPage(ttk.Frame):
             win.destroy()
             self.refresh_brackets(t_id)
 
-        # complete button
-        complete_btn = ttk.Button(win, text="Complete Grand Prix", command=save_gp_results, style="UnHoverSubmit.TButton")
-        complete_btn.pack(padx=10, pady=(6,12))
-        self.controller.make_hoverable_btn(complete_btn, "HoverSubmit", "UnHoverSubmit")
+        # complete button which first validates the data
+        AnimatedButton(
+            win, text="Complete Grand Prix", command=save_gp_results, hover_cursor="mouse",
+            width=200, base_colour=FC.green[0], hover_colour=FC.green[1]
+        ).pack(pady=(10,15))

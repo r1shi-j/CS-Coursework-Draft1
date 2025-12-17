@@ -1,7 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
-from tooltip import create_tooltip
-# importing tooltip to show the circuit cover on hover
+from Utilities.tooltip import create_tooltip
+from Utilities.FontStyling import Colours as FC
+# importing relevant tkinter packages
+# importing tooltip to show the circuit cover on hovern
+# importing FontStyling to use custom colours
 
 class CircuitsPage(ttk.Frame):
     def __init__(self, parent: ttk.Frame, controller):
@@ -13,25 +16,31 @@ class CircuitsPage(ttk.Frame):
     def build_view(self):
         self.form_frame = ttk.Frame(self)
         self.form_frame.pack()
-        
-        # creating the title
-        title_frame = ttk.Frame(self.form_frame)
-        title_frame.pack(pady=(10, 5))
-        ttk.Label(title_frame, text="Circuits Dashboard", font=("TkDefaultFont", 14, "bold")).pack()
 
         # creating the search bar frame
         search_frame = ttk.Frame(self.form_frame)
-        search_frame.pack(pady=(5, 10))
+        search_frame.pack(pady=(15, 8))
 
         # subtitle, search field and clear button
         # binding keyboard buttons to clear and unfocus search field, with every keypress triggering a search for real time searching
-        ttk.Label(search_frame, text="Search circuits:").pack(side="left", padx=5)
+        # using subtitle style to get font size 12
+        ttk.Label(search_frame, text="Search circuits:", style="Subtitle.TLabel").pack(side="left", padx=5)
         self.search_field = ttk.Entry(search_frame, width=20)
         self.search_field.pack(side="left", padx=5)
         self.search_field.bind("<KeyRelease>", self.search_circuits)
         self.search_field.bind("<Command-BackSpace>", self.clear_entry)
         self.search_field.bind("<Escape>", lambda e: self.search_field.focus_set() or self.focus())
-        ttk.Button(search_frame, text="⌫", width=2, command=self.remove_search, cursor="pirate").pack(side="left", padx=5)
+        # clear search button as a label so can add styling
+        clear_search = ttk.Label(search_frame, text="⌫", width=2)
+        clear_search.pack(side="left", padx=5)
+
+        # binding hover and unhover to change the colour to red on hover
+        def on_enter(e): clear_search.config(foreground=FC.red[1])
+        def on_leave(e): clear_search.config(foreground=FC.black)
+        clear_search.bind("<Enter>", on_enter)
+        clear_search.bind("<Leave>", on_leave)
+        # binding clicking on the label to call remove search function
+        clear_search.bind("<Button-1>", self.remove_search)
 
         # creating the scroll container
         container = ttk.Frame(self)
@@ -74,7 +83,8 @@ class CircuitsPage(ttk.Frame):
         # name is underlined on hover
         for row in results:
             name = ttk.Label(self.results_frame, text=row[1], anchor="center")
-            name.pack(pady=(5 if results.index(row) != len(results)-1 else (5,20)))
+            # padding of 4 between each row, this is 1 greater than in player view, because each text opens a tip, don't want them to be too close together
+            name.pack(pady=(4 if results.index(row) != len(results)-1 else (4,20)))
             name.bind("<Button-1>", lambda e, r=row: self.controller.open_statistics_circuit(r))
             self.controller.make_hoverable(name)
             create_tooltip(name, row[1], False)
@@ -105,6 +115,6 @@ class CircuitsPage(ttk.Frame):
         self.show_results(results)
 
     # when the clear search button pressed, clear the textbox and then load all circuits
-    def remove_search(self):
+    def remove_search(self, event):
         self.clear_entry()
         self.show_results(self.controller.db.read_circuit_data())
