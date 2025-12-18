@@ -15,7 +15,7 @@ def show_error_message(exc_type, exc_value, exc_traceback):
         # creating new window and showing error message
         temp_root = tk.Tk()
         temp_root.withdraw()
-        messagebox.showerror("Critical Error", f"An error occurred:\n\n{error_details}", master=temp_root)
+        messagebox.showerror("Critical Error", f"An error occurred:\n\n{error_details}", parent=temp_root)
         temp_root.destroy()
     else:
         # showing error message
@@ -30,7 +30,6 @@ if __name__ == "__main__":
     app.mainloop()
 
 # split long lines up
-# implement full type hint (vscode build in)
 #* 2D Array
 
 # FOR DEMO

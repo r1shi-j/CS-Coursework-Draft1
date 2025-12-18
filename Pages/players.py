@@ -258,7 +258,7 @@ class PlayersPage(ttk.Frame):
         # text box for age, prefilling with the original data
         ttk.Label(win, text="Age:").grid(row=2, column=0, padx=(15,10), pady=8, sticky="e")
         age_entry = ttk.Entry(win)
-        age_entry.insert(0, player[3])
+        age_entry.insert(0, str(player[3]))
         age_entry.grid(row=2, column=1, columnspan=2, padx=(5,20), pady=8)
         age_entry.bind("<Escape>", lambda e: win.focus())
         age_entry.bind("<Command-BackSpace>", clear_age)

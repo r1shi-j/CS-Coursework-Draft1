@@ -16,7 +16,7 @@ def create_tooltip(widget: AnimatedButton | ttk.Label, text: str, is_stats: bool
 
 # Class to show a tip over a button
 class ToolTip:
-    def __init__(self, widget: ttk.Button | ttk.Label, text: str, is_stats: bool):
+    def __init__(self, widget: AnimatedButton | ttk.Label, text: str, is_stats: bool):
         self.widget = widget
         self.text = text
         self.is_stats = is_stats

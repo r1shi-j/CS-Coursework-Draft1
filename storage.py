@@ -8,6 +8,7 @@ from datetime import datetime
 # uuid to generate unique identifiers
 # hashlib to encode password as a hash
 # datetime to convert string dates when sorting dates
+import tkinter
 
 # function to generate a UUID
 def create_uuid() -> str:
@@ -19,7 +20,7 @@ PAPER_CIRCUITS = ["Mario Kart Stadium", "Water Park", "Sweet Sweet Canyon", "Thw
 class Database:
     # MARK: - Initialisation
     # setting up connection
-    def __init__(self, filename="tournament.db"):
+    def __init__(self, filename:str="tournament.db"):
         try:
             if os.path.isfile(filename):
                 self.connection = sqlite3.connect(filename)
@@ -28,7 +29,7 @@ class Database:
             else:
                 raise FileNotFoundError
         except Exception as e:
-            print("Database not found: ", e)
+            print("Database not found: ", e, type(e))
             quit(0)
 
     # creating all the tables if they don't exist
@@ -170,12 +171,12 @@ class Database:
     # MARK: - Tournaments
 
     # reads all tournament data
-    def read_tournament_data(self) -> list[tuple]:
+    def read_tournament_data(self) -> list[tuple[str, str, int, str]]:
         self.cursor.execute("SELECT * FROM Tournament;")
         return self.cursor.fetchall()
     
     # bubble sort on tournaments
-    def sort_tournaments(self, options: tuple[str, str]) -> list[tuple]:
+    def sort_tournaments(self, options: tuple[str, str]) -> list[tuple[str, str, int, str]]:
         # reading all tournaments, the list to sort
         t = self.read_tournament_data()
 
@@ -196,7 +197,7 @@ class Database:
         # recursive quicksort function
         # data: the list of tuples to sort
         # key_func: a function that extracts the value to compare (e.g., date or winner name)
-        def quick_sort(data: list[tuple], key_func) -> list[tuple]:
+        def quick_sort(data: list[tuple[str, str, int, str]], key_func) -> list[tuple[str, str, int, str]]:
             # base case: A list of 0 or 1 elements is already sorted
             if len(data) <= 1:
                 return data
@@ -235,7 +236,7 @@ class Database:
                 else:
                     middle.append(item) # equal to pivot
 
-            # recursive Step: sort left and right, then combine
+            # recursive step: sort left and right, then combine
             return quick_sort(left, key_func) + middle + quick_sort(right, key_func)
 
         # if the field to sort is date
@@ -249,7 +250,7 @@ class Database:
 
             return sorted_list
         
-        elif options[0] == "Winner":
+        else:
             # empty arrays for list of tournaments with winners and without winners (incomplete tournaments)
             with_winners = []
             without_winners = []
@@ -288,7 +289,7 @@ class Database:
         self.connection.commit()
     
     # creating the grand prixs for a new tournament and adding the respective players to them
-    def create_gps_for_tournament(self, t_id: str, players: list[tuple]):
+    def create_gps_for_tournament(self, t_id: str, players: list[tuple[str, str, str, int]]):
         starter_ids = [create_uuid(), create_uuid(), create_uuid(), create_uuid()]
         # creating the new grand prixs for all the different brackets
         self.cursor.execute("INSERT INTO GrandPrix (grandprix_id, tournament_id, round, inverse, bracket, continuers) VALUES (?, ?, ?, ?, ?, ?)", (starter_ids[0], t_id, 1, False, 1, 2))
@@ -307,17 +308,17 @@ class Database:
         for p in players[12:16]: self.add_player_to_gp(starter_ids[3], p[0], None)
 
     # adds a player to a grand prix
-    def add_player_to_gp(self, gp_id: str, p_id: str, res: int):
+    def add_player_to_gp(self, gp_id: str, p_id: str, res: int | None):
         self.cursor.execute("INSERT INTO GrandPrixParticipation (grandprix_id, player_id, grandprix_result) VALUES (?, ?, ?)", (gp_id, p_id, res))
         self.connection.commit()
 
     # updates a tournament with the changes
-    def update_tournament(self, t_id, date: str, p_count: int, ttype_id: str):
+    def update_tournament(self, t_id: str, date: str, p_count: int, ttype_id: str):
         self.cursor.execute("UPDATE Tournament SET date = ?, player_count = ?, tournament_type_id = ? WHERE tournament_id = ?", (date, p_count, ttype_id, t_id))
         self.connection.commit()
 
     # reading all the tournament types
-    def read_tournament_types(self) -> list[tuple]:
+    def read_tournament_types(self) -> list[tuple[str, int, int, bool]]:
         self.cursor.execute("SELECT * FROM TournamentType;")
         return self.cursor.fetchall()
     
@@ -338,7 +339,7 @@ class Database:
         self.connection.commit()
 
     # reading all the accounts in a tournament
-    def read_tournament_accounts(self, t_id: str) -> list[tuple]:
+    def read_tournament_accounts(self, t_id: str) -> list[tuple[str, str, str, str]]:
         self.cursor.execute("SELECT * FROM Account WHERE tournament_id = ?;", (t_id,))
         return self.cursor.fetchall()
     
@@ -381,7 +382,7 @@ class Database:
         return True if hashed == hash[0] else False
         
     # reading all the players in a tournament
-    def read_tournament_players(self, t_id: str) -> list[tuple]:
+    def read_tournament_players(self, t_id: str) -> list[tuple[str, str, str, int]]:
         self.cursor.execute("""
             SELECT p.player_id, p.forename, p.surname, p.age
             FROM TournamentParticipation tp
@@ -391,7 +392,7 @@ class Database:
         return self.cursor.fetchall()
 
     # reading a specific tournament
-    def read_tournament(self, t_id: str) -> tuple:
+    def read_tournament(self, t_id: str) -> tuple[str, str, int, str]:
         self.cursor.execute("SELECT * FROM Tournament WHERE tournament_id = ?;", (t_id,))
         return self.cursor.fetchone()
     
@@ -413,7 +414,7 @@ class Database:
             return False
 
     # reading all grand prixs in a specific tournament
-    def read_grand_prix(self, t_id: str) -> list[tuple]:
+    def read_grand_prix(self, t_id: str) -> list[tuple[str, int, bool, int, int]]:
         self.cursor.execute("""
             SELECT grandprix_id, round, inverse, bracket, continuers
             FROM GrandPrix
@@ -423,17 +424,17 @@ class Database:
         return self.cursor.fetchall()
     
     # reading all players in a grand prix
-    def read_grand_prix_players(self, gp_id: str) -> list[tuple]:
+    def read_grand_prix_players(self, gp_id: str) -> list[tuple[str, str, str, int]]:
         self.cursor.execute("SELECT * FROM Player WHERE player_id IN (SELECT player_id FROM GrandPrixParticipation WHERE grandprix_id = ?)", (gp_id,))
         return self.cursor.fetchall()
     
     # creating a race and adding all the players to it
-    def create_race(self, gp_id: str, c_id: str, players: list[tuple]):
+    def create_race(self, gp_id: str, c_id: str, player_results: list[tuple[str, int]]):
         # creating new id
         r_id = create_uuid()
         # creating the Race entry
         self.cursor.execute("INSERT INTO Race (race_id, grandprix_id, circuit_id) VALUES (?, ?, ?)", (r_id, gp_id, c_id))
-        for p in players:
+        for p in player_results:
             # adding the players to the race via RaceParticipation
             self.cursor.execute("INSERT INTO RaceParticipation (race_id, player_id, race_result) VALUES (?, ?, ?)", (r_id, p[0], p[1]))
         self.connection.commit()
@@ -457,7 +458,7 @@ class Database:
         except (TypeError, AttributeError):
             # if no value then can't subscript 
             print(f"Error: Tournament ID {t_id} not found.")
-            return ""
+            return -1
     
     # getting the current round in a tournament
     def get_current_round(self, t_id: str) -> int:
@@ -494,7 +495,7 @@ class Database:
 
         # if there is at elast 1 grand prix not finished
         if current_rounds:
-            # returning the smallest round number of grand prix that isnt finished
+            # returning the smallest round number of grand prix that isn't finished
             return min(current_rounds)
         else:
             # othewise returning the final round
@@ -512,7 +513,7 @@ class Database:
         gp_ids = self.cursor.fetchall()
 
         # players as an empty set
-        players = set()
+        players: set[str] = set()
 
         # for each grand prix in the tournament
         for gp in gp_ids:
@@ -520,7 +521,7 @@ class Database:
             if self.get_player_count_in_gp(gp[0]) == 4 and self.get_race_count_in_gp(gp[0]) == 4:
                 # add the losers to the set
                 losers = self.find_losers_for_gp(gp[0], False)
-                players.update([x for x in losers])
+                players.update(losers)
 
         # players now contains a list of all players that have been eliminated from each bracket
         # but as it is a set, it removes duplicates and so is a list of all people who have been eliminated
@@ -528,7 +529,7 @@ class Database:
         return len(players)
     
     # finds the winners for a grand prix
-    def find_winners_for_gp(self, gp_id: str, internal: bool) -> list[tuple]:
+    def find_winners_for_gp(self, gp_id: str, internal: bool) -> list[tuple[str, int]] | tuple[str, str, str, int]:
         # selects the continuers property for grand prix
         self.cursor.execute("""
             SELECT continuers
@@ -545,7 +546,9 @@ class Database:
         
         # if this is none then this is final gp, calculate winner if this is not called internally eg so from tournaments file
         if limit is None and not internal:
-            return self.calculate_tournament_winner(gp_id)
+            w = self.calculate_tournament_winner(gp_id)
+            if w: return w
+            else: return []
         else: limit = 2
         # return the top n people in the grand prix where n is found above
         self.cursor.execute("""
@@ -559,7 +562,7 @@ class Database:
         return self.cursor.fetchall()
     
     # finds the losers for a grand prix
-    def find_losers_for_gp(self, gp_id: str, internal: bool) -> list[tuple]:
+    def find_losers_for_gp(self, gp_id: str, internal: bool) -> list[str]:
         # fetching all player ids in a grand prix
         self.cursor.execute("""
             SELECT player_id
@@ -573,13 +576,14 @@ class Database:
         # fetching all winners in a grand prix
         winner = self.find_winners_for_gp(gp_id, internal)
         # if only 1 winner because final gp, it returns a tuple, so convert this to an array of tuples to match other data
-        if type(winner) == tuple: winner = [winner]
+        if type(winner) == tuple: winner2 = [winner]
+        elif type(winner) == list: winner2 = winner
         # set of all player ids for winners
-        winners = set([x[0] for x in winner])
+        winners = set([x[0] for x in winner2])
 
         # finding losers by the player ids that are not winners
         losers = players - winners
-        return losers
+        return list(losers)
     
     # finding the grand prix id for next round
     def find_next_gp_id(self, gp_id: str, t_id: str) -> str:
@@ -651,17 +655,17 @@ class Database:
                 return ""
     
     # inserting the grand prix results for players after grand prix finished
-    def insert_gp_results(self, gp_id: str, results: list[tuple]):
+    def insert_gp_results(self, gp_id: str, results: list[tuple[str, tkinter.StringVar]]):
         for p_id, var in results:
             self.cursor.execute("UPDATE GrandPrixParticipation SET grandprix_result = ? WHERE grandprix_id = ? AND player_id = ?", (int(var.get()), gp_id, p_id))
         self.connection.commit()
         
     # adding the winners to the next grand prix
-    def add_winners_to_gp(self, players: list[tuple], gp_id: str):
+    def add_winners_to_gp(self, players: list[tuple[str, str, str, int]], gp_id: str):
         for p in players: self.add_player_to_gp(gp_id, p[0], None)
 
     # finding the tournament winner from the final grand prix id
-    def calculate_tournament_winner(self, gp_id: str) -> tuple:
+    def calculate_tournament_winner(self, gp_id: str) -> tuple[str, str, str, int] | None:
         # finding the player with highest grand prix result in the final grand prix
         self.cursor.execute("""
             SELECT player_id, grandprix_result
@@ -676,14 +680,14 @@ class Database:
         except (TypeError, AttributeError):
             # if no value then can't subscript 
             print(f"Error: Grandprix ID {gp_id} not found.")
-            return ()
+            return None
 
         # returing the whole player object with the player_id found above
         self.cursor.execute("SELECT * FROM Player WHERE player_id = ?", (p_id,))
         return self.cursor.fetchone()
     
     # finding the tournament winner from a tournament id
-    def read_tournament_winner(self, t_id: str) -> tuple:
+    def read_tournament_winner(self, t_id: str) -> tuple[str, str, str, int]:
         self.cursor.execute("SELECT * FROM Player WHERE player_id = (SELECT player_id from TournamentParticipation WHERE tournament_id = ? AND tournament_result = 1);", (t_id,))
         return self.cursor.fetchone()
     
@@ -696,12 +700,12 @@ class Database:
         except (TypeError, AttributeError):
             # if no value then can't subscript 
             print(f"Error: Tournament ID {t_id} or Player ID {p_id} not found.")
-            return ""
+            return -1
 
     # function to calculate what position eveyone came and then update it in TournamentParticipation
     def set_tournament_results(self, t_id: str):
         # inner function to update results for a specific round number so can gather all players eliminated in that round and rank for results
-        def update_for_round(round: int, base: int):
+        def update_for_round(round: int | None, base: int):
             # selecting all the grand prix ids for that round
             self.cursor.execute("SELECT grandprix_id FROM GrandPrix WHERE tournament_id = ? AND round is ?", (t_id, round))
             round_ids = self.cursor.fetchall()
@@ -730,7 +734,7 @@ class Database:
             # so it is a sorted array of players results who were eliminated in this round
             sorted_round_results = sorted(round_results, key=lambda x: x[2])
             # creating results dictionary with key result and value empty array
-            results = {x: [] for x in range(base, base + len(sorted_round_results))}
+            results: dict[int, list[tuple[str, str, int]]] = {x: [] for x in range(base, base + len(sorted_round_results))}
 
             # recursive function to add the player to the to the dictionary for key result
             def add_data(position: int, offset: int) -> tuple[int, int]:
@@ -770,12 +774,12 @@ class Database:
     # MARK: - Players
 
     # reading all player data
-    def read_player_data(self) -> list[tuple]:
+    def read_player_data(self) -> list[tuple[str, str, str, int]]:
         self.cursor.execute("SELECT * FROM Player;")
         return self.cursor.fetchall()
     
     # linear search on players with a query
-    def search_players(self, search_term: str) -> list[tuple]:
+    def search_players(self, search_term: str) -> list[tuple[str, str, str, int]]:
         # fetching all players into a 2d array
         all_players = self.read_player_data()
         
@@ -785,7 +789,7 @@ class Database:
 
         # prepare search terms, split into lowercase words
         terms = search_term.lower().split()
-        results = []
+        results: list[tuple[str, str, str, int]] = []
 
         # iterate through each player
         for player in all_players:
@@ -840,12 +844,12 @@ class Database:
     # MARK: - Circuits
 
     # reading all circuits
-    def read_circuit_data(self) -> list[tuple]:
+    def read_circuit_data(self) -> list[tuple[str, str]]:
         self.cursor.execute("SELECT * FROM Circuit;")
         return self.cursor.fetchall()
 
     # linear search on circuits with a query
-    def search_circuits(self, search_term: str) -> list[tuple]:
+    def search_circuits(self, search_term: str) -> list[tuple[str, str]]:
         # fetching all circuits into a 2d array
         all_circuits = self.read_circuit_data()
         
@@ -855,7 +859,7 @@ class Database:
 
         # prepare search terms, split into lowercase words
         terms = search_term.lower().split()
-        results = []
+        results: list[tuple[str, str]] = []
 
         # iterate through each player
         for circuit in all_circuits:
@@ -883,7 +887,7 @@ class Database:
     # MARK: - Statistics
 
     # getting top winners stats
-    def get_top_winners_stats(self) -> list[tuple]:
+    def get_top_winners_stats(self) -> list[tuple[str, int]]:
         # fetching the full name concatenated along with the number of tournaments come first in
         query = """
         SELECT p.forename || ' ' || p.surname, COUNT(tp.tournament_result) as wins
@@ -897,7 +901,7 @@ class Database:
         return self.cursor.fetchall()
     
     # getting rivalry stats
-    def get_rivalry_stats(self) -> dict[str: list[tuple]]:
+    def get_rivalry_stats(self) -> dict[str, list[tuple[str, int]]]:
         # fetches the first name and surname in a single string, the sum and number of tournament results
         query = """
         SELECT p.forename || ' ' || p.surname, SUM(tp.tournament_result) as sum, COUNT(tp.tournament_result) as count
@@ -910,7 +914,7 @@ class Database:
         res = self.cursor.fetchall()
 
         # calculating the average result for each player
-        avg_res = []
+        avg_res: list[tuple[str, float]] = []
         for row in res:
             # trying to divide the sum of results by the number of results (number of individual data so the number of tournaments with results)
             try:
@@ -918,13 +922,13 @@ class Database:
                 avg_res.append((row[0], average))
             except (ZeroDivisionError, TypeError):
                 # if either is 0 or Null/None then continue
-                # this will be if the player hasnt finished tournament yet
+                # this will be if the player hasn't finished tournament yet
                 continue
         # sorting the list by average result highest to lowest
         sorted_res = sorted(avg_res, key=lambda x: x[1])
         # taking the top 5 players with the best average result
         top_players = [p[0] for p in sorted_res[:5]]
-        data = {}
+        data: dict[str, list[tuple[str, int]]] = {}
         
         # for each player, fetches their tournament history
         for name in top_players:
@@ -943,7 +947,7 @@ class Database:
         return data
 
     # getting circuit usage stats
-    def get_circuit_usage_stats(self) -> list[tuple]:
+    def get_circuit_usage_stats(self) -> list[tuple[str, int]]:
         # getting the name of circuit and number of races that use that circuit
         # ordering from highest to lowest (DESC)
         query = """
@@ -957,7 +961,7 @@ class Database:
         return self.cursor.fetchall()
 
     # getting circuit winners stats
-    def get_circuit_winners(self, circuit_id: str) -> list[tuple]:
+    def get_circuit_winners(self, circuit_id: str) -> list[tuple[str, int]]:
         # getting the first and surname as a single string, and the number of wins the player has on that circuit
         # ordering by number of wins highest to lowest
         query = """
@@ -973,7 +977,7 @@ class Database:
         return self.cursor.fetchall()
 
     # getting player circuit results
-    def get_player_circuit_results(self, circuit_id: str, player_id: str) -> list[tuple]:
+    def get_player_circuit_results(self, circuit_id: str, player_id: str) -> list[tuple[int, int]]:
         # getting the race result and the number of times the player has achieved that result on that circuit
         # ordering by result ascending (1st place to 12th place)
         query = """
@@ -988,7 +992,7 @@ class Database:
         return self.cursor.fetchall()
     
     # getting player history
-    def get_player_history(self, player_id: str) -> list[tuple]:
+    def get_player_history(self, player_id: str) -> list[tuple[str, int]]:
         # getting the date and tournament result for the player
         query = """
         SELECT t.date, tp.tournament_result

@@ -748,7 +748,7 @@ class TournamentsPage(ttk.Frame):
             # adding s for plural if more than 1 grand prix for correct grammar
             description = f"{t[1]} continuers\n {t[2]} Grand Prix{"" if t[2] == 1 else "'s"}\n{"Longer" if t[3] else "Normal"} Style"
             # adding the radio button with justify and anchor centre so the text is aligned centrally
-            ttk.Radiobutton(parent, text=description, value=t[0], variable=selected_type, padding=3, justify="center").pack(anchor="center", pady=5)
+            ttk.Radiobutton(parent, text=description, value=t[0], variable=selected_type, padding=3).pack(anchor="center", pady=5)
 
             # if an id is passed in as an argument then preselect this radio button
             # this is used in edit tournament view because the user already has selected a tournament type
@@ -791,11 +791,12 @@ class TournamentsPage(ttk.Frame):
         field2.bind("<Command-BackSpace>", clear_field2)
 
         # check box whether the tournament is normal or longer style
-        longer_var = tk.BooleanVar()
-        ttk.Checkbutton(win, text="Longer Style", variable=longer_var, padding=(3,0,0,0)).grid(row=2, column=0, columnspan=2, pady=(5,0))
+        self.longer_var = tk.BooleanVar()
+        self.longer_var.set(False)
+        ttk.Checkbutton(win, text="Longer Style", variable=self.longer_var, padding=(3,0,0,0)).grid(row=2, column=0, columnspan=2, pady=(5,0))
 
         # function called when user clicks save
-        def create_type():
+        def create_type(event=None):
             # fetching the raw data
             data1 = field1.get()
             data2 = field2.get()
@@ -825,7 +826,7 @@ class TournamentsPage(ttk.Frame):
                 return
 
             # creating the tournament type, closing this window and updating the tournament type section where this view was opened from
-            self.controller.db.create_tournament_type(data1, data2, longer_var.get())
+            self.controller.db.create_tournament_type(data1, data2, self.longer_var.get())
 
             # showing message saying success
             messagebox.showinfo("title", "Tournament Type Created!")
@@ -1372,7 +1373,7 @@ class TournamentsPage(ttk.Frame):
         final_index = rounds_joined.index(999)
 
         # function to make a bracket frame
-        def make_frame(gp_id: str, round_frame: ttk.Frame):
+        def make_frame(gp_id: str, round_frame: tk.LabelFrame):
             # reading all players in the grand prix
             gp_players = self.controller.db.read_grand_prix_players(gp_id)
 
@@ -1394,7 +1395,7 @@ class TournamentsPage(ttk.Frame):
                             colour = "Green.TLabel"
                     else:
                         # if the player is in the winners then text colour is green
-                        fmap = [p[0] for p in wins]
+                        fmap: list[str] = [p[0] for p in wins]
                         if name[0] in fmap: 
                             colour = "Green.TLabel"
                 
@@ -1532,7 +1533,7 @@ class TournamentsPage(ttk.Frame):
             ttk.Label(row_frame, text=p[1]).pack(padx=18, side="left")
             result_var = tk.StringVar()
             # values is a string array of numbers 1-12
-            result_dropdown = ttk.Combobox(row_frame, textvariable=result_var, values=[str(i) for i in range(1, 13)], state="readonly", width="5")
+            result_dropdown = ttk.Combobox(row_frame, textvariable=result_var, values=[str(i) for i in range(1, 13)], state="readonly", width=5)
             result_dropdown.pack(padx=18, side="right")
             result_dropdown.bind("<Escape>", lambda e: win.focus())
             result_dropdown.bind("<<ComboboxSelected>>", lambda e: win.focus())
@@ -1622,7 +1623,7 @@ class TournamentsPage(ttk.Frame):
             # width 5 as only numbers in the dropdown
             ttk.Label(row_frame, text=p[1]).pack(padx=20, side="left")
             result_var = tk.StringVar()
-            result_dropdown = ttk.Combobox(row_frame, textvariable=result_var, values=[str(i) for i in range(1, 13)], state="readonly", width="5")
+            result_dropdown = ttk.Combobox(row_frame, textvariable=result_var, values=[str(i) for i in range(1, 13)], state="readonly", width=5)
             result_dropdown.pack(padx=20, side="right")
             result_dropdown.bind("<Escape>", lambda e: win.focus())
             result_dropdown.bind("<<ComboboxSelected>>", lambda e: win.focus())

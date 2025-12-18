@@ -171,7 +171,7 @@ class StatisticsPage(ttk.Frame):
             return
         
         # inner function to calculate the proportions for pie chart
-        def calculate_sizes(data: list[tuple[str, str]]) -> tuple[list, list]:
+        def calculate_sizes(data: list[tuple[str, str]]) -> tuple[list[str], list[int]]:
             # setting a max number of slices for the pie chart as 10
             # if there are more than 10 items from data then must group some into other category
             # but can't simply cut off at the end, must make sure count of last item is greater than max count of other items
@@ -186,7 +186,8 @@ class StatisticsPage(ttk.Frame):
             if len(data) <= MAX_TOTAL_SLICES:
                 # array for labels and sizes for pie chart
                 labels = [row[0] for row in data]
-                sizes = [row[1] for row in data]
+                sizes = [int(row[1]) for row in data]
+                return labels, sizes
 
             # case 2: there are more than 10 items, so we need to group some into other category
             else:
@@ -214,11 +215,11 @@ class StatisticsPage(ttk.Frame):
                 remaining_data = data[split_index:]
                 
                 # calculate sum of count for other category
-                other_count = sum(row[1] for row in remaining_data)
+                other_count = sum(int(row[1]) for row in remaining_data)
                 
                 # creating the labels and sizes arrays
                 labels = [row[0] for row in top_data] + [f"Other ({len(remaining_data)})"]
-                sizes = [row[1] for row in top_data] + [other_count]
+                sizes = [int(row[1]) for row in top_data] + [other_count]
                 return labels, sizes
         
         # arrays for labels and sizes for pie chart

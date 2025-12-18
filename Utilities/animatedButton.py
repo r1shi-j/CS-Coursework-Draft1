@@ -9,11 +9,11 @@ from Utilities.FontStyling import Fonts as FS, Colours as FC
 DEFAULT_CURSOR = "arrow"
 
 # function to convert a hex colour to an rgb colour
-def hex_to_rgb(hex_val):
+def hex_to_rgb(hex_val: str):
     return tuple(int(hex_val.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
 
 # helper function to find the middle colour hex between 2 hex colours
-def interpolate_colour(start_hex, end_hex, progress):
+def interpolate_colour(start_hex: str, end_hex: str, progress: float):
     # first convert the start and end to rgb
     start_rgb = hex_to_rgb(start_hex)
     end_rgb = hex_to_rgb(end_hex)
@@ -25,10 +25,10 @@ def interpolate_colour(start_hex, end_hex, progress):
 # custom button class
 class AnimatedButton(tk.Canvas):
     # initialiser with all parameters
-    def __init__(self, parent, text, command, 
-                 width=120, height=34, corner_radius=16,
-                 base_colour=FC.base, hover_colour="", text_colour=FC.black, font=FS.base,
-                 hover_cursor=DEFAULT_CURSOR, frame_colour=None, rounded_corners=None):
+    def __init__(self, parent, text:str, command, 
+                 width:int=120, height:int=34, corner_radius:int=16,
+                 base_colour:str=FC.base, hover_colour:str="", text_colour:str=FC.black, font:tuple[str,int,str]=FS.base,
+                 hover_cursor:str=DEFAULT_CURSOR, frame_colour:str|None=None, rounded_corners:list[str]|None=None):
         
         # if a frame colour is passed in then set it to the parent_bg variable
         if frame_colour:
@@ -169,7 +169,7 @@ class AnimatedButton(tk.Canvas):
             self.command()
 
     # function that starts the animation taking in parameter for the target colour
-    def start_animation(self, target_hex):
+    def start_animation(self, target_hex: str):
         # changing the global target colour
         self.target_colour = target_hex
         # setting the start colour

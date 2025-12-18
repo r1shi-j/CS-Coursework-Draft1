@@ -164,8 +164,8 @@ class App(tk.Frame):
             hover_font = FS.base_u
         else:
             # otherwise change to customised with underline on hover
-            base_font = (font[0], font[1], font[2])
-            hover_font = (font[0], font[1], f"{font[2]} underline")
+            base_font = (font[0], int(font[1]), font[2])
+            hover_font = (font[0], int(font[1]), f"{font[2]} underline")
 
         # binding enter and leave hover actions over the label to change the font
         label.bind("<Enter>", lambda e: label.config(font=hover_font))

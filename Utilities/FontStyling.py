@@ -9,7 +9,7 @@ class Fonts:
     base2_i = ("TkDefaultFont", 12, "italic") # italic version of base2
     header = ("TkDefaultFont", 14, "bold") # header is used for the navigation headers (14)
     header_u = ("TkDefaultFont", 14, "bold underline") # underlined version of header used when hovering over a header
-    tip = ("tahoma", "9", "normal") # used for text tip
+    tip = ("tahoma", 9, "normal") # used for text tip
 
 # creating a class called Colours and defining a list of hex colours
 class Colours:
