@@ -132,18 +132,21 @@ class StatisticsPage(ttk.Frame):
 
         # adding results for each player to the graph
         for name, records in data_dict.items():
-            # Sort by date (converting string date to datetime object for sorting)
+            # sort by date (converting string date to datetime object for sorting)
             records.sort(key=lambda x: datetime.strptime(x[0], "%d/%m/%y"))
             # arrays of all dates and results
-            dates = [r[0] for r in records]
+            # array for dates is as datetime objects not strings
+            date_objects = [datetime.strptime(r[0], "%d/%m/%y") for r in records]
             results = [r[1] for r in records]
             # adding the data to the chart
-            ax.plot(dates, results, marker="o", label=name)
+            ax.plot(date_objects, results, marker="o", label=name)
 
         # setting titles and labels
         ax.set_title("Tournament Results Over Time (Top 5 Players)") # graph title
         ax.set_ylabel("Position") # y axis title
         ax.set_xlabel("Date") # x axis title
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%y')) # turning datetime objects back to strings
+        fig.autofmt_xdate() # auto rotate dates if they overlap
         ax.invert_yaxis() # 1st place at top
         ax.set_yticks(range(1, 17)) # showing y axis ticks 1-16
         ax.set_ylim(16.5, 0.5) # so that there is spacing on bottom and top
@@ -621,7 +624,8 @@ class StatisticsPage(ttk.Frame):
         ax1.set_title(f"Tournament Placement History: {p_name}")
         ax1.set_ylabel("Position (Lower is Better)")
         ax1.invert_yaxis()
-        ax1.yaxis.get_major_locator().set_params(integer=True)
+        ax1.set_yticks(range(min(results), max(results)+1)) # showing y axis ticks in range of min and max results values
+        ax1.set_ylim(max(results)+0.5, min(results)-0.5) # so that there is spacing on bottom and top by adding/removing 0.5 to min and max results
         fig1.autofmt_xdate()
         ax1.fmt_xdata = mdates.DateFormatter("%d/%m/%y")
         fig1.tight_layout()
@@ -645,6 +649,13 @@ class StatisticsPage(ttk.Frame):
             # adding titles and labels
             ax2.set_title(f"Consistency Analysis: {p_name}")
             ax2.set_xlabel("Race Finish Position")
+            # if only 1 result or results are all the same
+            if len(set(race_results)) == 1:
+                ax2.set_xticks(range(race_results[0]-1, race_results[0]+2)) # show ticks for ±1 of the result
+                ax2.set_xlim(race_results[0]-1.5, race_results[0]+1.5) # graph scale is ±1.5 of the result
+            else:
+                # if more than 1 unique result then a proper bar chart is shown, setting the x axis ticks to integers only
+                ax2.xaxis.get_major_locator().set_params(integer=True)
             ax2.invert_yaxis()
             fig2.tight_layout()
             # adding the box plot to the bottom frame

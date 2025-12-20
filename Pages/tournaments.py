@@ -4,12 +4,16 @@ from tkcalendar import Calendar
 import re
 import datetime
 from collections import defaultdict
+import threading
+import LocalAuthentication
 from storage import create_uuid
 from Utilities.animatedButton import AnimatedButton
 from Utilities.FontStyling import Fonts as FS, Colours as FC
 # usual tk imports, new tkcalendar import to show the calendar
 # importing re for regex validation
 # importing datetime and defaultdict
+# added threading to use for Touch ID
+# importing LocalAuthentication to use Touch ID sensor to login
 # importing the create uuid function from storage
 # importing animatedButton to use custom coloured button
 # importing FontStyling to use custom fonts and colours
@@ -20,6 +24,50 @@ class TournamentsPage(ttk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.build_view()
+
+    # function to open Touch ID window and return whether authentication was successful as a bool
+    def trigger_touch_id(self) -> bool:
+        # creating the context
+        context = LocalAuthentication.LAContext.new()
+
+        # check if Touch ID is actually available on this Mac
+        can_auth, error = context.canEvaluatePolicy_error_(LocalAuthentication.LAPolicyDeviceOwnerAuthenticationWithBiometrics, None)
+
+        # if not available then return false
+        if not can_auth:
+            print("Touch ID not available.")
+            return False
+        
+        # create an event to pause the main thread
+        auth_finished_event = threading.Event()
+        # a simple list to store the result from the other thread (True/False)
+        result_container = [False]
+        # the reason to show on the Touch ID window
+        reason = "Log in to Mario Kart Tournament System"
+
+        # this callback runs on a separate macOS background thread
+        def callback(success, error):
+            # if successful then set the result to true
+            if success:
+                result_container[0] = True
+            else:
+                # if not successful then set the result to false
+                result_container[0] = False
+                # if there is an error available then print it
+                if error: print(f"Touch ID Error: {error}")
+            
+            # wake up the main thread
+            auth_finished_event.set()
+
+        # trigger the prompt
+        context.evaluatePolicy_localizedReason_reply_(LocalAuthentication.LAPolicyDeviceOwnerAuthenticationWithBiometrics, reason, callback)
+
+        # block here until the callback runs 'auth_finished_event.set()'
+        # this makes the asynchronous call behave synchronously
+        auth_finished_event.wait()
+        
+        # returning the result to decide what UI to show
+        return result_container[0]
 
     # this function is used to do nothing and block child window closure
     def block_window_closure(self): return
@@ -218,18 +266,17 @@ class TournamentsPage(ttk.Frame):
         
         # function to update the search results
         def update_search_results(*args):
-            # deleting previous results
+            # deleting current search results
             for w in results_frame.winfo_children(): w.destroy()
+            # getting query            
             query = search_var.get().strip()
 
-            # if no query then hide scrollbar
             if not query:
-                results_canvas.yview_moveto(0)
-                results_canvas.configure(scrollregion=(0, 0, 0, 0))
-                return
+                results = self.controller.db.read_player_data()
+            else:
+                results = self.controller.db.search_players(query)
             
-            # fetching results and only showing players not already selected
-            results = self.controller.db.search_players(query)
+            # only showing players not already selected
             results = [r for r in results if r not in tournament_players]
 
             # creating the row with player name
@@ -282,6 +329,9 @@ class TournamentsPage(ttk.Frame):
         # each time search query is changed call function to update the search results
         search_var.trace_add("write", update_search_results)
 
+        # in add players box initially showing all players as query is empty
+        update_search_results()
+
         #* Temporary function
         # function to validate the correct number of players are added
         # if correct then show the next step
@@ -327,7 +377,8 @@ class TournamentsPage(ttk.Frame):
         # using a function because when user creates a tournament type this list needs to be refreshed, so the function can be called to rebuild the list
         self.build_tournament_type_section(types_container, selected_type)
         # add button to open the create ttype view
-        ttk.Button(step3, text="+", command=lambda: self.open_create_ttype(types_container, selected_type), cursor="crosshair").pack(anchor="ne", padx=5, pady=2)
+        #* Temporarily disabled, change cursor back to crosshair
+        ttk.Button(step3, text="+", command=lambda: self.open_create_ttype(types_container, selected_type), cursor="arrow", state="disabled").pack(anchor="ne", padx=5, pady=2)
 
         # Creating the tournament
         def create_tournament():
@@ -536,14 +587,12 @@ class TournamentsPage(ttk.Frame):
             # getting query
             query = search_var.get().strip()
 
-            # if no query then hide scrollbar
             if not query:
-                results_canvas.yview_moveto(0)
-                results_canvas.configure(scrollregion=(0, 0, 0, 0))
-                return
+                results = self.controller.db.read_player_data()
+            else:
+                results = self.controller.db.search_players(query)
             
-            # fetching results and only showing players not already selected
-            results = self.controller.db.search_players(query)
+            # only showing players not already selected
             results = [r for r in results if r not in tournament_players]
 
             # creating the row with player name
@@ -592,11 +641,14 @@ class TournamentsPage(ttk.Frame):
             refresh_current_players()
             update_search_results()
 
-        # initially loading the results for no query
-        refresh_current_players()
-
         # every time query is changed update the results
         search_var.trace_add("write", update_search_results)
+
+        # in add players box initially showing all players not in the tournament as query is empty
+        update_search_results()
+
+        # in current players box initially showing all players in the tournament
+        refresh_current_players()
 
         #* Temporary function
         # function to validate the correct number of players are added
@@ -650,7 +702,9 @@ class TournamentsPage(ttk.Frame):
         
         # building the tournament type list and the add button
         self.build_tournament_type_section(types_container, selected_type, current_type_id)
-        ttk.Button(step3, text="+", command=lambda: self.open_create_ttype(types_container, selected_type), cursor="crosshair").pack(anchor="ne", padx=5, pady=2)
+        # add button to open the create ttype view
+        #* Temporarily disabled, change cursor back to crosshair
+        ttk.Button(step3, text="+", command=lambda: self.open_create_ttype(types_container, selected_type), cursor="arrow", state="disabled").pack(anchor="ne", padx=5, pady=2)
 
         # making frame for the actions buttons
         bottom_bar = ttk.Frame(step3)
@@ -754,6 +808,9 @@ class TournamentsPage(ttk.Frame):
             # this is used in edit tournament view because the user already has selected a tournament type
             if current_type_id:
                 selected_type.set(current_type_id)
+            #* Temporarily preselect the only tournament type
+            if len(types) == 1 and not current_type_id:
+                selected_type.set(t[0])
     
     # create tournament type subview
     def open_create_ttype(self, parent_frame: ttk.Frame, selected_type: tk.StringVar):
@@ -1021,15 +1078,25 @@ class TournamentsPage(ttk.Frame):
 
         # buttons to cancel or create account
         # cancel closes this window, and create runs the above function
-        AnimatedButton(
-            win, text="Cancel", command=win.destroy,
-            width=100, base_colour=FC.base, hover_colour=FC.cancel
-        ).grid(row=3, column=0, padx=20, pady=(10,15), sticky="w")
 
-        AnimatedButton(
-            win, text="Create", command=create_account, hover_cursor="mouse",
-            width=100, base_colour=FC.green[0], hover_colour=FC.green[1]
-        ).grid(row=3, column=1, padx=20, pady=(10,15), sticky="e")
+        # cancel is only shown if opened from tournament settings
+        # if opened after tournament creation the user must create an account which is why there is no back/cancel button
+        if parent_frame:
+            AnimatedButton(
+                win, text="Cancel", command=win.destroy,
+                width=100, base_colour=FC.base, hover_colour=FC.cancel
+            ).grid(row=3, column=0, padx=20, pady=(10,15), sticky="w")
+
+            AnimatedButton(
+                win, text="Create", command=create_account, hover_cursor="mouse",
+                width=100, base_colour=FC.green[0], hover_colour=FC.green[1]
+            ).grid(row=3, column=1, padx=20, pady=(10,15), sticky="e")
+        else:
+            # columnspan 2 and no sticky so that the button is placed centrally
+            AnimatedButton(
+                win, text="Create", command=create_account, hover_cursor="mouse",
+                width=120, base_colour=FC.green[0], hover_colour=FC.green[1]
+            ).grid(row=3, column=0, columnspan=2, padx=20, pady=(10,15))
 
     # function to open the login view for a tournament
     def open_login(self, t_id: str):
@@ -1041,7 +1108,7 @@ class TournamentsPage(ttk.Frame):
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
         # forcing the window to appear on top, using parent tournament overview
-        win.transient(self.t_overview_win) 
+        win.transient(self.t_overview_win)
         win.lift()
         win.focus_force()
 
@@ -1225,6 +1292,10 @@ class TournamentsPage(ttk.Frame):
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
+        # forcing the window to appear on top, using parent as main window
+        win.transient(self.controller)
+        win.lift()
+        win.focus_force()
 
         # function to open brackets
         def open_brackets(login_data: tuple[bool, str | None]):
@@ -1261,9 +1332,25 @@ class TournamentsPage(ttk.Frame):
                 base_colour=FC.base, hover_colour=FC.logout, hover_cursor="pirate"
             ).grid(row=1, column=0, columnspan=2, pady=5)
         else:
+            # function that tries to use Touch ID to login, it if fails then open the login view
+            def route_login():
+                # opening Touch ID window
+                success = self.trigger_touch_id()
+                # if authentication was successful
+                if success:
+                    # set user to logged in and reopen tournament overview
+                    # self.after to put on main thread as we are waiting for result (touch id window is asynchronous)
+                    self.login_status[t_id] = (True, "MASTER")
+                    self.after(10, lambda: messagebox.showinfo("Login", "Login success"))
+                    self.after(20, lambda: win.destroy())
+                    self.after(30, lambda: self.open_tournament_overview(t_id))
+                else:
+                    # otherwise if it failed then open the manual login window
+                    self.open_login(t_id)
+
             # if user is logged out then show button to login
             AnimatedButton(
-                win, text="Login", command=lambda: self.open_login(t_id),
+                win, text="Login", command=route_login,
                 base_colour=FC.red[0], hover_colour=FC.red[1], hover_cursor="mouse"
             ).grid(row=0, column=0, columnspan=2, pady=(12,5))
 
@@ -1490,6 +1577,7 @@ class TournamentsPage(ttk.Frame):
         win.title(f"Input Race Results [{race_count + 1}/4]")
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
+        win.geometry("280x300")
         win.resizable(False, False)
         # forcing the window to appear on top, using parent brackets window
         win.transient(self.bracket_win) 
@@ -1504,7 +1592,7 @@ class TournamentsPage(ttk.Frame):
 
         # frame for the circuit selection
         select_circuit_frame = ttk.LabelFrame(win, text="Select the circuit")
-        select_circuit_frame.pack(padx=10, pady=10)
+        select_circuit_frame.pack(padx=10, pady=10, fill="x", expand=True)
 
         # drop down selection box with all circuits
         circuit_var = tk.StringVar()
@@ -1520,21 +1608,21 @@ class TournamentsPage(ttk.Frame):
 
         # frame for the player results selection
         inp_results_frame = ttk.LabelFrame(win, text="Input player results")
-        inp_results_frame.pack(padx=10, pady=10)
+        inp_results_frame.pack(padx=9, pady=10, fill="x", expand=True)
         
         # for each player in the race, creating a result selction box 1-12
         for p in players:
             # creating a row frame to position the name and dropdown
             row_frame = ttk.Frame(inp_results_frame)
-            row_frame.pack(padx=30, pady=2, fill="x")
+            row_frame.pack(padx=20, pady=2, fill="x")
 
             # name label and the dropdown box
-            # width 5 as only numbers in the dropdown
-            ttk.Label(row_frame, text=p[1]).pack(padx=18, side="left")
+            ttk.Label(row_frame, text=p[1]).pack(side="left", padx=10)
             result_var = tk.StringVar()
             # values is a string array of numbers 1-12
+            # width 5 as only numbers in the dropdown
             result_dropdown = ttk.Combobox(row_frame, textvariable=result_var, values=[str(i) for i in range(1, 13)], state="readonly", width=5)
-            result_dropdown.pack(padx=18, side="right")
+            result_dropdown.pack(side="right", padx=10)
             result_dropdown.bind("<Escape>", lambda e: win.focus())
             result_dropdown.bind("<<ComboboxSelected>>", lambda e: win.focus())
             result_vars[p[0]] = result_var
@@ -1586,13 +1674,13 @@ class TournamentsPage(ttk.Frame):
         AnimatedButton(
             bottom_bar, text="Cancel", command=win.destroy,
             width=90, base_colour=FC.base_l, hover_colour=FC.cancel
-        ).pack(pady=(10,15), padx=10, side="left")
+        ).pack(pady=(5,10), padx=10, side="left")
 
         # insert results button which first validates the input
         AnimatedButton(
             bottom_bar, text="Insert Resuts", command=insert_results, hover_cursor="mouse",
             width=130, base_colour=FC.green[0], hover_colour=FC.green[1]
-        ).pack(pady=(10,15), padx=10, side="right")
+        ).pack(pady=(5,10), padx=10, side="right")
 
     # opens subview to input grand prix results
     def open_input_gp_results(self, gp_id: str, t_id: str):
@@ -1677,4 +1765,4 @@ class TournamentsPage(ttk.Frame):
         AnimatedButton(
             win, text="Complete Grand Prix", command=save_gp_results, hover_cursor="mouse",
             width=200, base_colour=FC.green[0], hover_colour=FC.green[1]
-        ).pack(pady=(10,15))
+        ).pack(pady=(8,15))

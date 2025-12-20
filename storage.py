@@ -8,14 +8,19 @@ from datetime import datetime
 # uuid to generate unique identifiers
 # hashlib to encode password as a hash
 # datetime to convert string dates when sorting dates
-import tkinter
+import tkinter # used for type hint in insert_gp_results
 
 # function to generate a UUID
 def create_uuid() -> str:
     return str(uuid.uuid4())
 
+# Prefilled data: standard circuits, tournament type, demo players, tournaments
+
 # array of all the standard circuits
 PAPER_CIRCUITS = ["Mario Kart Stadium", "Water Park", "Sweet Sweet Canyon", "Thwomp Ruins", "Mario Circuit", "Toad Harbor", "Twisted Mansion", "Shy Guy Falls", "Sunshine Airport", "Dolphin Shoals", "Electrodrome", "Mount Wario", "Cloudtop Cruise", "Bone-Dry Dunes", "Bowser's Castle", "Rainbow Road", "Moo Moo Meadows", "GBA Mario Circuit", "Cheep Cheep Beach", "Toad's Turnpike", "Dry Dry Desert", "Donut Plains 3", "Royal Raceway", "DK Jungle", "Wario Stadium", "Sherbet Land", "Music Park", "Yoshi Valley", "Tick-Tock Clock", "Piranha Plant Slide", "Grumble Volcano", "N64 Rainbow Road", "Yoshi Circuit", "Excitebike Arena", "Dragon Driftway", "Mute City", "Wario's Goldmine", "SNES Rainbow Road", "Ice Ice Outpost", "Hyrule Circuit", "Baby Park", "Cheese Land", "Wild Woods", "Animal Crossing", "Neo Bowser City", "Ribbon Road", "Super Bell Subway", "Big Blue"]
+
+# array of all demo names
+PAPER_PLAYERS = ["James Smith 24", "Olivia Johnson 19", "Liam Williams 28", "Emma Jones 22", "Ali Gheldi 12", "Ava Davis 17", "Robert Oakling 30", "Sophie Wlid 21", "Mason Moore 26", "Pete Strauss 58", "Ryan Parker 23", "Mia Thomas 29", "Lucas Jackson 16", "Charlotte White 27", "Ethan Harris 20", "Amelia Martin 24", "Jacob Thompson 22", "Tegan Jade 23", "Michael Martinez 30", "Evelyn Robinson 25"]
 
 class Database:
     # MARK: - Initialisation
@@ -30,7 +35,6 @@ class Database:
                 raise FileNotFoundError
         except Exception as e:
             print("Database not found: ", e, type(e))
-            quit(0)
 
     # creating all the tables if they don't exist
     def connect(self):
@@ -135,8 +139,9 @@ class Database:
         );
         """)
 
-        # inserting demo circuits and tournament type if new database
+        # inserting demo data if new database
         self.insert_standard_circuits()
+        self.insert_demo_players()
         self.insert_standard_tournament_type()
 
         # saving changes
@@ -150,7 +155,7 @@ class Database:
 
         # if no circuits exist then add them
         if circuit_count == 0:
-            print("adding demo circuits")
+            print("adding standard circuits")
             self.cursor.executemany("INSERT INTO Circuit (circuit_id, circuit_name) VALUES (?, ?)", [(create_uuid(), name) for name in PAPER_CIRCUITS])
 
     # function to insert the standard tournament type
@@ -159,10 +164,21 @@ class Database:
         self.cursor.execute("SELECT COUNT(*) FROM TournamentType")
         ttype_count = self.cursor.fetchone()[0]
 
-        # if no tournament types then add demo one
+        # if no tournament types exist then add one
         if ttype_count == 0:
-            print("adding demo tournament type")
+            print("adding standard tournament type")
             self.cursor.execute("INSERT INTO TournamentType (tournament_type_id, def_continuers, num_grandprix, longer_style) VALUES (?, ?, ?, ?)", (create_uuid(), 2, 4, False))
+
+    # function to insert all demo players
+    def insert_demo_players(self):
+        # getting number of players
+        self.cursor.execute("SELECT COUNT(*) FROM Player")
+        player_count = self.cursor.fetchone()[0]
+
+        # if no players exist then add them
+        if player_count == 0:
+            print("adding demo players")
+            self.cursor.executemany("INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)", [(create_uuid(), p.split(" ")[0], p.split(" ")[1], int(p.split(" ")[2])) for p in PAPER_PLAYERS])
 
     # closing the database
     def close(self):
@@ -1010,6 +1026,26 @@ class Database:
         return [row[0] for row in self.cursor.fetchall()]
 
 #* temporary manual database operations
-# db = Database()
-# db.connect()
-# db.close()
+def temp_operations():
+    print("database opened")
+    db = Database()
+    db.connect()
+    
+    # tempoary function to create an account for all tournaments with username "username" and password "password"
+    # def reset_all_accounts():
+    #     db.cursor.execute("DELETE FROM Account")
+    #     db.connection.commit()
+
+    #     db.cursor.execute("SELECT tournament_id FROM Tournament;")
+    #     tournament_ids = db.cursor.fetchall()
+    #     for t_id in tournament_ids:
+    #         hashed = hashlib.sha256("password".encode()).hexdigest()
+    #         db.cursor.execute("INSERT INTO Account (account_id, tournament_id, username, password_hash) VALUES (?, ?, ?, ?)", (create_uuid(), t_id[0], "username", hashed))
+    #     db.connection.commit()
+
+    db.close()
+    print("database closed")
+
+# if this file is run directly then run temp_operations function
+if __name__ == "__main__":
+    temp_operations()
