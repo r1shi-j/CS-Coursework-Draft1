@@ -1,8 +1,6 @@
 import tkinter as tk
-import platform
 from Utilities.FontStyling import Fonts as FS, Colours as FC
 # importing tkinter
-# importing platform to get the current operating system
 # importing FontStyling to get custom fonts and colours
 
 # declaring a constant default cursor
@@ -34,16 +32,9 @@ class AnimatedButton(tk.Canvas):
         if frame_colour:
             parent_bg = frame_colour
         else:
-            # else check the operating system
-            system = platform.system()
-            if system == "Windows":
-                # if os is windows then set parent_bg to windows bg colour
-                parent_bg = FC.windows_base
-            elif system == "Darwin":
-                # otherwise if os is Darwin or else set to white
-                parent_bg = FC.white
-            else:
-                parent_bg = FC.white
+            # otherwise use the default frame background colour in FontStyling file
+            # which is white it macos otherwise a light grey if windows
+            parent_bg = FC.default_frame_bg
         
         # the tk.Canvas initialiser
         super().__init__(parent, width=width, height=height, bg=parent_bg, highlightthickness=0)

@@ -4,6 +4,7 @@ from datetime import datetime
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
 from Utilities.tooltip import create_tooltip
 from Utilities.animatedButton import AnimatedButton
 from Utilities.FontStyling import Fonts as FS, Colours as FC
@@ -13,6 +14,11 @@ from Utilities.FontStyling import Fonts as FS, Colours as FC
 # importing tooltip to show tip of what the graph represents in the stats homeview
 # importing animatedButton to use custom coloured button
 # importing FontStyling to use custom fonts and colours
+
+# setting the background of all graphs to white if macos, and a light grey if windows
+# os-colour specific logic calculated in FontStyling
+plt.rcParams['figure.facecolor'] = FC.brackets_frame
+plt.rcParams['axes.facecolor'] = FC.brackets_frame
 
 class StatisticsPage(ttk.Frame):
     def __init__(self, parent: ttk.Frame, controller):

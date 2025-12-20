@@ -1,3 +1,5 @@
+import platform
+
 # creating a class called Fonts and creating static properties to use as font parameters
 class Fonts:
     caption = ("TkDefaultFont", 10, "bold") # caption font which is smaller than standard but in bold
@@ -27,11 +29,23 @@ class Colours:
     cancel = "#8A9098" # cancel button
     back = "#695adb" # back button
     white = "#FFFFFF" # standard white colour
-    base_l = "#FAFAFA" # lighter colour to match TkLabelFrame colour
-    base = "#F5F5F5" # standard grey colour
-    base_d = "#DFDFDF" # darker alternating frame colours in tournament list
     black = "#000000" # standard black colour
     tip = "#ffffe0" # background for tip popovers
     disabled_bg = "#E0E0E0" # using for button background when disabled
     disabled_text = "#A0A0A0" # using for button text when disabled
-    windows_base = "#F0F0F0" # alternative base when os is windows :(
+
+    # different grey colours for macOS and Windows
+    system = platform.system()
+    # if os is Windows
+    if system == "Windows":
+        base_l = "#F0F0F0" # lighter colour to match TkLabelFrame colour but for windows its slightly darker grey
+        base = "#E8E8E8" # standard grey colour but for windows its slightly darker grey
+        base_d = "#DCDCDC" # setting a darker alternating frame colour for tournament list
+        default_frame_bg = "#F0F0F0" # default background for windows is this hex on windows
+        brackets_frame = "#F3F3F3" # setting the brackets background to this hex on macos
+    else: # for macOS or Linux or other systems
+        base_l = "#FAFAFA" # lighter colour to match TkLabelFrame colour
+        base = "#F5F5F5" # standard grey colour
+        base_d = "#DFDFDF" # darker alternating frame colour for tournament list
+        default_frame_bg = white # default background for windows is white on macos
+        brackets_frame = white # setting the brackets background to white on macos

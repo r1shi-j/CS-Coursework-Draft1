@@ -4,8 +4,6 @@ from tkcalendar import Calendar
 import re
 import datetime
 from collections import defaultdict
-import threading
-import LocalAuthentication
 from storage import create_uuid
 from Utilities.animatedButton import AnimatedButton
 from Utilities.FontStyling import Fonts as FS, Colours as FC
@@ -13,10 +11,21 @@ from Utilities.FontStyling import Fonts as FS, Colours as FC
 # importing re for regex validation
 # importing datetime and defaultdict
 # added threading to use for Touch ID
-# importing LocalAuthentication to use Touch ID sensor to login
 # importing the create uuid function from storage
 # importing animatedButton to use custom coloured button
 # importing FontStyling to use custom fonts and colours
+
+# trying to import LocalAuthentication, if it can be imported then os is macOS so import it and threading
+# creating variable to determine whether to should Touch ID login
+try:
+    import threading
+    import LocalAuthentication
+    # importing LocalAuthentication to use Touch ID sensor to login
+    HAS_TOUCH_ID = True
+except ModuleNotFoundError:
+    HAS_TOUCH_ID = False
+    # if module isn't found then os is Windows so just pass
+    pass
 
 class TournamentsPage(ttk.Frame):
     # initialiser building the view
@@ -27,6 +36,9 @@ class TournamentsPage(ttk.Frame):
 
     # function to open Touch ID window and return whether authentication was successful as a bool
     def trigger_touch_id(self) -> bool:
+        # if Touch ID is not available then quickly exit by returning false to open up manual login
+        if not HAS_TOUCH_ID: return False
+        
         # creating the context
         context = LocalAuthentication.LAContext.new()
 
@@ -171,7 +183,7 @@ class TournamentsPage(ttk.Frame):
             year=today.year, month=today.month, day=today.day,
             mindate=mindate, maxdate=maxdate, 
             background=FC.base_l, foreground=FC.black, disabledbackground=FC.base_l,
-            headersforeground=FC.purple[1], selectforeground=FC.red[1], normalforeground=FC.black,
+            headersforeground=FC.purple[1], selectforeground=FC.red[1], selectbackground=FC.hover, normalforeground=FC.black,
             weekendforeground=FC.black, othermonthforeground=FC.cancel, othermonthweforeground=FC.cancel
         )
         cal.pack(padx=10, pady=10)
@@ -1519,7 +1531,7 @@ class TournamentsPage(ttk.Frame):
             title = f"Round {rn}" if rn != 999 else "Final"
             # creating the box frame for the players, with white background to override the default off white with the label frame
             # caption font style which is smaller and bold
-            round_frame = tk.LabelFrame(self.brackets_container, text=title, bg=FC.white, font=FS.caption)
+            round_frame = tk.LabelFrame(self.brackets_container, text=title, bg=FC.brackets_frame, font=FS.caption)
             round_frame.grid(row=0, column=col, padx=40, pady=20, sticky="n")
 
             # building the brackets for each round
