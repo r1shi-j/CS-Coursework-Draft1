@@ -8,7 +8,7 @@ DEFAULT_CURSOR = "arrow"
 
 # function to convert a hex colour to an rgb colour
 def hex_to_rgb(hex_val: str):
-    return tuple(int(hex_val.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    return tuple(int(hex_val.lstrip("#")[i:i+2], 16) for i in (0, 2, 4))
 
 # helper function to find the middle colour hex between 2 hex colours
 def interpolate_colour(start_hex: str, end_hex: str, progress: float):
@@ -18,7 +18,7 @@ def interpolate_colour(start_hex: str, end_hex: str, progress: float):
     # math formula to find the middle hex in terms of colour
     new_rgb = tuple(int(start_rgb[i] + (end_rgb[i] - start_rgb[i]) * progress) for i in range(3))
     # converting back to hex
-    return '#{:02x}{:02x}{:02x}'.format(*new_rgb)
+    return "#{:02x}{:02x}{:02x}".format(*new_rgb)
 
 # custom button class
 class AnimatedButton(tk.Canvas):

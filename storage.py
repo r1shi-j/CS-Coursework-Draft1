@@ -25,7 +25,7 @@ PAPER_PLAYERS = ["James Smith 24", "Olivia Johnson 19", "Liam Williams 28", "Emm
 class Database:
     # MARK: - Initialisation
     # setting up connection
-    def __init__(self, filename:str="tournament.db"):
+    def __init__(self, filename:str="database.db"):
         try:
             if os.path.isfile(filename):
                 self.connection = sqlite3.connect(filename)
@@ -317,11 +317,18 @@ class Database:
         self.cursor.execute("INSERT INTO GrandPrix (grandprix_id, tournament_id, round, inverse, bracket, continuers) VALUES (?, ?, ?, ?, ?, ?)", (create_uuid(), t_id, None, None, None, None))
         self.connection.commit()
 
-        # adding the respective players to their respective grand prix
-        for p in players[0:4]: self.add_player_to_gp(starter_ids[0], p[0], None)
-        for p in players[4:8]: self.add_player_to_gp(starter_ids[1], p[0], None)
-        for p in players[8:12]: self.add_player_to_gp(starter_ids[2], p[0], None)
-        for p in players[12:16]: self.add_player_to_gp(starter_ids[3], p[0], None)
+        # adding the respective players to their respective grand prix (new code using 2D array)
+
+        # 2D array of players, each array has 4 players, and 4 arrays
+        # each array of 4 players for each Grand Prix
+        # creates an array for each 4 players [[player1, player2, player3, player4], [player5, player6, player7, player8]...]
+        player_groups = [players[i:i + 4] for i in range(0, len(players), 4)]
+        # for each index, array in player_groups
+        for i, group in enumerate(player_groups):
+            # for each player in the small array
+            for p in group:
+                # add the player to the grand prix using the starter_ids subscript i which is the group index (0-3)
+                self.add_player_to_gp(starter_ids[i], p[0], None)
 
     # adds a player to a grand prix
     def add_player_to_gp(self, gp_id: str, p_id: str, res: int | None):

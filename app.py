@@ -1,9 +1,11 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+import platform
 from storage import Database
 from Pages import tournaments, players, circuits, statistics
 from Utilities.FontStyling import Fonts as FS, Colours as FC
 # importing relevant tkinter packages
+# importing platform to configure os specific keyboard shortcuts
 # importing Database class from storage file
 # importing the view files from Pages folder
 # importing custom font styling, font as FS and colours as FC
@@ -19,6 +21,10 @@ class App(tk.Frame):
         # creating and connecting to the database
         self.db = Database()
         self.db.connect()
+        # setting the keyboard event to listen to clear search field depending on OS (macOS or Windows)
+        system = platform.system()
+        if system == "Darwin": self.CLEAR_TEXT_FIELD = "<Command-BackSpace>"
+        else: self.CLEAR_TEXT_FIELD = "<Control-BackSpace>"
         # calling functions to create style and basic view
         self.create_styling()
         self.create_layout()

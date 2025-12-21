@@ -232,7 +232,7 @@ class TournamentsPage(ttk.Frame):
         search_field.pack(fill="x", padx=5, pady=5)
         # binding escape to deselect search field and command delete to clear search field
         search_field.bind("<Escape>", lambda e: win.focus())
-        search_field.bind("<Command-BackSpace>", clear_query)
+        search_field.bind(self.CLEAR_TEXT_FIELD, clear_query)
 
         # search results frame
         results_outer = ttk.LabelFrame(step2, text="Add Players")
@@ -548,7 +548,7 @@ class TournamentsPage(ttk.Frame):
         search_field = ttk.Entry(search_frame, textvariable=search_var)
         search_field.pack(fill="x", padx=5, pady=5)
         search_field.bind("<Escape>", lambda e: win.focus())
-        search_field.bind("<Command-BackSpace>", clear_query)
+        search_field.bind(self.CLEAR_TEXT_FIELD, clear_query)
 
         # search results frame
         results_outer = ttk.LabelFrame(step2, text="Add Players")
@@ -850,14 +850,14 @@ class TournamentsPage(ttk.Frame):
         field1 = ttk.Entry(win, width=10)
         field1.grid(row=0, column=1, padx=(5,20), pady=(16,8))
         field1.bind("<Escape>", lambda e: win.focus())
-        field1.bind("<Command-BackSpace>", clear_field1)
+        field1.bind(self.CLEAR_TEXT_FIELD, clear_field1)
 
         # text box for the number of grand prixs to be used per round
         ttk.Label(win, text="Number of Grand Prix:").grid(row=1, column=0, padx=(20,5), pady=8, sticky="e")
         field2 = ttk.Entry(win, width=10)
         field2.grid(row=1, column=1, padx=(5,20), pady=8)
         field2.bind("<Escape>", lambda e: win.focus())
-        field2.bind("<Command-BackSpace>", clear_field2)
+        field2.bind(self.CLEAR_TEXT_FIELD, clear_field2)
 
         # check box whether the tournament is normal or longer style
         self.longer_var = tk.BooleanVar()
@@ -1007,32 +1007,36 @@ class TournamentsPage(ttk.Frame):
         # functions to clear the textfield when command backspace pressed
         def clear_uname(event=None):
             uname.delete(0, tk.END)
-        def clear_pword(event=None):
+        def clear_pword1(event=None):
             pword1.delete(0, tk.END)
         def clear_pword2(event=None):
             pword2.delete(0, tk.END)
 
-        # text box for username
-        # binding escape to deselect field
-        ttk.Label(win, text="Username:").grid(row=0, column=0, padx=(20,10), pady=(16,8), sticky="e")
+        # creating the textfields, username password x2
         uname = ttk.Entry(win)
-        uname.grid(row=0, column=1, padx=(5,20), pady=(16,8))
-        uname.bind("<Escape>", lambda e: win.focus())
-        uname.bind("<Command-BackSpace>", clear_uname)
-
-        # text box for password
-        ttk.Label(win, text="Password:").grid(row=1, column=0, padx=(20,10), pady=8, sticky="e")
         pword1 = ttk.Entry(win)
-        pword1.grid(row=1, column=1, padx=(5,20), pady=8)
-        pword1.bind("<Escape>", lambda e: win.focus())
-        pword1.bind("<Command-BackSpace>", clear_pword)
-
         # text box to reenter password (double entry validation)
-        ttk.Label(win, text="Reenter Password:").grid(row=2, column=0, padx=(20,10), pady=8, sticky="e")
         pword2 = ttk.Entry(win)
-        pword2.grid(row=2, column=1, padx=(5,20), pady=8)
-        pword2.bind("<Escape>", lambda e: win.focus())
-        pword2.bind("<Command-BackSpace>", clear_pword2)
+
+        # defining the data to be used in the for loop
+        # textfield title, variable and function that clears it
+        form_data = [
+            ["Username:", uname, clear_uname],
+            ["Password:", pword1, clear_pword1],
+            ["Reenter Password:", pword2, clear_pword2]
+        ]
+
+        # iterate through the 2D array to build the view
+        for i, row_data in enumerate(form_data):
+            # if first row then add extra y padding at top
+            pady = (16,8) if i == 0 else (8,8)
+            # textfield title
+            ttk.Label(win, text=row_data[0]).grid(row=i, column=0, padx=(20,10), pady=pady, sticky="e")
+            # textfield, binding escape and command backspace to clear it
+            entry = row_data[1]
+            entry.grid(row=i, column=1, padx=(5,20), pady=pady)
+            entry.bind("<Escape>", lambda e: win.focus())
+            entry.bind(self.CLEAR_TEXT_FIELD, row_data[2])
 
         # function to add account and close window
         def create_account():
@@ -1135,7 +1139,7 @@ class TournamentsPage(ttk.Frame):
         uname = ttk.Entry(win)
         uname.grid(row=0, column=1, padx=(5,20), pady=(16,8))
         uname.bind("<Escape>", lambda e: win.focus())
-        uname.bind("<Command-BackSpace>", clear_uname)
+        uname.bind(self.CLEAR_TEXT_FIELD, clear_uname)
 
         # text box for password
         # show="" whether to show the password or show="*" to show ***
@@ -1143,7 +1147,7 @@ class TournamentsPage(ttk.Frame):
         pword = ttk.Entry(win, show="")
         pword.grid(row=1, column=1, padx=(5,20), pady=8)
         pword.bind("<Escape>", lambda e: win.focus())
-        pword.bind("<Command-BackSpace>", clear_pword)
+        pword.bind(self.CLEAR_TEXT_FIELD, clear_pword)
 
         # check mark box to toggle showing the raw password or ***
         # storing the value as integer

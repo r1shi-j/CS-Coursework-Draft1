@@ -7,6 +7,7 @@ from app import App
 # importing traceback and sys for error handling
 # importing our actual App class to run it
 
+# MARK: Error Handler
 # function to show error message in popup window
 def show_error_message(exc_type, exc_value, exc_traceback):
     # getting the error
@@ -24,6 +25,7 @@ def show_error_message(exc_type, exc_value, exc_traceback):
         # showing error message
         messagebox.showerror("Critical Error", f"An error occurred:\n\n{error_details}")
 
+# MARK: Main
 # creating and running the app, attatching error handlers
 if __name__ == "__main__":
     sys.excepthook = show_error_message
@@ -32,20 +34,10 @@ if __name__ == "__main__":
     app = App(root)
     app.mainloop()
 
-# deploy on windows and check for inconsistencies
-# 2D Array
+# TODO
 # split long lines up
 
-# MARK: Bugs
-# Tournament type doesn't currently do anything: temporary solution is to disable creating any
+# FIXME
+# Tournament type doesn't currently do anything: temporary solution is to disable creation
 # Adding/removing players from a tournament will disrupt brackets: temporary solution is locking players by disabling adding and removing players from a tournament
 # Only 16 player single elimination is supported: temporary solution is requiring 16 players, by validation, in future maybe a restriction of at least 4 players
-
-# MARK: Conventions
-# using "" instead of '' for strings
-# use (,) instead of [] in sql
-# all functions have return and type hints
-# use english spelling (colour, initialise)
-# block window resizing
-# bind escape key to deactivate search field
-# bind cmd backspace to clear field - update for windows use control instead?

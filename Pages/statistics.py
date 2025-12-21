@@ -17,8 +17,8 @@ from Utilities.FontStyling import Fonts as FS, Colours as FC
 
 # setting the background of all graphs to white if macos, and a light grey if windows
 # os-colour specific logic calculated in FontStyling
-plt.rcParams['figure.facecolor'] = FC.brackets_frame
-plt.rcParams['axes.facecolor'] = FC.brackets_frame
+plt.rcParams["figure.facecolor"] = FC.brackets_frame
+plt.rcParams["axes.facecolor"] = FC.brackets_frame
 
 class StatisticsPage(ttk.Frame):
     def __init__(self, parent: ttk.Frame, controller):
@@ -151,7 +151,7 @@ class StatisticsPage(ttk.Frame):
         ax.set_title("Tournament Results Over Time (Top 5 Players)") # graph title
         ax.set_ylabel("Position") # y axis title
         ax.set_xlabel("Date") # x axis title
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%y')) # turning datetime objects back to strings
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m/%y")) # turning datetime objects back to strings
         fig.autofmt_xdate() # auto rotate dates if they overlap
         ax.invert_yaxis() # 1st place at top
         ax.set_yticks(range(1, 17)) # showing y axis ticks 1-16

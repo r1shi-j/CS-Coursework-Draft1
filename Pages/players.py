@@ -63,7 +63,7 @@ class PlayersPage(ttk.Frame):
         self.search_field = ttk.Entry(search_frame, width=20)
         self.search_field.pack(side="left", padx=5)
         self.search_field.bind("<KeyRelease>", self.search_players)
-        self.search_field.bind("<Command-BackSpace>", self.clear_entry)
+        self.search_field.bind(self.CLEAR_TEXT_FIELD, self.clear_entry)
         self.search_field.bind("<Escape>", lambda e: self.search_field.focus_set() or self.focus())
         # clear search button as a label so can add styling
         self.clear_search = ttk.Label(search_frame, text="⌫", width=2)
@@ -130,21 +130,21 @@ class PlayersPage(ttk.Frame):
         fname_entry = ttk.Entry(win)
         fname_entry.grid(row=0, column=1, padx=(5,20), pady=(16,8))
         fname_entry.bind("<Escape>", lambda e: win.focus())
-        fname_entry.bind("<Command-BackSpace>", clear_fname)
+        fname_entry.bind(self.CLEAR_TEXT_FIELD, clear_fname)
 
         # text box for surname
         ttk.Label(win, text="Surname:").grid(row=1, column=0, padx=10, pady=8, sticky="e")
         sname_entry = ttk.Entry(win)
         sname_entry.grid(row=1, column=1, padx=(5,20), pady=8)
         sname_entry.bind("<Escape>", lambda e: win.focus())
-        sname_entry.bind("<Command-BackSpace>", clear_sname)
+        sname_entry.bind(self.CLEAR_TEXT_FIELD, clear_sname)
 
         # text box for age
         ttk.Label(win, text="Age:").grid(row=2, column=0, padx=10, pady=8, sticky="e")
         age_entry = ttk.Entry(win)
         age_entry.grid(row=2, column=1, padx=(5,20), pady=8)
         age_entry.bind("<Escape>", lambda e: win.focus())
-        age_entry.bind("<Command-BackSpace>", clear_age)
+        age_entry.bind(self.CLEAR_TEXT_FIELD, clear_age)
 
         # adding the player to the database, and then closing the window and refreshing the player view so that the new player is present
         def create_player():
@@ -245,7 +245,7 @@ class PlayersPage(ttk.Frame):
         fname_entry.insert(0, player[1])
         fname_entry.grid(row=0, column=1, columnspan=2, padx=(5,20), pady=(16,8))
         fname_entry.bind("<Escape>", lambda e: win.focus())
-        fname_entry.bind("<Command-BackSpace>", clear_fname)
+        fname_entry.bind(self.CLEAR_TEXT_FIELD, clear_fname)
 
         # text box for surname, prefilling with the original data
         ttk.Label(win, text="Surname:").grid(row=1, column=0, padx=(15,10), pady=8, sticky="e")
@@ -253,7 +253,7 @@ class PlayersPage(ttk.Frame):
         sname_entry.insert(0, player[2])
         sname_entry.grid(row=1, column=1, columnspan=2, padx=(5,20), pady=8)
         sname_entry.bind("<Escape>", lambda e: win.focus())
-        sname_entry.bind("<Command-BackSpace>", clear_sname)
+        sname_entry.bind(self.CLEAR_TEXT_FIELD, clear_sname)
 
         # text box for age, prefilling with the original data
         ttk.Label(win, text="Age:").grid(row=2, column=0, padx=(15,10), pady=8, sticky="e")
@@ -261,7 +261,7 @@ class PlayersPage(ttk.Frame):
         age_entry.insert(0, str(player[3]))
         age_entry.grid(row=2, column=1, columnspan=2, padx=(5,20), pady=8)
         age_entry.bind("<Escape>", lambda e: win.focus())
-        age_entry.bind("<Command-BackSpace>", clear_age)
+        age_entry.bind(self.CLEAR_TEXT_FIELD, clear_age)
 
         # function to update the data, and then go back
         def update_player():
