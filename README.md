@@ -7,9 +7,11 @@
 <code>python3 -m venv venv</code><br>
 <code>source venv/bin/activate</code><br>
 <code>pip install -r requirements.txt</code><br>
+<code>python3 main.py</code>
 
 <h1>For Windows ⊞ 🗑 (using PowerShell)</h1>
 <code>python -m venv venv</code><br>
 <code>Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process</code><br>
 <code>.\venv\Scripts\Activate.ps1</code><br>
-<code>pip install -r requirements.txt</code>
+<code>pip install -r requirements.txt</code><br>
+<code>python main.py</code>

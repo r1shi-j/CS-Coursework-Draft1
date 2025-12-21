@@ -232,7 +232,7 @@ class TournamentsPage(ttk.Frame):
         search_field.pack(fill="x", padx=5, pady=5)
         # binding escape to deselect search field and command delete to clear search field
         search_field.bind("<Escape>", lambda e: win.focus())
-        search_field.bind(self.CLEAR_TEXT_FIELD, clear_query)
+        search_field.bind(self.controller.CLEAR_TEXT_FIELD, clear_query)
 
         # search results frame
         results_outer = ttk.LabelFrame(step2, text="Add Players")
@@ -548,7 +548,7 @@ class TournamentsPage(ttk.Frame):
         search_field = ttk.Entry(search_frame, textvariable=search_var)
         search_field.pack(fill="x", padx=5, pady=5)
         search_field.bind("<Escape>", lambda e: win.focus())
-        search_field.bind(self.CLEAR_TEXT_FIELD, clear_query)
+        search_field.bind(self.controller.CLEAR_TEXT_FIELD, clear_query)
 
         # search results frame
         results_outer = ttk.LabelFrame(step2, text="Add Players")
@@ -850,14 +850,14 @@ class TournamentsPage(ttk.Frame):
         field1 = ttk.Entry(win, width=10)
         field1.grid(row=0, column=1, padx=(5,20), pady=(16,8))
         field1.bind("<Escape>", lambda e: win.focus())
-        field1.bind(self.CLEAR_TEXT_FIELD, clear_field1)
+        field1.bind(self.controller.CLEAR_TEXT_FIELD, clear_field1)
 
         # text box for the number of grand prixs to be used per round
         ttk.Label(win, text="Number of Grand Prix:").grid(row=1, column=0, padx=(20,5), pady=8, sticky="e")
         field2 = ttk.Entry(win, width=10)
         field2.grid(row=1, column=1, padx=(5,20), pady=8)
         field2.bind("<Escape>", lambda e: win.focus())
-        field2.bind(self.CLEAR_TEXT_FIELD, clear_field2)
+        field2.bind(self.controller.CLEAR_TEXT_FIELD, clear_field2)
 
         # check box whether the tournament is normal or longer style
         self.longer_var = tk.BooleanVar()
@@ -1036,7 +1036,7 @@ class TournamentsPage(ttk.Frame):
             entry = row_data[1]
             entry.grid(row=i, column=1, padx=(5,20), pady=pady)
             entry.bind("<Escape>", lambda e: win.focus())
-            entry.bind(self.CLEAR_TEXT_FIELD, row_data[2])
+            entry.bind(self.controller.CLEAR_TEXT_FIELD, row_data[2])
 
         # function to add account and close window
         def create_account():
@@ -1139,7 +1139,7 @@ class TournamentsPage(ttk.Frame):
         uname = ttk.Entry(win)
         uname.grid(row=0, column=1, padx=(5,20), pady=(16,8))
         uname.bind("<Escape>", lambda e: win.focus())
-        uname.bind(self.CLEAR_TEXT_FIELD, clear_uname)
+        uname.bind(self.controller.CLEAR_TEXT_FIELD, clear_uname)
 
         # text box for password
         # show="" whether to show the password or show="*" to show ***
@@ -1147,7 +1147,7 @@ class TournamentsPage(ttk.Frame):
         pword = ttk.Entry(win, show="")
         pword.grid(row=1, column=1, padx=(5,20), pady=8)
         pword.bind("<Escape>", lambda e: win.focus())
-        pword.bind(self.CLEAR_TEXT_FIELD, clear_pword)
+        pword.bind(self.controller.CLEAR_TEXT_FIELD, clear_pword)
 
         # check mark box to toggle showing the raw password or ***
         # storing the value as integer

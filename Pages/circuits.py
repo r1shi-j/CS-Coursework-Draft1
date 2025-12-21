@@ -28,7 +28,7 @@ class CircuitsPage(ttk.Frame):
         self.search_field = ttk.Entry(search_frame, width=20)
         self.search_field.pack(side="left", padx=5)
         self.search_field.bind("<KeyRelease>", self.search_circuits)
-        self.search_field.bind(self.CLEAR_TEXT_FIELD, self.clear_entry)
+        self.search_field.bind(self.controller.CLEAR_TEXT_FIELD, self.clear_entry)
         self.search_field.bind("<Escape>", lambda e: self.search_field.focus_set() or self.focus())
         # clear search button as a label so can add styling
         clear_search = ttk.Label(search_frame, text="⌫", width=2)
