@@ -2,10 +2,15 @@ import tkinter as tk
 from tkinter import messagebox
 import traceback
 import sys
+import argparse
 from app import App
 # usual tkinter imports
 # importing traceback and sys for error handling
+# argparse for command line parsing
 # importing our actual App class to run it
+
+# constant for the default database to open when none provided
+DEFAULT_DATABASE = "test_database.db"
 
 # MARK: Error Handler
 # function to show error message in popup window
@@ -26,16 +31,25 @@ def show_error_message(exc_type, exc_value, exc_traceback):
         messagebox.showerror("Critical Error", f"An error occurred:\n\n{error_details}")
 
 # MARK: Main
-# creating and running the app, attatching error handlers
 if __name__ == "__main__":
+    # adding command line parser when run, to catch flags
+    parser = argparse.ArgumentParser(description=f"Mario Kart Tournament App: running without any arguments opens the existing {DEFAULT_DATABASE} database")
+    parser.add_argument("mode", choices=["new", "run"], nargs="?", default="run", help="Mode: 'new' to create a new database, 'run' to use an existing database")
+    parser.add_argument("db_name", nargs="?", default=DEFAULT_DATABASE, help="Name of the database file to use")
+    args = parser.parse_args()
+    is_new = True if args.mode == "new" else False
+    # printing mode
+    print(f"--- Starting in {args.mode.upper()} mode using database: {args.db_name}, is new database: {is_new} ---")
     sys.excepthook = show_error_message
     root = tk.Tk()
     root.report_callback_exception = show_error_message
-    app = App(root)
+    # launching app with database config
+    app = App(root, (args.db_name, is_new))
     app.mainloop()
 
 # TODO
 # split long lines up
+# remove TODO, FIXME, #* for temporary code
 
 # FIXME
 # Tournament type doesn't currently do anything: temporary solution is to disable creation

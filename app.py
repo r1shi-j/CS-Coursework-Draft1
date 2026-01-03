@@ -10,17 +10,19 @@ from Utilities.FontStyling import Fonts as FS, Colours as FC
 # importing the view files from Pages folder
 # importing custom font styling, font as FS and colours as FC
 
+# constant to store navigation titles
+NAVIGATION_TITLES = ["Tournaments", "Players", "Circuits", "Statistics"]
+
 # creating the frame
 class App(tk.Frame):
-    def __init__(self, master: tk.Tk):
+    def __init__(self, master: tk.Tk, database: tuple[str, bool]):
         super().__init__(master)
         # creating the view
         self.master = master
         # when user tries to close window the function on_app_close is called
         self.master.protocol("WM_DELETE_WINDOW", self.on_app_close)
         # creating and connecting to the database
-        self.db = Database()
-        self.db.connect()
+        self.db = Database(database)
         # setting the keyboard event to listen to clear search field depending on OS (macOS or Windows)
         system = platform.system()
         if system == "Darwin": self.CLEAR_TEXT_FIELD = "<Command-BackSpace>"
@@ -33,7 +35,7 @@ class App(tk.Frame):
         # creating the navbar and view pages, and then showing the Tournaments frame
         self.create_navbar()
         self.create_pages()
-        self.show_frame("Tournaments")
+        self.show_frame(NAVIGATION_TITLES[0])
     
     # function called when window is tried to be closed
     def on_app_close(self):
@@ -95,31 +97,37 @@ class App(tk.Frame):
             # creating the title with the header font
             label = ttk.Label(parent, text=view_name, font=FS.header)
             label.pack(side="left", padx=36)
+            
+            # variable to store whether user is hovering over this nav title
+            is_hovering = False
 
             # when hover change font to add underline
             def on_enter(e):
                 label.configure(font=FS.header_u)
+                # set is_hovering to true as user has started hovering
+                is_hovering = True
 
             # when unhovers change font to remove underline
             def on_leave(e):
                 label.configure(font=FS.header)
+                # set is_hovering to false as user is not hovering anymore
+                is_hovering = False
 
             # when label clicked call function to show that view
-            def on_click(e): self.show_frame(view_name)
+            def on_click(k): 
+                self.show_frame(view_name, k)
 
             # binding mouse actions to these functions
             label.bind("<Enter>", on_enter)
             label.bind("<Leave>", on_leave)
-            label.bind("<Button-1>", on_click)
+            label.bind("<Button-1>", lambda k=is_hovering: on_click(k))
             # in dictionary setting the view title to the actual label variable
             self.nav_labels[view_name] = label
             return label
-
+        
         # making all the headers
-        make_nav_label(self.header_frame, "Tournaments")
-        make_nav_label(self.header_frame, "Players")
-        make_nav_label(self.header_frame, "Circuits")
-        make_nav_label(self.header_frame, "Statistics")
+        for name in NAVIGATION_TITLES:
+            make_nav_label(self.header_frame, name)
 
         # defining the current page to be None
         # when app runs this is set to Tournaments
@@ -141,7 +149,7 @@ class App(tk.Frame):
             frame.grid(row=0, column=0, sticky="nsew")
 
     # showing the respective frame when navigation button clicked on
-    def show_frame(self, page_name: str):
+    def show_frame(self, page_name: str, is_hovering: bool = False):
         # getting the frame from dictionary with the page name
         # tkraise to bring that view to the top
         frame = self.frames[page_name]
@@ -151,8 +159,12 @@ class App(tk.Frame):
         for name, label in self.nav_labels.items():
             # getting the name and label for all nav titles
             if name == page_name:
+                # if user has hovered over the title and clicked it, then keep font to underline
+                if is_hovering: font = FS.header_u
+                # else if system has opened the view don't show underline
+                else: font = FS.header
                 # if this is the selected page then set the font colour foreground to blue
-                label.configure(font=FS.header, foreground=FC.blue[1])
+                label.configure(font=font, foreground=FC.blue[1])
             else:
                 # setting black text colour for other titles
                 label.configure(font=FS.header, foreground=FC.black)
@@ -162,6 +174,8 @@ class App(tk.Frame):
 
     # function to underline a label on hover
     def make_hoverable(self, label: ttk.Label):
+        # only if function recives a ttk.Label otherwise do nothing
+        if type(label) != ttk.Label: return
         # fetching the font the label uses
         font = str(label["font"]).split(" ")
         # if no font is specified then use defaults with underline on hover
@@ -180,15 +194,15 @@ class App(tk.Frame):
     # function to open statistics view with player data
     def open_statistics_player(self, player: tuple[str, str, str, int]):
         # calling function to load player stats
-        stats_page = self.frames["Statistics"]
+        stats_page = self.frames[NAVIGATION_TITLES[3]]
         stats_page.load_player_stats(player)
         # loading the statistics view
-        self.show_frame("Statistics")
+        self.show_frame(NAVIGATION_TITLES[3])
 
     # function to open statistics view with circuit data
     def open_statistics_circuit(self, circuit: tuple[str, str]):
         # calling function to load circuit stats
-        stats_page = self.frames["Statistics"]
+        stats_page = self.frames[NAVIGATION_TITLES[3]]
         stats_page.load_circuit_stats(circuit)
         # loading the statistics view
-        self.show_frame("Statistics")
+        self.show_frame(NAVIGATION_TITLES[3])

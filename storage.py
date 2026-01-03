@@ -3,18 +3,19 @@ import sqlite3
 import uuid
 import hashlib
 from datetime import datetime
+from typing import Callable 
 # os needed to check if db file exists
 # sqlite3 for database
 # uuid to generate unique identifiers
 # hashlib to encode password as a hash
 # datetime to convert string dates when sorting dates
-import tkinter # used for type hint in insert_gp_results
+# typing used for type hint in sort_tournaments
 
 # function to generate a UUID
 def create_uuid() -> str:
     return str(uuid.uuid4())
 
-# Prefilled data: standard circuits, tournament type, demo players, tournaments
+# prefilled data: standard circuits, tournament type, demo players, tournaments
 
 # array of all the standard circuits
 PAPER_CIRCUITS = ["Mario Kart Stadium", "Water Park", "Sweet Sweet Canyon", "Thwomp Ruins", "Mario Circuit", "Toad Harbor", "Twisted Mansion", "Shy Guy Falls", "Sunshine Airport", "Dolphin Shoals", "Electrodrome", "Mount Wario", "Cloudtop Cruise", "Bone-Dry Dunes", "Bowser's Castle", "Rainbow Road", "Moo Moo Meadows", "GBA Mario Circuit", "Cheep Cheep Beach", "Toad's Turnpike", "Dry Dry Desert", "Donut Plains 3", "Royal Raceway", "DK Jungle", "Wario Stadium", "Sherbet Land", "Music Park", "Yoshi Valley", "Tick-Tock Clock", "Piranha Plant Slide", "Grumble Volcano", "N64 Rainbow Road", "Yoshi Circuit", "Excitebike Arena", "Dragon Driftway", "Mute City", "Wario's Goldmine", "SNES Rainbow Road", "Ice Ice Outpost", "Hyrule Circuit", "Baby Park", "Cheese Land", "Wild Woods", "Animal Crossing", "Neo Bowser City", "Ribbon Road", "Super Bell Subway", "Big Blue"]
@@ -25,16 +26,45 @@ PAPER_PLAYERS = ["James Smith 24", "Olivia Johnson 19", "Liam Williams 28", "Emm
 class Database:
     # MARK: - Initialisation
     # setting up connection
-    def __init__(self, filename:str="database.db"):
+    def __init__(self, db: tuple[str, bool]):
+        # inner function which opens the database and outputs message
+        def open_db():
+            self.connection = sqlite3.connect(db[0])
+            self.connection.execute("PRAGMA foreign_keys = ON;")
+            self.cursor = self.connection.cursor()
+            print("Opened database: ", db[0])
+
+        # if we are told to create a new database
         try:
-            if os.path.isfile(filename):
-                self.connection = sqlite3.connect(filename)
-                self.connection.execute("PRAGMA foreign_keys = ON;")
-                self.cursor = self.connection.cursor()
+            if db[1]:
+                # check if file already exists, if it does then say it
+                if os.path.isfile(db[0]): print(f"Database {db[0]} already exists")
+                # if it doesnt exist then say we are creating it
+                else: print("Creating database: ", db[0])
+                # open the database
+                open_db()
+            # if we are opening existing database (99% of times)
             else:
-                raise FileNotFoundError
-        except Exception as e:
-            print("Database not found: ", e, type(e))
+                # if file exists then open the database
+                if os.path.isfile(db[0]): open_db()
+                # if file doesn't exist then raise this error
+                else: raise FileNotFoundError
+        except FileNotFoundError:
+            # if file doesn't exist then show it and close system
+            print("Database not found. If you intend to create a new database file run `python3 main.py new 'my_new_db_name.db'`")
+            exit()
+        except sqlite3.Error as e:
+            # if any other db error then show it and close system
+            print("Database error: ", e)
+            exit()
+
+        # trying to connect to database and create tables if new db
+        try:
+            self.connect()
+        except sqlite3.Error as e:
+            # if fails then show error
+            print("Database connection error: ", e)
+            exit()
 
     # creating all the tables if they don't exist
     def connect(self):
@@ -116,6 +146,7 @@ class Database:
             FOREIGN KEY (player_id) REFERENCES Player(player_id)
         );
         """)
+        #* UNIQUE (race_id, race_result)
 
         self.cursor.execute("""
         CREATE TABLE IF NOT EXISTS GrandPrixParticipation (
@@ -183,6 +214,7 @@ class Database:
     # closing the database
     def close(self):
         self.connection.close()
+        print("Closed database")
 
     # MARK: - Tournaments
 
@@ -213,7 +245,7 @@ class Database:
         # recursive quicksort function
         # data: the list of tuples to sort
         # key_func: a function that extracts the value to compare (e.g., date or winner name)
-        def quick_sort(data: list[tuple[str, str, int, str]], key_func) -> list[tuple[str, str, int, str]]:
+        def quick_sort(data: list[tuple[str, str, int, str]], key_func: Callable[[tuple[str, str, int, str]], str]) -> list[tuple[str, str, int, str]]:
             # base case: A list of 0 or 1 elements is already sorted
             if len(data) <= 1:
                 return data
@@ -289,7 +321,7 @@ class Database:
             # the closure takes a tournament object and gets the id and then finds the player name, and so sorting by winner name
             sorted_winners = quick_sort(with_winners, lambda x: self.read_tournament_winner(x[0])[1])
 
-            # Sort the incomplete tournaments by Date (always ASC by default convention)
+            # sort the incomplete tournaments by Date (always ASC by default convention)
             sorted_losers = quick_sort(without_winners, lambda x: x[1])
 
             # reverse winners if DESC required
@@ -337,8 +369,12 @@ class Database:
 
     # updates a tournament with the changes
     def update_tournament(self, t_id: str, date: str, p_count: int, ttype_id: str):
-        self.cursor.execute("UPDATE Tournament SET date = ?, player_count = ?, tournament_type_id = ? WHERE tournament_id = ?", (date, p_count, ttype_id, t_id))
-        self.connection.commit()
+        try:
+            self.cursor.execute("UPDATE Tournament SET date = ?, player_count = ?, tournament_type_id = ? WHERE tournament_id = ?", (date, p_count, ttype_id, t_id))
+            self.connection.commit()
+        except sqlite3.IntegrityError:
+            print(f"Failed to update tournament, either Tournament ID {t_id} not found or Tournament Type ID {ttype_id} not found.")
+            return
 
     # reading all the tournament types
     def read_tournament_types(self) -> list[tuple[str, int, int, bool]]:
@@ -421,8 +457,12 @@ class Database:
     
     # adding a player to a tournament
     def add_player_to_tournament(self, t_id: str, p_id: str):
-        self.cursor.execute("INSERT INTO TournamentParticipation (tournament_id, player_id, tournament_result) VALUES (?, ?, ?)", (t_id, p_id, None))
-        self.connection.commit()
+        try:
+            self.cursor.execute("INSERT INTO TournamentParticipation (tournament_id, player_id, tournament_result) VALUES (?, ?, ?)", (t_id, p_id, None))
+            self.connection.commit()
+        except sqlite3.IntegrityError:
+            print(f"Failed to update tournament, either Tournament ID {t_id} not found or Player ID {p_id} not found.")
+            return
 
     # removing a player from a tournament
     def remove_player_from_tournament(self, t_id: str, p_id: str) -> bool:
@@ -678,9 +718,9 @@ class Database:
                 return ""
     
     # inserting the grand prix results for players after grand prix finished
-    def insert_gp_results(self, gp_id: str, results: list[tuple[str, tkinter.StringVar]]):
-        for p_id, var in results:
-            self.cursor.execute("UPDATE GrandPrixParticipation SET grandprix_result = ? WHERE grandprix_id = ? AND player_id = ?", (int(var.get()), gp_id, p_id))
+    def insert_gp_results(self, gp_id: str, results: list[tuple[str, int]]):
+        for p_id, res in results:
+            self.cursor.execute("UPDATE GrandPrixParticipation SET grandprix_result = ? WHERE grandprix_id = ? AND player_id = ?", (res, gp_id, p_id))
         self.connection.commit()
         
     # adding the winners to the next grand prix
@@ -725,8 +765,13 @@ class Database:
             print(f"Error: Tournament ID {t_id} or Player ID {p_id} not found.")
             return -1
 
-    # function to calculate what position eveyone came and then update it in TournamentParticipation
-    def set_tournament_results(self, t_id: str):
+    # function to calculate what position everyone came and then update it in TournamentParticipation
+    def set_tournament_results(self, t_id: str, force: bool = False):
+        # if called when tournament finished, then bypass this flawed winner check
+        if not force:
+            winner = self.read_tournament_winner(t_id)
+            if not winner: return
+
         # inner function to update results for a specific round number so can gather all players eliminated in that round and rank for results
         def update_for_round(round: int | None, base: int):
             # selecting all the grand prix ids for that round
@@ -803,7 +848,7 @@ class Database:
     
     # linear search on players with a query
     def search_players(self, search_term: str) -> list[tuple[str, str, str, int]]:
-        # fetching all players into a 2d array
+        # fetching all players into a 2D array
         all_players = self.read_player_data()
         
         # if no query, return everyone
@@ -873,7 +918,7 @@ class Database:
 
     # linear search on circuits with a query
     def search_circuits(self, search_term: str) -> list[tuple[str, str]]:
-        # fetching all circuits into a 2d array
+        # fetching all circuits into a 2D array
         all_circuits = self.read_circuit_data()
         
         # if no query, return everyone
@@ -925,11 +970,12 @@ class Database:
     
     # getting rivalry stats
     def get_rivalry_stats(self) -> dict[str, list[tuple[str, int]]]:
-        # fetches the first name and surname in a single string, the sum and number of tournament results
+        # fetches the first name and surname in a single string, the sum and number of tournament results for finished tournaments
         query = """
         SELECT p.forename || ' ' || p.surname, SUM(tp.tournament_result) as sum, COUNT(tp.tournament_result) as count
         FROM TournamentParticipation tp
         JOIN Player p ON tp.player_id = p.player_id
+        WHERE tp.tournament_result IS NOT NULL
         GROUP BY p.player_id
         ORDER BY sum ASC
         """
@@ -939,13 +985,13 @@ class Database:
         # calculating the average result for each player
         avg_res: list[tuple[str, float]] = []
         for row in res:
-            # trying to divide the sum of results by the number of results (number of individual data so the number of tournaments with results)
+            # finding average by dividing sum of tournament results by the number of tournaments finished
             try:
                 average = row[1] / row[2]
                 avg_res.append((row[0], average))
             except (ZeroDivisionError, TypeError):
-                # if either is 0 or Null/None then continue
-                # this will be if the player hasn't finished tournament yet
+                # if either value is 0 or Null/None then division can't work so continue to next item
+                # this will be if a player is added to their first tournament and it is incomplete
                 continue
         # sorting the list by average result highest to lowest
         sorted_res = sorted(avg_res, key=lambda x: x[1])
@@ -1034,11 +1080,16 @@ class Database:
 
 #* temporary manual database operations
 def temp_operations():
-    print("database opened")
-    db = Database()
+    db = Database(("test_database.db", False))
     db.connect()
+
+    # temporary function to reset tournament result for all players in a tournament
+    # def reset_t_result(t_id: str):
+    #     db.cursor.execute("UPDATE TournamentParticipation SET tournament_result = NULL WHERE tournament_id = ?", (t_id,))
+    #     db.connection.commit()
+    # reset_t_result("5cca8604-55a7-4f0a-8a2a-e1854ec9296b")
     
-    # tempoary function to create an account for all tournaments with username "username" and password "password"
+    # temporary function to create an account for all tournaments with username "username" and password "password"
     # def reset_all_accounts():
     #     db.cursor.execute("DELETE FROM Account")
     #     db.connection.commit()
@@ -1051,7 +1102,6 @@ def temp_operations():
     #     db.connection.commit()
 
     db.close()
-    print("database closed")
 
 # if this file is run directly then run temp_operations function
 if __name__ == "__main__":

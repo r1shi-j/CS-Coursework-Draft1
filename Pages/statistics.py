@@ -47,7 +47,7 @@ class StatisticsPage(ttk.Frame):
         # defining the button data such as title, function to open, tip text and colour
         buttons_data = [
             ("Top Players", self.show_top_players, "Displays the players with the most\ntournament wins as a bar chart.", FC.blue),
-            ("Top Rivalries", self.show_rivalry, "Displays the past tournament results\nfor the top 3 players as a line graph.", FC.green),
+            ("Top Rivalries", self.show_rivalry, "Displays the past tournament results\nfor the top 5 players as a line graph.", FC.green),
             ("Circuit Popularity", self.show_circuit_popularity, "Displays the most raced\ncircuits as a pie chart.", FC.red),
             ("Circuit Analysis", self.open_circuit_analysis, "Displays who has won a circuit\nthe most times as a bar chart.", FC.purple),
             ("Player-Circuit Performance", self.open_player_circuit_performance, "Displays a player's performance\nfor a circuit as a bar chart.", FC.gold),
@@ -64,7 +64,7 @@ class StatisticsPage(ttk.Frame):
                 base_colour=hover_colour[0], hover_colour=hover_colour[1]
             )
             btn.pack(pady=10)
-            create_tooltip(btn, tooltip, True)
+            create_tooltip(btn, tooltip)
 
     # for the basic graphs, this function opens a new window and displays the graph
     def open_graph_window(self, title: str, figure: Figure):
@@ -86,7 +86,7 @@ class StatisticsPage(ttk.Frame):
         data = self.controller.db.get_top_winners_stats()
 
         if not data: 
-            # Open a window just to tell the user there is no data
+            # opens a window just to tell the user there is no data
             window = tk.Toplevel(self)
             window.title("Top Players")
             window.geometry("400x200")
@@ -123,9 +123,9 @@ class StatisticsPage(ttk.Frame):
         data_dict = self.controller.db.get_rivalry_stats()
 
         if not data_dict:
-            # Open a window just to tell the user there is no data
+            # opens a window just to tell the user there is no data
             window = tk.Toplevel(self)
-            window.title("Rivalry Analysis")
+            window.title("Top Rivalries")
             window.geometry("400x200")
             window.resizable(False, False)
             
@@ -170,7 +170,7 @@ class StatisticsPage(ttk.Frame):
         data = self.controller.db.get_circuit_usage_stats()
         
         if not data:
-            # Open a window just to tell the user there is no data
+            # opens a window just to tell the user there is no data
             window = tk.Toplevel(self)
             window.title("Circuit Popularity")
             window.geometry("400x200")
@@ -185,7 +185,7 @@ class StatisticsPage(ttk.Frame):
             # if there are more than 10 items from data then must group some into other category
             # but can't simply cut off at the end, must make sure count of last item is greater than max count of other items
             MAX_TOTAL_SLICES = 10
-            MAX_SPECIFIC_SLICES = 9 # Indices 0 to 8
+            MAX_SPECIFIC_SLICES = 9 # indices 0 to 8
 
             # empty arrays of labels and sizes
             labels = []
@@ -251,7 +251,7 @@ class StatisticsPage(ttk.Frame):
         # getting the number of players, if no player created then showing message
         player_count = self.controller.db.get_player_count()
         if player_count == 0:
-            # Open a window just to tell the user there are no players to view statistics on
+            # opens a window just to tell the user there are no players to view statistics on
             window = tk.Toplevel(self)
             window.title("Circuit Analysis")
             window.geometry("400x200")
@@ -334,7 +334,7 @@ class StatisticsPage(ttk.Frame):
                 label_widget.image = photo
                 # setting the label image to the photo file
             except Exception:
-                # Fallback if image not found
+                # fallback if image not found
                 label_widget.config(image="", text="No Image")
 
         # loading the images to their placeholder labels defined in open_circuit_analysis above
@@ -386,7 +386,7 @@ class StatisticsPage(ttk.Frame):
         # getting the number of players, if no player created then showing message
         player_count = self.controller.db.get_player_count()
         if player_count == 0:
-            # Open a window just to tell the user there are no players to view statistics on
+            # opens a window just to tell the user there are no players to view statistics on
             window = tk.Toplevel(self)
             window.title("Player-Circuit Performance")
             window.geometry("400x200")
@@ -515,9 +515,9 @@ class StatisticsPage(ttk.Frame):
         # getting the number of players, if no player created then showing message
         player_count = self.controller.db.get_player_count()
         if player_count == 0:
-            # Open a window just to tell the user there are no players to analyse
+            # opens a window just to tell the user there are no players to analyse
             window = tk.Toplevel(self)
-            window.title("Full Player Analysis")
+            window.title("Player Analysis")
             window.geometry("400x200")
             window.resizable(False, False)
             
@@ -598,14 +598,14 @@ class StatisticsPage(ttk.Frame):
         
         # if no data then show error message, indicates that the player hasn't participated in any tournaments yet
         if not history_data:
-            # Hide the graph frames
+            # hide the graph frames
             win.top_graph_frame.pack_forget()
             win.bottom_graph_frame.pack_forget()
             win.error_label = tk.Label(win, text=f"No data found for {p_name}.", font=FS.base2)
             win.error_label.pack(expand=True)
             return
         
-        # Showing the graph frames
+        # showing the graph frames
         win.top_graph_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         win.bottom_graph_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
@@ -672,7 +672,7 @@ class StatisticsPage(ttk.Frame):
             # otherwise shows empty canvas, but error message will show
             win.canvas_box = None
 
-    # When hyperlinks clicked in other parts of the system, these functions open the relevant graphs directly with preselected values
+    # when hyperlinks clicked in other parts of the system, these functions open the relevant graphs directly with preselected values
     def load_player_stats(self, player:  tuple[str, str, str, int]):
         self.open_player_analysis(player)
 

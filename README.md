@@ -28,6 +28,7 @@
 <p>
 <span><code>datetime</code></span>
 <span><code>collections</code></span>
+<span><code>typing</code></span>
 <span><code>re</code></span>
 <span><code>uuid</code></span>
 <span><code>hashlib</code></span>
@@ -37,12 +38,14 @@
 <span><code>platform</code></span>
 <span><code>traceback</code></span>
 <span><code>sys</code></span>
+<span><code>argparse</code></span>
 <span><code>threading (macOS only)</code></span>
 </p>
 <h4>Modules required to be installed (additional info can be found in <code>requirements.txt</code>)</h4>
 <p>
 <span><code>tkcalendar</code></span>
 <span><code>matplotlib</code></span>
+<span><code>zxcvbn</code></span>
 <span><code>LocalAuthentication (macOS only)</code></span>
 </p>
 <p>Following the steps above will install these modules into your virual environment</p>

@@ -78,16 +78,16 @@ class CircuitsPage(ttk.Frame):
             return
 
         # creating a row with the text for each result
-        # adding extra padding at the bottom of last row
         # binding the name to open statistics view with the circuit data
         # name is underlined on hover
         for row in results:
             name = ttk.Label(self.results_frame, text=row[1], anchor="center")
-            # padding of 4 between each row, this is 1 greater than in player view, because each text opens a tip, don't want them to be too close together
+            # padding of 4 between each row, adding extra padding at the bottom of last row
+            # this is 1 greater than in player view, because each text opens a tip, don't want them to be too close together
             name.pack(pady=(4 if results.index(row) != len(results)-1 else (4,20)))
             name.bind("<Button-1>", lambda e, r=row: self.controller.open_statistics_circuit(r))
             self.controller.make_hoverable(name)
-            create_tooltip(name, row[1], False)
+            create_tooltip(name, row[1])
 
     # function to clear the search field by deleting content in the text box
     def clear_entry(self, event=None):
@@ -106,15 +106,13 @@ class CircuitsPage(ttk.Frame):
         # fetches the query
         query = self.search_field.get().strip()
 
-        # if query is blank then fetch all circuits
-        # else fetch the circuits for the query
-        if query == "":
-            results = self.controller.db.read_circuit_data()
-        else:
-            results = self.controller.db.search_circuits(query)
+        # show results for the query
+        # if the query is blank then the function will return all circuits
+        results = self.controller.db.search_circuits(query)
         self.show_results(results)
 
     # when the clear search button pressed, clear the textbox and then load all circuits
     def remove_search(self, event):
         self.clear_entry()
-        self.show_results(self.controller.db.read_circuit_data())
+        all_results = self.controller.db.read_circuit_data()
+        self.show_results(all_results)

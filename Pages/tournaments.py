@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 from tkcalendar import Calendar
 import re
 import datetime
+from zxcvbn import zxcvbn
 from collections import defaultdict
 from storage import create_uuid
 from Utilities.animatedButton import AnimatedButton
@@ -10,6 +11,7 @@ from Utilities.FontStyling import Fonts as FS, Colours as FC
 # usual tk imports, new tkcalendar import to show the calendar
 # importing re for regex validation
 # importing datetime and defaultdict
+# zxcvbn is for password strength estimator
 # added threading to use for Touch ID
 # importing the create uuid function from storage
 # importing animatedButton to use custom coloured button
@@ -18,6 +20,7 @@ from Utilities.FontStyling import Fonts as FS, Colours as FC
 # trying to import LocalAuthentication, if it can be imported then os is macOS so import it and threading
 # creating variable to determine whether to should Touch ID login
 try:
+    # raise ModuleNotFoundError #* Temporary internal testing to force manual login
     import threading
     import LocalAuthentication
     # importing LocalAuthentication to use Touch ID sensor to login
@@ -74,7 +77,7 @@ class TournamentsPage(ttk.Frame):
         # trigger the prompt
         context.evaluatePolicy_localizedReason_reply_(LocalAuthentication.LAPolicyDeviceOwnerAuthenticationWithBiometrics, reason, callback)
 
-        # block here until the callback runs 'auth_finished_event.set()'
+        # freezing the main thread until authentication is finished
         # this makes the asynchronous call behave synchronously
         auth_finished_event.wait()
         
@@ -137,6 +140,112 @@ class TournamentsPage(ttk.Frame):
         # loading the tournaments list
         self.refresh_tournaments()
 
+    # refreshing tournaments list when tournament is created, finished or is being sorted
+    # and initially showing the tournaments list
+    def refresh_tournaments(self):
+        # removing previous tournaments list
+        for widget in self.results_frame.winfo_children():
+            widget.destroy()
+
+        # function to change the internal property tracking the sort option and order
+        # after the change it refreshes the view so that the sorted list is shown
+        def change_order(property: str):
+            if self.sort_options[0] == property:
+                # if the sort option is the same then switch ASC to DESC
+                self.sort_options = (property, "ASC") if self.sort_options[1] == "DESC" else (property, "DESC")
+            else:
+                # if sort option has changed then change it
+                self.sort_options = (property, "ASC")
+            # updating the arrows
+            update_header_arrows()
+            self.refresh_tournaments()
+
+        # updates the arrow in headings when sort field changes
+        def update_header_arrows():
+            # for each header
+            for field, label in header_labels.items():
+                base = field
+                # setting the correct arrow
+                if self.sort_options[0] == field:
+                    arrow = " ▲" if self.sort_options[1] == "ASC" else " ▼"
+                    label.config(text=base + arrow)
+                else:
+                    label.config(text=base)
+
+        # function to get the arrow for a header field
+        def get_arrow(field: str):
+            if self.sort_options[0] == field:
+                return " ▲" if self.sort_options[1] == "ASC" else " ▼"
+            else:
+                return ""
+        
+        # dictionary of header text to actual label
+        header_labels = {}
+        
+        # date and winner labels, they are clickable buttons with underline on hover, next to the title is the arrow showing sort order
+        date_label = ttk.Label(self.results_frame, text="Date"+get_arrow("Date"), width=32, anchor="center")
+        date_label.grid(row=0, column=0, padx=0, pady=2)
+        # when clicked changing the order
+        date_label.bind("<Button-1>", lambda e: change_order("Date"))
+        # adding the label to the dictionary so can edit the label title when sort options change
+        header_labels["Date"] = date_label
+        self.controller.make_hoverable(date_label)
+
+        winner_label = ttk.Label(self.results_frame, text="Winner"+get_arrow("Winner"), width=32, anchor="center")
+        winner_label.grid(row=0, column=1, padx=0, pady=2)
+        winner_label.bind("<Button-1>", lambda e: change_order("Winner"))
+        header_labels["Winner"] = winner_label
+        self.controller.make_hoverable(winner_label)
+
+        # initially showing the default arrows
+        update_header_arrows()
+
+        # fetching the tournaments data
+        results = self.controller.db.sort_tournaments(self.sort_options)
+
+        # if no tournaments
+        if len(results) == 0:
+            ttk.Label(self.results_frame, text="You haven't created any tournaments yet.\nClick the create button above!").grid(row=1, column=0, columnspan=2)
+            return
+
+        # iterating over all results with start index 1 to account for header row
+        for i, row in enumerate(results, start=1):
+            # alternating background colour for row (stripe effect)
+            original_bg = FC.base if i % 2 == 0 else FC.base_d
+
+            # date column
+            date_label = tk.Label(self.results_frame, text=row[1], width=32, anchor="center", bg=original_bg, pady=6)
+            date_label.grid(row=i, column=0, pady=2)
+
+            # winner column
+            winner = self.controller.db.read_tournament_winner(row[0])
+            # fetching winner and displaying name otherwise dash if no winner
+            winner_text = winner[1] if winner else "—"
+            winner_label = tk.Label(self.results_frame, text=winner_text, width=32, anchor="center", bg=original_bg, pady=6)
+            winner_label.grid(row=i, column=1, pady=2)
+            
+            # this function changes both labels bg to the hover colour
+            def on_enter(e, d=date_label, w=winner_label):
+                d.config(bg=FC.hover)
+                w.config(bg=FC.hover)
+
+            # this function changes both labels bg to the original colour
+            def on_leave(e, d=date_label, w=winner_label, orig=original_bg):
+                d.config(bg=orig)
+                w.config(bg=orig)
+
+            # binding hover for both labels to call on_enter
+            date_label.bind("<Enter>", on_enter)
+            winner_label.bind("<Enter>", on_enter)
+            # binding unhover for both labels to call on_enter
+            date_label.bind("<Leave>", on_leave)
+            winner_label.bind("<Leave>", on_leave)
+            # because the labels have seperate backgrounds, when hover over either label both bacgrounds are updated
+
+            # clicking any column opens tournament overview
+            date_label.bind("<Button-1>", lambda e, t_id=row[0]: self.open_tournament_overview(t_id))
+            winner_label.bind("<Button-1>", lambda e, t_id=row[0]: self.open_tournament_overview(t_id))
+
     # opens create tournament subview
     def open_create_tournament(self):
         # creating subview
@@ -166,7 +275,7 @@ class TournamentsPage(ttk.Frame):
             # 2 different frames per step
             current_step.set(index)
 
-        # Step 1: Select date
+        # step 1: select date
         step1_frame = ttk.LabelFrame(win, text="Select the tournament date")
         step1 = ttk.Frame(step1_frame)
 
@@ -213,7 +322,7 @@ class TournamentsPage(ttk.Frame):
             width=80, base_colour=FC.blue[0], hover_colour=FC.blue[1], frame_colour=FC.base_l
         ).pack(pady=(5,0), padx=0, side="right")
 
-        # Step 2: Select players
+        # step 2: select players
         step2_frame = ttk.LabelFrame(win, text="Select the tournament players")
         step2 = ttk.Frame(step2_frame)
 
@@ -301,9 +410,13 @@ class TournamentsPage(ttk.Frame):
                 row = ttk.Frame(results_frame)
                 row.pack(fill="x", padx=10, pady=pady)
                 # full player name
-                ttk.Label(row, text=f"{player[1]} {player[2]}").pack(side="left")
+                name = ttk.Label(row, text=f"{player[1]} {player[2]}")
+                name.pack(side="left")
                 # plus button to add the player to the tournament
                 ttk.Button(row, text="+", command=lambda p=player: add_player(p)).pack(side="right")
+                # if name is long, and plus button won't show then bind click on name to add to tournament
+                if len(player[1]) + len(player[2]) > 20:
+                    name.bind("<Button-1>", lambda e, p=player: add_player(p))
 
         # function to update current players list when player is added or removed
         def refresh_current_players():
@@ -318,9 +431,13 @@ class TournamentsPage(ttk.Frame):
                 row = ttk.Frame(current_players_frame)
                 row.pack(fill="x", padx=10, pady=pdy)
                 # full player name
-                ttk.Label(row, text=f"{player[1]} {player[2]}").pack(side="left")
+                name = ttk.Label(row, text=f"{player[1]} {player[2]}")
+                name.pack(side="left")
                 # minus button to remove the player from the tournament
                 ttk.Button(row, text="-", command=lambda p=player: remove_player(p)).pack(side="right")
+                # if name is long, and minus button won't show then bind click on name to remove from tournament
+                if len(player[1]) + len(player[2]) > 20:
+                    name.bind("<Button-1>", lambda e, p=player: remove_player(p))
 
         # function to remove player from tournament
         # remove from database then refresh views
@@ -331,7 +448,7 @@ class TournamentsPage(ttk.Frame):
 
         # function to add player to tournament
         # add to database then refresh views
-        def add_player(p: tuple[str, str, str, int]):
+        def add_player(p: tuple[str, str, str, int], event=None):
             # only adding if not already in the array
             if p not in tournament_players:
                 tournament_players.append(p)
@@ -375,7 +492,7 @@ class TournamentsPage(ttk.Frame):
             width=80, base_colour=FC.base, hover_colour=FC.cancel, frame_colour=FC.base_l
         ).pack(pady=(5,0), padx=10)
 
-        # Step 3: Select tournament type
+        # step 3: select tournament type
         step3_frame = ttk.LabelFrame(win, text="Select the tournament type")
         step3 = ttk.Frame(step3_frame)
 
@@ -392,7 +509,7 @@ class TournamentsPage(ttk.Frame):
         #* Temporarily disabled, change cursor back to crosshair
         ttk.Button(step3, text="+", command=lambda: self.open_create_ttype(types_container, selected_type), cursor="arrow", state="disabled").pack(anchor="ne", padx=5, pady=2)
 
-        # Creating the tournament
+        # creating the tournament
         def create_tournament():
             # validating that the tournament type isn't empty
             # fetching the selected radio button, if none selected then it will appear as an empty string
@@ -417,7 +534,7 @@ class TournamentsPage(ttk.Frame):
             messagebox.showinfo("title", "Tournament Created!")
 
             # refreshing tournaments list to account for the new tournament
-            # Adding the new tournament to login status dictionary
+            # adding the new tournament to login status dictionary
             # opening create account view for user to make an account
             self.refresh_tournaments()
             self.login_status[new_t_id] = (False, None)
@@ -479,7 +596,7 @@ class TournamentsPage(ttk.Frame):
             steps[index+4].pack(padx=10, pady=10)
             current_step.set(index)
         
-        # Step 1: Select date
+        # step 1: select date
         step1_frame = ttk.LabelFrame(win, text="Select the tournament date")
         step1 = ttk.Frame(step1_frame)
 
@@ -527,7 +644,7 @@ class TournamentsPage(ttk.Frame):
             width=80, base_colour=FC.blue[0], hover_colour=FC.blue[1], frame_colour=FC.base_l
         ).pack(pady=(5,0), padx=0, side="right")
 
-        # Step 2: Select players
+        # step 2: select players
         step2_frame = ttk.LabelFrame(win, text="Select the tournament players")
         step2 = ttk.Frame(step2_frame)
 
@@ -693,7 +810,7 @@ class TournamentsPage(ttk.Frame):
             width=80, base_colour=FC.base, hover_colour=FC.cancel, frame_colour=FC.base_l
         ).pack(pady=(5,0), padx=10)
 
-        # Step 3: Select tournament type
+        # step 3: select tournament type
         step3_frame = ttk.LabelFrame(win, text="Select the tournament type")
         step3 = ttk.Frame(step3_frame)
         selected_type = tk.StringVar()
@@ -740,7 +857,7 @@ class TournamentsPage(ttk.Frame):
             width=80, base_colour=FC.base, hover_colour=FC.cancel, frame_colour=FC.base_l
         ).pack(pady=(5,0), padx=10)
 
-        # Step 4: Manage accounts
+        # step 4: manage accounts
         step4_frame = ttk.LabelFrame(win, text="Manage accounts")
         step4 = ttk.Frame(step4_frame)
 
@@ -749,7 +866,7 @@ class TournamentsPage(ttk.Frame):
         accounts_container.pack(fill="x")
         self.build_accounts_section(t_id, accounts_container)
 
-        # Update the tournament
+        # update the tournament
         def update_tournament():
             # updating the tournament with data
             self.controller.db.update_tournament(t_id, get_date(), len(tournament_players), selected_type.get())
@@ -814,7 +931,9 @@ class TournamentsPage(ttk.Frame):
             # adding s for plural if more than 1 grand prix for correct grammar
             description = f"{t[1]} continuers\n {t[2]} Grand Prix{"" if t[2] == 1 else "'s"}\n{"Longer" if t[3] else "Normal"} Style"
             # adding the radio button with justify and anchor centre so the text is aligned centrally
-            ttk.Radiobutton(parent, text=description, value=t[0], variable=selected_type, padding=3).pack(anchor="center", pady=5)
+            #* Temporarily disabled if 1 type
+            state = "disabled" if len(types) == 1 else "normal"
+            ttk.Radiobutton(parent, text=description, value=t[0], variable=selected_type, padding=3, state=state).pack(anchor="center", pady=5)
 
             # if an id is passed in as an argument then preselect this radio button
             # this is used in edit tournament view because the user already has selected a tournament type
@@ -986,8 +1105,8 @@ class TournamentsPage(ttk.Frame):
         if len(accounts) > 1:
             ttk.Button(btn_frame, text=minus_text, command=lambda: self.build_accounts_section(t_id, parent, not delete_mode), style=minus_style, cursor=minus_cursor).pack(side="left", padx=5)
 
-        # if not in edit mode then show the add button to create an account
-        if not delete_mode:
+        # if fewer than 5 accounts and not in edit mode then show the add button to create an account
+        if len(accounts) < 5 and not delete_mode:
             ttk.Button(btn_frame, text="+", command=lambda: self.open_create_account(t_id, parent), cursor="crosshair").pack(side="right", padx=5)
 
     # function to open the create account view
@@ -995,7 +1114,7 @@ class TournamentsPage(ttk.Frame):
         # creating a small pop up window for data entry
         # blocking action on other windows, and blocking window closure using red x
         win = tk.Toplevel(self)
-        win.title("Create Account")
+        win.title("Create Account" if parent_frame else "Create Account for New Tournament")
         win.grab_set()
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
@@ -1046,7 +1165,7 @@ class TournamentsPage(ttk.Frame):
             password2 = pword2.get()
 
             # presence check on all fields
-            if username == "" or password1 == "" or password2 == "":
+            if username == "" or password1 == "":
                 messagebox.showerror("Missing Info", "Please fill in all fields.")
                 return
             # length check on username and password1 fields
@@ -1058,6 +1177,10 @@ class TournamentsPage(ttk.Frame):
             if re.fullmatch(r"[a-zA-Z0-9._-]*", username) is None:
                 messagebox.showerror("Bad data", "Please make a username using only letters, numbers and ._- with no spaces")
                 return
+            # type check on username ensure first and last character is letter or number
+            if re.fullmatch(r"[a-zA-Z0-9]*", username[0]) is None or re.fullmatch(r"[a-zA-Z0-9]*", username[-1]) is None:
+                messagebox.showerror("Bad data", "Username must start and end with a letter or number")
+                return
             # length check on password1 to ensure password is at least 10 characters
             if len(password1) < 10:
                 messagebox.showerror("Password not long enough", "Please make the password at least 10 characters.")
@@ -1065,6 +1188,12 @@ class TournamentsPage(ttk.Frame):
             # validating that there are no spaces in password1
             if re.fullmatch(r"[^\s]+", password1) is None:
                 messagebox.showerror("Password contains spaces", "Please make a password without spaces")
+                return
+            # calculating password strength
+            result = zxcvbn(password1, user_inputs=[username])
+            # if password is weak then show suggestion
+            if result["score"] < 2:
+                messagebox.showerror("Weak password", f"Make password stronger\n{result["feedback"]["suggestions"][0]}")
                 return
             # if passwords don't match then show error
             if password1 != password2:
@@ -1159,8 +1288,36 @@ class TournamentsPage(ttk.Frame):
             else:
                 pword.config(show="*")
         # storing value to the variable above, when check selected variable is 1, when deselected variable is 0
-        checkbutton = tk.Checkbutton(win, text="Show Password", variable=check_selection, onvalue=1, offvalue=0, command=toggle_pwd, padx=3)
-        checkbutton.grid(row=2, column=1)
+        ttk.Checkbutton(win, text="Show Password", variable=check_selection, onvalue=1, offvalue=0, command=toggle_pwd, padding=(3,0,0,0)).grid(row=2, column=1)
+
+        # variable to track if we are peeking
+        win.peeking = False
+
+        # when option key pressed
+        def on_option_press(event):
+            # if password is currently hidden
+            if check_selection.get() == 0:
+                check_selection.set(1) # change the check box to ticked
+                toggle_pwd() # show the password
+                win.peeking = True # mark that we are peeking
+            else:
+                # if password is shown
+                check_selection.set(0) # change the check box to unticked
+                toggle_pwd() # hide the password
+
+        # when option key released
+        def on_option_release(event):
+            # if we are peeking then hide the password
+            if win.peeking:
+                check_selection.set(0) # change the check box to unticked
+                toggle_pwd() # hide the password
+                win.peeking = False # mark that we are not peeking
+
+        # binding left and right option keys to functions press and release
+        win.bind("<KeyPress-Alt_L>", on_option_press)
+        win.bind("<KeyRelease-Alt_L>", on_option_release)
+        win.bind("<KeyPress-Alt_R>", on_option_press)
+        win.bind("<KeyRelease-Alt_R>", on_option_release)
 
         # attempting to log the user in
         def login(event=None):
@@ -1170,6 +1327,7 @@ class TournamentsPage(ttk.Frame):
             # trying to log the user in
             successful = self.controller.db.attempt_login(t_id, username, password)
             if successful:
+                messagebox.showinfo("Login successful.", f"Logged in as {username}") #* is this needed
                 # if login successful then change dictionary value to show user is logged in, and reopen tournament overview
                 win.destroy()
                 self.login_status[t_id] = (True, username)
@@ -1194,111 +1352,6 @@ class TournamentsPage(ttk.Frame):
             win, text="Login", command=login, hover_cursor="mouse",
             width=100, base_colour=FC.green[0], hover_colour=FC.green[1]
         ).grid(row=3, column=1, padx=15, pady=(10,15), sticky="e")
-
-    # refreshing tournaments list when tournament is created, finished or is being sorted
-    def refresh_tournaments(self):
-        # removing previous tournaments list
-        for widget in self.results_frame.winfo_children():
-            widget.destroy()
-
-        # function to change the internal property tracking the sort option and order
-        # after the change it refreshes the view so that the sorted list is shown
-        def change_order(property: str):
-            if self.sort_options[0] == property:
-                # if the sort option is the same then switch ASC to DESC
-                self.sort_options = (property, "ASC") if self.sort_options[1] == "DESC" else (property, "DESC")
-            else:
-                # if sort option has changed then change it
-                self.sort_options = (property, "ASC")
-            # updating the arrows
-            update_header_arrows()
-            self.refresh_tournaments()
-
-        # Updates the arrow in headings when sort field changes
-        def update_header_arrows():
-            # for each header
-            for field, label in header_labels.items():
-                base = field
-                # setting the correct arrow
-                if self.sort_options[0] == field:
-                    arrow = " ▲" if self.sort_options[1] == "ASC" else " ▼"
-                    label.config(text=base + arrow)
-                else:
-                    label.config(text=base)
-
-        # function to get the arrow for a header field
-        def get_arrow(field: str):
-            if self.sort_options[0] == field:
-                return " ▲" if self.sort_options[1] == "ASC" else " ▼"
-            else:
-                return ""
-        
-        # dictionary of header text to actual label
-        header_labels = {}
-        
-        # date and winner labels, they are clickable buttons with underline on hover, next to the title is the arrow showing sort order
-        date_label = ttk.Label(self.results_frame, text="Date"+get_arrow("Date"), width=32, anchor="center")
-        date_label.grid(row=0, column=0, padx=0, pady=2)
-        # when clicked changing the order
-        date_label.bind("<Button-1>", lambda e: change_order("Date"))
-        # adding the label to the dictionary so can edit the label title when sort options change
-        header_labels["Date"] = date_label
-        self.controller.make_hoverable(date_label)
-
-        winner_label = ttk.Label(self.results_frame, text="Winner"+get_arrow("Winner"), width=32, anchor="center")
-        winner_label.grid(row=0, column=1, padx=0, pady=2)
-        winner_label.bind("<Button-1>", lambda e: change_order("Winner"))
-        header_labels["Winner"] = winner_label
-        self.controller.make_hoverable(winner_label)
-
-        # initially showing the default arrows
-        update_header_arrows()
-
-        # fetching the tournaments data
-        results = self.controller.db.sort_tournaments(self.sort_options)
-
-        # if no tournaments
-        if len(results) == 0:
-            ttk.Label(self.results_frame, text="You haven't created any tournaments yet.\nClick the create button above!").grid(row=1, column=0, columnspan=2)
-            return
-
-        # iterating over all results with start index 1 to account for header row
-        for i, row in enumerate(results, start=1):
-            # alternating background colour for row (stripe effect)
-            original_bg = FC.base if i % 2 == 0 else FC.base_d
-
-            # date column
-            date_label = tk.Label(self.results_frame, text=row[1], width=32, anchor="center", bg=original_bg, pady=6)
-            date_label.grid(row=i, column=0, pady=2)
-
-            # winner column
-            winner = self.controller.db.read_tournament_winner(row[0])
-            # fetching winner and displaying name otherwise dash if no winner
-            winner_text = winner[1] if winner else "—"
-            winner_label = tk.Label(self.results_frame, text=winner_text, width=32, anchor="center", bg=original_bg, pady=6)
-            winner_label.grid(row=i, column=1, pady=2)
-            
-            # this function changes both labels bg to the hover colour
-            def on_enter(e, d=date_label, w=winner_label):
-                d.config(bg=FC.hover)
-                w.config(bg=FC.hover)
-
-            # this function changes both labels bg to the original colour
-            def on_leave(e, d=date_label, w=winner_label, orig=original_bg):
-                d.config(bg=orig)
-                w.config(bg=orig)
-
-            # binding hover for both labels to call on_enter
-            date_label.bind("<Enter>", on_enter)
-            winner_label.bind("<Enter>", on_enter)
-            # binding unhover for both labels to call on_enter
-            date_label.bind("<Leave>", on_leave)
-            winner_label.bind("<Leave>", on_leave)
-            # because the labels have seperate backgrounds, when hover over either label both bacgrounds are updated
-
-            # clicking any column opens tournament overview
-            date_label.bind("<Button-1>", lambda e, t_id=row[0]: self.open_tournament_overview(t_id))
-            winner_label.bind("<Button-1>", lambda e, t_id=row[0]: self.open_tournament_overview(t_id))
 
     # creates tournament overview subview
     def open_tournament_overview(self, t_id: str):
@@ -1355,11 +1408,10 @@ class TournamentsPage(ttk.Frame):
                 # if authentication was successful
                 if success:
                     # set user to logged in and reopen tournament overview
-                    # self.after to put on main thread as we are waiting for result (touch id window is asynchronous)
                     self.login_status[t_id] = (True, "MASTER")
-                    self.after(10, lambda: messagebox.showinfo("Login", "Login success"))
-                    self.after(20, lambda: win.destroy())
-                    self.after(30, lambda: self.open_tournament_overview(t_id))
+                    messagebox.showinfo("Login", "Touch ID Login success")
+                    win.destroy()
+                    self.open_tournament_overview(t_id)
                 else:
                     # otherwise if it failed then open the manual login window
                     self.open_login(t_id)
@@ -1663,7 +1715,7 @@ class TournamentsPage(ttk.Frame):
                 # if can't convert all results to integer then showing error that not all results have been entered
                 messagebox.showerror("Incomplete Data", "Please ensure all players have a position assigned.")
                 return
-            # if number of unique results is not 4 then means 2 results have the same value so showing error
+            # if number of unique results is not 4 then means at least 2 results have the same value so display error
             if len(unique_results) != 4:
                 messagebox.showerror("Duplicate Positions", "Two players cannot finish in the same position.\nPlease check your entries.")
                 return
@@ -1746,13 +1798,14 @@ class TournamentsPage(ttk.Frame):
                 # if can't convert all results to integer then showing error that not all results have been entered
                 messagebox.showerror("Incomplete Data", "Please ensure all players have a position assigned.")
                 return
-            # if number of unique results is not 4 then means 2 results have the same value so showing error
+            # if number of unique results is not 4 then means at least 2 results have the same value so display error
             if len(unique_results) != 4:
                 messagebox.showerror("Duplicate Positions", "Two players cannot finish in the same position.\nPlease check your entries.")
                 return
             
             # adding the results of the players to GrandPrixParticipation
-            self.controller.db.insert_gp_results(gp_id, result_vars.items())
+            players_results = [(p_id, int(var.get())) for p_id, var in result_vars.items()]
+            self.controller.db.insert_gp_results(gp_id, players_results)
             
             # finding the top players in the gp
             top_players = self.controller.db.find_winners_for_gp(gp_id, False)
@@ -1761,7 +1814,7 @@ class TournamentsPage(ttk.Frame):
             # if this is the final bracket
             if new_gp_id == "Tournament finished":
                 # setting tournament results for all players
-                self.controller.db.set_tournament_results(t_id)
+                self.controller.db.set_tournament_results(t_id, True)
 
                 # showing message saying success
                 messagebox.showinfo("title", f"Tournament Finished!!!\n{top_players[1]} won")

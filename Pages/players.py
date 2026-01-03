@@ -210,7 +210,6 @@ class PlayersPage(ttk.Frame):
         if self.edit_mode:
             self.create_btn.set_state("disabled")
             self.search_field["state"] = "disabled"
-            # self.clear_search: btn.config(foreground=FC.red[1])
             self.clear_search["state"] = "disabled"
         else:
             self.create_btn.set_state("normal")
@@ -355,12 +354,11 @@ class PlayersPage(ttk.Frame):
             return
 
         # creating a row with the text for each result
-        # adding extra padding at the bottom of last row
         # binding the name to open edit view if in edit mode otherwise statistics view with the player data
         # name is underlined on hover
         for row in results:
             name = ttk.Label(self.results_frame, text=f"{row[1]} {row[2]}", anchor="center")
-            # padding of 3 between each row
+            # padding of 3 between each row, adding extra padding at the bottom of last row
             name.pack(pady=(3 if results.index(row) != len(results)-1 else (3,20)))
             name.bind("<Button-1>", lambda e, r=row: self.open_edit_player(r) if self.edit_mode else self.controller.open_statistics_player(r))
             self.controller.make_hoverable(name)
@@ -379,18 +377,16 @@ class PlayersPage(ttk.Frame):
         # scrolling all the way up to top of search results
         self.canvas.yview_moveto(0)
 
-        # fetching query
+        # fetches the query
         query = self.search_field.get().strip()
 
-        # if query is blank then fetch all players
-        # else fetch the players for the query
-        if query == "":
-            results = self.controller.db.read_player_data()
-        else:
-            results = self.controller.db.search_players(query)
+        # show results for the query
+        # if the query is blank then the function will return all players
+        results = self.controller.db.search_players(query)
         self.show_results(results)
 
     # when the clear search button pressed, clear the textbox and then load all players
     def remove_search(self):
         self.clear_entry()
-        self.show_results(self.controller.db.read_player_data())
+        all_results = self.controller.db.read_player_data()
+        self.show_results(all_results)

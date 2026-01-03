@@ -5,13 +5,15 @@ from Utilities.FontStyling import Fonts as FS, Colours as FC
 
 # declaring a constant default cursor
 DEFAULT_CURSOR = "arrow"
+# declaring constant for all the corners
+DEFAULT_CORNERS = ["top_left", "top_right", "bottom_left", "bottom_right"]
 
 # function to convert a hex colour to an rgb colour
-def hex_to_rgb(hex_val: str):
+def hex_to_rgb(hex_val: str) -> tuple[int, int, int]:
     return tuple(int(hex_val.lstrip("#")[i:i+2], 16) for i in (0, 2, 4))
 
 # helper function to find the middle colour hex between 2 hex colours
-def interpolate_colour(start_hex: str, end_hex: str, progress: float):
+def interpolate_colour(start_hex: str, end_hex: str, progress: float) -> str:
     # first convert the start and end to rgb
     start_rgb = hex_to_rgb(start_hex)
     end_rgb = hex_to_rgb(end_hex)
@@ -35,6 +37,16 @@ class AnimatedButton(tk.Canvas):
             # otherwise use the default frame background colour in FontStyling file
             # which is white it macos otherwise a light grey if windows
             parent_bg = FC.default_frame_bg
+
+        # presence check on text
+        if not text:
+            # if no text then set all colours to the parent bg, this creates an invisible button
+            base_colour = parent_bg
+            hover_colour = parent_bg
+            text_colour = parent_bg
+            hover_cursor = DEFAULT_CURSOR
+            # set the command to None so nothing happens when it is clicked
+            command = None
         
         # the tk.Canvas initialiser
         super().__init__(parent, width=width, height=height, bg=parent_bg, highlightthickness=0)
@@ -44,14 +56,31 @@ class AnimatedButton(tk.Canvas):
         self.base_colour = base_colour
         self.hover_colour = hover_colour
         self.current_colour = base_colour
-        self.hover_cursor = hover_cursor
         self.text_colour = text_colour
-        self.is_disabled = False 
+        self.is_disabled = False
+
+        # checking if the cursor specified is valid
+        try:
+            # trying to change the cursor to the one specified and then quickly change back
+            self.config(cursor=hover_cursor)
+            self.config(cursor=DEFAULT_CURSOR)
+            # if no errors then set this to be the cursor to use on hover
+            self.hover_cursor = hover_cursor
+        except tk.TclError:
+            # if this fails then set the cursor to use on hover to the default one
+            self.hover_cursor = DEFAULT_CURSOR
         
-        # default to all corners rounded if not specified
-        if rounded_corners is None:
-            rounded_corners = ["top_left", "top_right", "bottom_left", "bottom_right"]
-            
+        # if we have corners passed into the function
+        if rounded_corners:
+            # finding the real corners from our constant, to eliminate any jargon they may have included
+            res = set(rounded_corners).intersection(set(DEFAULT_CORNERS))
+            # if in fact they haven't passed any real corners in then use the default ones
+            if res is None:
+                rounded_corners = DEFAULT_CORNERS
+        else:
+            # default to all corners rounded if not specified
+            rounded_corners = DEFAULT_CORNERS
+
         self.shapes = []
         d = corner_radius * 2 # diameter
         r = corner_radius # radius
@@ -129,8 +158,7 @@ class AnimatedButton(tk.Canvas):
     # function that runs on hover
     def on_enter(self, event):
         # if button is disabled then don't to anything
-        if self.is_disabled:
-            return
+        if self.is_disabled: return
         # start animation with end colour of the hover colour
         self.start_animation(self.hover_colour)
         # changing the font colour from black to white
@@ -141,8 +169,7 @@ class AnimatedButton(tk.Canvas):
     # function that runs when unhover
     def on_leave(self, event):
         # if button is disabled then don't do anything
-        if self.is_disabled:
-            return
+        if self.is_disabled: return
         # start animation with end colour of the unhover colour
         self.start_animation(self.base_colour)
         # changing the font colour from white to black
@@ -153,11 +180,9 @@ class AnimatedButton(tk.Canvas):
     # function that runs on button click
     def on_click(self, event):
         # if button is disabled don't do anything
-        if self.is_disabled:
-            return
+        if self.is_disabled: return
         # if there is a command passed in function then run it
-        if self.command:
-            self.command()
+        if self.command: self.command()
 
     # function that starts the animation taking in parameter for the target colour
     def start_animation(self, target_hex: str):
@@ -169,10 +194,11 @@ class AnimatedButton(tk.Canvas):
         self.animation_step = 0
         
         # if not currently animating then start animating
-        if not self.animating:
-            self.animate_loop()
+        if not self.animating: self.animate_loop()
 
     # function that animates the colour change
+    # this runs approx 25 times when hovered to change from base to hover colour
+    # and another 25 times when unhovered to change from hover to base colour
     def animate_loop(self):
         # set animating status to true
         self.animating = True
@@ -188,8 +214,9 @@ class AnimatedButton(tk.Canvas):
         # update all shape backgrounds
         for shape_id in self.shapes:
             self.itemconfig(shape_id, fill=new_colour)
-            
-        self.current_colour = new_colour 
+
+        # changing the current colour to the new colour we just calculated  
+        self.current_colour = new_colour
         
         # recursive step
         # if not finished: the current step is lower than the total steps then call function
