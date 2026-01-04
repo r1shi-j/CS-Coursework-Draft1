@@ -12,6 +12,9 @@
 <p><code>source venv/bin/activate</code></p>
 <p><code>pip install -r requirements.txt</code></p>
 <p><code>python3 main.py</code></p>
+<h4>If this fails, install brew, and run:</h4>
+<p><code>brew install python-tk</code></p>
+<p>You may have to specify the current python version: <code>brew install python-tk@3.14</code></p>
 
 <h2>For Windows ⊞ 🗑 (using PowerShell)</h2>
 <p><code>python -m venv venv</code></p>
