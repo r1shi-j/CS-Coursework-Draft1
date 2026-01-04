@@ -19,11 +19,10 @@ NAVIGATION_TITLES = [
     "Statistics"
 ]
 
+
 # creating the frame
 class App(tk.Frame):
-    def __init__(
-        self, master: tk.Tk, database: tuple[str, bool]
-    ):
+    def __init__(self, master: tk.Tk, database: tuple[str, bool]):
         super().__init__(master)
         # creating the view
         self.master = master

@@ -79,8 +79,7 @@ class PlayersPage(ttk.Frame):
         )
         self.search_field.bind(
             "<Escape>",
-            lambda e: self.search_field.focus_set()
-            or self.focus()
+            lambda e: self.search_field.focus_set() or self.focus()
         )
         # clear search button as a label so can add styling
         self.clear_search = ttk.Label(search_frame, text="⌫", width=2)
@@ -106,9 +105,7 @@ class PlayersPage(ttk.Frame):
         self.clear_search.bind(
             "<Button-1>",
             lambda e: (
-                self.remove_search()
-                if not self.edit_mode
-                else None
+                self.remove_search() if not self.edit_mode else None
             )
         )
 
@@ -117,9 +114,7 @@ class PlayersPage(ttk.Frame):
         container.pack(fill="both", expand=True)
         self.canvas = tk.Canvas(container)
         scrollbar = ttk.Scrollbar(
-            container,
-            orient="vertical",
-            command=self.canvas.yview
+            container, orient="vertical", command=self.canvas.yview
         )
         self.canvas.configure(yscrollcommand=scrollbar.set)
         self.canvas.pack(side="left", fill="both", expand=True)
@@ -170,9 +165,7 @@ class PlayersPage(ttk.Frame):
             row=0, column=0, padx=10, pady=(16, 8), sticky="e"
         )
         fname_entry = ttk.Entry(win)
-        fname_entry.grid(
-            row=0, column=1, padx=(5, 20), pady=(16, 8)
-        )
+        fname_entry.grid(row=0, column=1, padx=(5, 20), pady=(16, 8))
         fname_entry.bind("<Escape>", lambda e: win.focus())
         fname_entry.bind(self.controller.CLEAR_TEXT_FIELD, clear_fname)
 
@@ -250,9 +243,7 @@ class PlayersPage(ttk.Frame):
                 )
                 return
 
-            self.controller.db.create_player(
-                firstname, surname, age
-            )
+            self.controller.db.create_player(firstname, surname, age)
 
             # showing message saying success
             messagebox.showinfo("title", "Player Created!")
@@ -263,20 +254,22 @@ class PlayersPage(ttk.Frame):
         # buttons to cancel or create
         # cancel closes this window, and create runs the above function
         AnimatedButton(
-            win, text="Cancel", command=win.destroy,
-            width=100, base_colour=FC.base, hover_colour=FC.cancel
+            win,
+            text="Cancel",
+            command=win.destroy,
+            width=100,
+            base_colour=FC.base,
+            hover_colour=FC.cancel,
         ).grid(
-            row=3, column=0, 
-            padx=(20, 0), pady=(10, 15), sticky="w"
+            row=3, column=0, padx=(20, 0), pady=(10, 15), sticky="w"
         )
 
         AnimatedButton(
             win, text="Create", command=create_player,
-            hover_cursor="mouse", width=100, 
+            hover_cursor="mouse", width=100,
             base_colour=FC.green[0], hover_colour=FC.green[1]
         ).grid(
-            row=3, column=1,
-            padx=(0, 20), pady=(10, 15), sticky="e"
+            row=3, column=1, padx=(0, 20), pady=(10, 15), sticky="e"
         )
 
     # function to toggle edit mode
@@ -317,14 +310,12 @@ class PlayersPage(ttk.Frame):
 
         # text box for first name, prefilling with the original data
         ttk.Label(win, text="First name:").grid(
-            row=0, column=0, 
-            padx=(20, 10), pady=(16, 8), sticky="e"
+            row=0, column=0, padx=(20, 10), pady=(16, 8), sticky="e"
         )
         fname_entry = ttk.Entry(win)
         fname_entry.insert(0, player[1])
         fname_entry.grid(
-            row=0, column=1, columnspan=2,
-            padx=(5, 20), pady=(16, 8)
+            row=0, column=1, columnspan=2, padx=(5, 20), pady=(16, 8)
         )
         fname_entry.bind("<Escape>", lambda e: win.focus())
         fname_entry.bind(self.controller.CLEAR_TEXT_FIELD, clear_fname)
@@ -371,8 +362,7 @@ class PlayersPage(ttk.Frame):
                 age = int(age)
             except ValueError:
                 messagebox.showerror(
-                    "Invalid age",
-                    "Age must be a valid whole number."
+                    "Invalid age", "Age must be a valid whole number."
                 )
                 return
             # range check on age
@@ -429,9 +419,7 @@ class PlayersPage(ttk.Frame):
             if confirmed:
                 did_work = self.controller.db.delete_player(player[0])
                 if did_work:
-                    messagebox.showinfo(
-                        "Success", "Player deleted!"
-                    )
+                    messagebox.showinfo("Success", "Player deleted!")
                 else:
                     messagebox.showerror(
                         "Failed",
@@ -446,7 +434,7 @@ class PlayersPage(ttk.Frame):
         # buttons to cancel, delete and update
         # cancel just closes the window
         AnimatedButton(
-            win, text="Cancel", command=win.destroy,
+            win, text="Cancel", command=win.destroy, 
             width=80, base_colour=FC.base, hover_colour=FC.cancel
         ).grid(row=3, column=0, padx=(15, 0), pady=(10, 15))
 

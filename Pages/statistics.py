@@ -188,8 +188,7 @@ class StatisticsPage(ttk.Frame):
             # arrays of all dates and results
             # array for dates is as datetime objects not strings
             date_objects = [
-                datetime.strptime(r[0], "%d/%m/%y")
-                for r in records
+                datetime.strptime(r[0], "%d/%m/%y") for r in records
             ]
             results = [r[1] for r in records]
             # adding the data to the chart
@@ -311,10 +310,7 @@ class StatisticsPage(ttk.Frame):
         ax = fig.add_subplot(111)
 
         # creating the pie chart with labels and sizes, showing as percentages and starting from top
-        ax.pie(
-            sizes, labels=labels,
-            autopct="%1.1f%%", startangle=90
-        )
+        ax.pie(sizes, labels=labels, autopct="%1.1f%%", startangle=90)
         ax.axis("equal")
         ax.set_title("Most Frequently Raced Circuits")
 
@@ -387,8 +383,9 @@ class StatisticsPage(ttk.Frame):
 
         # initial error message informing user to select a circuit
         win.error_label = tk.Label(
-            win, text="Please select a circuit to analyse.",
-            font=FS.base2_i, fg=FC.cancel,
+            win,
+            text="Please select a circuit to analyse.",
+            font=FS.base2_i, fg=FC.cancel
         )
         win.error_label.pack(expand=True)
 
@@ -528,8 +525,7 @@ class StatisticsPage(ttk.Frame):
         c_ids = [c[0] for c in circuits]
         # circuit dropdown with all circuit names
         c_combo = ttk.Combobox(
-            control_frame, values=c_names,
-            state="readonly", width=20
+            control_frame, values=c_names, state="readonly", width=20
         )
         c_combo.pack(side=tk.LEFT, padx=(0, 15))
         c_combo.bind("<Escape>", lambda e: win.focus())
@@ -545,8 +541,7 @@ class StatisticsPage(ttk.Frame):
         p_ids = [p[0] for p in players]
         # player dropdown with all player names
         p_combo = ttk.Combobox(
-            control_frame, values=p_names,
-            state="readonly", width=20
+            control_frame, values=p_names, state="readonly", width=20
         )
         p_combo.pack(side=tk.LEFT)
         p_combo.bind("<Escape>", lambda e: win.focus())
@@ -559,8 +554,7 @@ class StatisticsPage(ttk.Frame):
         win.error_label = tk.Label(
             win,
             text="Please select both a Circuit and a Player to view performance stats.",
-            font=FS.base2_i,
-            fg=FC.cancel
+            font=FS.base2_i, fg=FC.cancel
         )
         win.error_label.pack(expand=True)
 
@@ -706,8 +700,7 @@ class StatisticsPage(ttk.Frame):
 
         # creating the dropdown box with all the player names
         combo = ttk.Combobox(
-            control_frame, values=p_names,
-            state="readonly", width=30
+            control_frame, values=p_names, state="readonly", width=30
         )
         combo.pack(side=tk.LEFT, padx=5)
         combo.bind("<Escape>", lambda e: win.focus())
@@ -735,8 +728,7 @@ class StatisticsPage(ttk.Frame):
         win.error_label = tk.Label(
             win,
             text="Please select a player to analyse.",
-            font=FS.base2_i,
-            fg=FC.cancel
+            font=FS.base2_i, fg=FC.cancel
         )
         win.error_label.pack(expand=True)
 
@@ -751,10 +743,7 @@ class StatisticsPage(ttk.Frame):
 
     # function to draw the player analysis graphs
     def draw_player_analysis(
-        self,
-        win: tk.Toplevel,
-        combo: ttk.Combobox,
-        p_ids: list[str]
+        self, win: tk.Toplevel, combo: ttk.Combobox, p_ids: list[str]
     ):
         # getting the index of the selected player
         # if -1 then nothing selected so return
@@ -788,9 +777,7 @@ class StatisticsPage(ttk.Frame):
             win.top_graph_frame.pack_forget()
             win.bottom_graph_frame.pack_forget()
             win.error_label = tk.Label(
-                win,
-                text=f"No data found for {p_name}.",
-                font=FS.base2
+                win, text=f"No data found for {p_name}.", font=FS.base2
             )
             win.error_label.pack(expand=True)
             return
@@ -821,8 +808,7 @@ class StatisticsPage(ttk.Frame):
         fig1 = Figure(figsize=(8, 4), dpi=100)
         ax1 = fig1.add_subplot(111)
         ax1.plot(
-            dates, results,
-            marker="o", linestyle="-", color=FC.blue[0]
+            dates, results, marker="o", linestyle="-", color=FC.blue[0]
         )
         # adding titles and labels
         ax1.set_title(f"Tournament Placement History: {p_name}")
@@ -871,9 +857,7 @@ class StatisticsPage(ttk.Frame):
                 )  # graph scale is ±1.5 of the result
             else:
                 # if more than 1 unique result then a proper bar chart is shown, setting the x axis ticks to integers only
-                ax2.xaxis.get_major_locator().set_params(
-                    integer=True
-                )
+                ax2.xaxis.get_major_locator().set_params(integer=True)
             ax2.invert_yaxis()
             fig2.tight_layout()
             # adding the box plot to the bottom frame
@@ -889,9 +873,7 @@ class StatisticsPage(ttk.Frame):
             win.canvas_box = None
 
     # when hyperlinks clicked in other parts of the system, these functions open the relevant graphs directly with preselected values
-    def load_player_stats(
-        self, player: tuple[str, str, str, int]
-    ):
+    def load_player_stats(self, player: tuple[str, str, str, int]):
         self.open_player_analysis(player)
 
     def load_circuit_stats(self, circuit: tuple[str, str]):

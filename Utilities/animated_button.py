@@ -18,8 +18,7 @@ DEFAULT_CORNERS = [
 # function to convert a hex colour to an rgb colour
 def hex_to_rgb(hex_val: str) -> tuple[int, int, int]:
     return tuple(
-        int(hex_val.lstrip("#")[i : i + 2], 16)
-        for i in (0, 2, 4)
+        int(hex_val.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4)
     )
 
 
@@ -72,8 +71,9 @@ class AnimatedButton(tk.Canvas):
             command = None
 
         # the tk.Canvas initialiser
-        super().__init__(parent, width=width, height=height,
-            bg=parent_bg, highlightthickness=0,
+        super().__init__(
+            parent, width=width, height=height,
+            bg=parent_bg, highlightthickness=0
         )
 
         # setting variables from function arguments
@@ -109,8 +109,8 @@ class AnimatedButton(tk.Canvas):
             rounded_corners = DEFAULT_CORNERS
 
         self.shapes = []
-        d = corner_radius * 2 # diameter
-        r = corner_radius # radius
+        d = corner_radius * 2  # diameter
+        r = corner_radius  # radius
 
         # inbuilt function that creates a rectangle on the canvas
         # creating the middle rectangle

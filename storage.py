@@ -288,18 +288,13 @@ class Database:
             print("adding standard circuits")
             self.cursor.executemany(
                 "INSERT INTO Circuit (circuit_id, circuit_name) VALUES (?, ?)",
-                [
-                    (create_uuid(), name)
-                    for name in PAPER_CIRCUITS
-                ],
+                [(create_uuid(), name) for name in PAPER_CIRCUITS],
             )
 
     # function to insert the standard tournament type
     def insert_standard_tournament_type(self):
         # getting number of tournament types
-        self.cursor.execute(
-            "SELECT COUNT(*) FROM TournamentType"
-        )
+        self.cursor.execute("SELECT COUNT(*) FROM TournamentType")
         ttype_count = self.cursor.fetchone()[0]
 
         # if no tournament types exist then add one
@@ -400,9 +395,7 @@ class Database:
                 if options[0] == "Date":
                     # date comparison
                     is_less = compare_dates(val, pivot_val, "<")
-                    is_greater = compare_dates(
-                        val, pivot_val, ">"
-                    )
+                    is_greater = compare_dates(val, pivot_val, ">")
                 else:
                     # winner name comparison
                     is_less = val < pivot_val
@@ -442,9 +435,7 @@ class Database:
             for tournament in t:
                 # for each tournament, trying to find the winner
                 try:
-                    winner = self.read_tournament_winner(
-                        tournament[0]
-                    )
+                    winner = self.read_tournament_winner(tournament[0])
                     if winner:
                         # if there is a winner then added the tournament to with winners array
                         with_winners.append(tournament)
@@ -463,9 +454,7 @@ class Database:
             )
 
             # sort the incomplete tournaments by Date (always ASC by default convention)
-            sorted_losers = quick_sort(
-                without_winners, lambda x: x[1]
-            )
+            sorted_losers = quick_sort(without_winners, lambda x: x[1])
 
             # reverse winners if DESC required
             if options[1] == "DESC":
@@ -541,9 +530,7 @@ class Database:
                 self.add_player_to_gp(starter_ids[i], p[0], None)
 
     # adds a player to a grand prix
-    def add_player_to_gp(
-        self, gp_id: str, p_id: str, res: int | None
-    ):
+    def add_player_to_gp(self, gp_id: str, p_id: str, res: int | None):
         self.cursor.execute(
             "INSERT INTO GrandPrixParticipation (grandprix_id, player_id, grandprix_result) VALUES (?, ?, ?)",
             (gp_id, p_id, res),
@@ -683,9 +670,7 @@ class Database:
         return self.cursor.fetchall()
 
     # reading a specific tournament
-    def read_tournament(
-        self, t_id: str
-    ) -> tuple[str, str, int, str]:
+    def read_tournament(self, t_id: str) -> tuple[str, str, int, str]:
         self.cursor.execute(
             "SELECT * FROM Tournament WHERE tournament_id = ?;",
             (t_id,),
@@ -1120,9 +1105,7 @@ class Database:
             return -1
 
     # function to calculate what position everyone came and then update it in TournamentParticipation
-    def set_tournament_results(
-        self, t_id: str, force: bool = False
-    ):
+    def set_tournament_results(self, t_id: str, force: bool = False):
         # if called when tournament finished, then bypass this flawed winner check
         if not force:
             winner = self.read_tournament_winner(t_id)
@@ -1153,9 +1136,7 @@ class Database:
                 else:
                     # otherwise adding the players which were eliminated to round_results
                     # fetching the players eliminated for this grand prix
-                    bottom2 = self.find_losers_for_gp(
-                        gp_id, True
-                    )
+                    bottom2 = self.find_losers_for_gp(gp_id, True)
                     for p in bottom2:
                         # fetching the GrandPrixParticipation object and adding to round_results
                         self.cursor.execute(
@@ -1174,9 +1155,7 @@ class Database:
             # creating results dictionary with key result and value empty array
             results: dict[int, list[tuple[str, str, int]]] = {
                 x: []
-                for x in range(
-                    base, base + len(sorted_round_results)
-                )
+                for x in range(base, base + len(sorted_round_results))
             }
 
             # recursive function to add the player to the to the dictionary for key result
@@ -1202,9 +1181,7 @@ class Database:
             offset = 0
             # upperbound is calculated by the number of unique results
             # first make array of all results, then encase in a set to remove duplicate result numbers, then apply len to get number of unique result numbers
-            upperbound = len(
-                set([x[2] for x in sorted_round_results])
-            )
+            upperbound = len(set([x[2] for x in sorted_round_results]))
             # calling the recursive function to add results to the dictionary for each position
             for _ in range(0, upperbound):
                 pos, off = add_data(position, offset)
@@ -1256,11 +1233,7 @@ class Database:
             # player structure: (id, forename, surname, age)
             # creating a searchable string for this row
             searchable_text = (
-                player[1]
-                + " "
-                + player[2]
-                + " "
-                + str(player[3])
+                player[1] + " " + player[2] + " " + str(player[3])
             ).lower()
 
             # initially set match to true
@@ -1281,9 +1254,7 @@ class Database:
         return results
 
     # creating a player with details
-    def create_player(
-        self, forename: str, surname: str, age: int
-    ):
+    def create_player(self, forename: str, surname: str, age: int):
         self.cursor.execute(
             "INSERT INTO Player (player_id, forename, surname, age) VALUES (?, ?, ?, ?)",
             (create_uuid(), forename, surname, age),
@@ -1514,7 +1485,10 @@ def temp_operations():
 
     # function to reset tournament result for all players in a tournament
     def reset_t_result(t_id: str):
-        db.cursor.execute("UPDATE TournamentParticipation SET tournament_result = NULL WHERE tournament_id = ?", (t_id,))
+        db.cursor.execute(
+            "UPDATE TournamentParticipation SET tournament_result = NULL WHERE tournament_id = ?",
+            (t_id,),
+        )
         db.connection.commit()
 
     # function to create an account for all tournaments with username "username" and password "password"
@@ -1526,7 +1500,10 @@ def temp_operations():
         tournament_ids = db.cursor.fetchall()
         for t_id in tournament_ids:
             hashed = hashlib.sha256("password".encode()).hexdigest()
-            db.cursor.execute("INSERT INTO Account (account_id, tournament_id, username, password_hash) VALUES (?, ?, ?, ?)", (create_uuid(), t_id[0], "username", hashed))
+            db.cursor.execute(
+                "INSERT INTO Account (account_id, tournament_id, username, password_hash) VALUES (?, ?, ?, ?)",
+                (create_uuid(), t_id[0], "username", hashed),
+            )
         db.connection.commit()
 
     db.close()

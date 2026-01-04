@@ -169,7 +169,8 @@ class TournamentsPage(ttk.Frame):
             if self.sort_options[0] == property:
                 # if the sort option is the same then switch ASC to DESC
                 self.sort_options = (
-                    (property, "ASC") if self.sort_options[1] == "DESC"
+                    (property, "ASC")
+                    if self.sort_options[1] == "DESC"
                     else (property, "DESC")
                 )
             else:
@@ -189,7 +190,7 @@ class TournamentsPage(ttk.Frame):
                 base = field
                 # setting the correct arrow
                 if self.sort_options[0] == field:
-                    arrow = (order_to_arrow())
+                    arrow = order_to_arrow()
                     label.config(text=base + arrow)
                 else:
                     label.config(text=base)
@@ -222,8 +223,7 @@ class TournamentsPage(ttk.Frame):
         )
         winner_label.grid(row=0, column=1, padx=0, pady=2)
         winner_label.bind(
-            "<Button-1>", 
-            lambda e: change_order("Winner")
+            "<Button-1>", lambda e: change_order("Winner")
         )
         header_labels["Winner"] = winner_label
         self.controller.make_hoverable(winner_label)
@@ -288,12 +288,16 @@ class TournamentsPage(ttk.Frame):
 
             # clicking any column opens tournament overview
             date_label.bind(
-                "<Button-1>", 
-                lambda e, t_id=row[0]: self.open_tournament_overview(t_id)
+                "<Button-1>",
+                lambda e, t_id=row[0]: self.open_tournament_overview(
+                    t_id
+                )
             )
             winner_label.bind(
                 "<Button-1>",
-                lambda e, t_id=row[0]: self.open_tournament_overview(t_id)
+                lambda e, t_id=row[0]: self.open_tournament_overview(
+                    t_id
+                )
             )
 
     # opens create tournament subview
@@ -378,15 +382,15 @@ class TournamentsPage(ttk.Frame):
         # cancel button closes window
         AnimatedButton(
             bottom_bar, text="Cancel", command=win.destroy,
-            width=80, base_colour=FC.base, hover_colour=FC.cancel,
-            frame_colour=FC.base_l
+            width=80, base_colour=FC.base,
+            hover_colour=FC.cancel, frame_colour=FC.base_l
         ).pack(pady=(5, 0), padx=0, side="left")
 
         # next button shows next step
         AnimatedButton(
             bottom_bar, text="Next", command=lambda: show_step(1),
-            width=80, base_colour=FC.blue[0], hover_colour=FC.blue[1],
-            frame_colour=FC.base_l
+            width=80, base_colour=FC.blue[0],
+            hover_colour=FC.blue[1], frame_colour=FC.base_l
         ).pack(pady=(5, 0), padx=0, side="right")
 
         # step 2: select players
@@ -439,8 +443,8 @@ class TournamentsPage(ttk.Frame):
             results_canvas.configure(
                 scrollregion=results_canvas.bbox("all")
             )
-
         results_frame.bind("<Configure>", on_frame_configure1)
+
         def on_canvas_configure1(event):
             results_canvas.itemconfig("all", width=event.width)
         results_canvas.bind("<Configure>", on_canvas_configure1)
@@ -555,8 +559,8 @@ class TournamentsPage(ttk.Frame):
                 # if name is long, and minus button won't show then bind click on name to remove from tournament
                 if len(player[1]) + len(player[2]) > 20:
                     name.bind(
-                        "<Button-1>", 
-                        lambda e, p=player: remove_player(p)
+                        "<Button-1>",
+                        lambda e, p=player: remove_player(p),
                     )
 
         # function to remove player from tournament
@@ -589,7 +593,7 @@ class TournamentsPage(ttk.Frame):
             else:
                 messagebox.showerror(
                     "Incorrect number of players",
-                    f"Number of players should be 16.\nCurrently {len(tournament_players)} players added."
+                    f"Number of players should be 16.\nCurrently {len(tournament_players)} players added.",
                 )
 
         # creating the bottom bar for the action buttons
@@ -606,14 +610,14 @@ class TournamentsPage(ttk.Frame):
         # next button first validates data and then goes to the next step
         AnimatedButton(
             bottom_bar, text="Next", command=validate_player_count,
-            width=80, base_colour=FC.blue[0], 
+            width=80, base_colour=FC.blue[0],
             hover_colour=FC.blue[1], frame_colour=FC.base_l
         ).pack(pady=(5, 0), padx=0, side="right")
 
         # cancel closes the window
         AnimatedButton(
             bottom_bar, text="Cancel", command=win.destroy,
-            width=80, base_colour=FC.base, 
+            width=80, base_colour=FC.base,
             hover_colour=FC.cancel, frame_colour=FC.base_l
         ).pack(pady=(5, 0), padx=10)
 
@@ -636,10 +640,10 @@ class TournamentsPage(ttk.Frame):
         )
         # add button to open the create ttype view
         ttk.Button(
-            step3, text="+", 
+            step3, text="+",
             command=lambda: self.open_create_ttype(
                 types_container, selected_type
-            ),  cursor="crosshair"
+            ), cursor="crosshair"
         ).pack(anchor="ne", padx=5, pady=2)
 
         # creating the tournament
@@ -650,8 +654,7 @@ class TournamentsPage(ttk.Frame):
             if ttype == "":
                 # showing an error message
                 messagebox.showerror(
-                    "Missing Info",
-                    "Please select a tournament type."
+                    "Missing Info", "Please select a tournament type."
                 )
                 return
 
@@ -690,28 +693,28 @@ class TournamentsPage(ttk.Frame):
         # back goes to the previous step
         AnimatedButton(
             bottom_bar, text="Back", command=lambda: show_step(1),
-            width=80, base_colour=FC.base, 
+            width=80, base_colour=FC.base,
             hover_colour=FC.back, frame_colour=FC.base_l
         ).pack(pady=(5, 0), padx=0, side="left")
 
         # create creates the tournament by first validating the data
         AnimatedButton(
             bottom_bar, text="Create", command=create_tournament,
-            width=80, base_colour=FC.green[0], 
+            width=80, base_colour=FC.green[0],
             hover_colour=FC.green[1], frame_colour=FC.base_l
         ).pack(pady=(5, 0), padx=0, side="right")
 
         # cancel closes the window
         AnimatedButton(
             bottom_bar, text="Cancel", command=win.destroy,
-            width=80, base_colour=FC.base, 
+            width=80, base_colour=FC.base,
             hover_colour=FC.cancel, frame_colour=FC.base_l
         ).pack(pady=(5, 0), padx=10)
 
         # adding the frames to the steps view array and then showing the first step
         steps.extend([
-            step1, step2, step3, 
-            step1_frame, step2_frame, step3_frame
+            step1, step2, step3,
+            step1_frame, step2_frame, step3_frame,
         ])
         show_step(0)
 
@@ -771,7 +774,7 @@ class TournamentsPage(ttk.Frame):
             day=original_date.day,
             mindate=mindate, maxdate=maxdate,
             background=FC.base_l, foreground=FC.black,
-            disabledbackground=FC.base_l, 
+            disabledbackground=FC.base_l,
             headersforeground=FC.purple[1],
             selectforeground=FC.red[1], normalforeground=FC.black,
             weekendforeground=FC.black,
@@ -806,14 +809,14 @@ class TournamentsPage(ttk.Frame):
         # cancel button closes window
         AnimatedButton(
             bottom_bar, text="Cancel", command=go_back,
-            width=80, base_colour=FC.base, hover_colour=FC.cancel,
-            frame_colour=FC.base_l
+            width=80, base_colour=FC.base,
+            hover_colour=FC.cancel, frame_colour=FC.base_l
         ).pack(pady=(5, 0), padx=0, side="left")
 
         # next button shows next step
         AnimatedButton(
             bottom_bar, text="Next", command=lambda: show_step(1),
-            width=80, base_colour=FC.blue[0], 
+            width=80, base_colour=FC.blue[0],
             hover_colour=FC.blue[1], frame_colour=FC.base_l
         ).pack(pady=(5, 0), padx=0, side="right")
 
@@ -890,7 +893,7 @@ class TournamentsPage(ttk.Frame):
         )
         current_players_scrollbar = ttk.Scrollbar(
             current_players_outer, orient="vertical",
-            command=current_players_canvas.yview,
+            command=current_players_canvas.yview
         )
         current_players_canvas.configure(
             yscrollcommand=current_players_scrollbar.set
@@ -943,9 +946,9 @@ class TournamentsPage(ttk.Frame):
                     pdy = (0, 0)
                 row = ttk.Frame(results_frame)
                 row.pack(fill="x", padx=10, pady=pdy)
-                ttk.Label(
-                    row, text=f"{player[1]} {player[2]}"
-                ).pack(side="left")
+                ttk.Label(row, text=f"{player[1]} {player[2]}").pack(
+                    side="left"
+                )
                 # disabled to prevent adding players to a running tournament
                 ttk.Button(
                     row, text="+",
@@ -966,9 +969,9 @@ class TournamentsPage(ttk.Frame):
                     pdy = (0, 0)
                 row = ttk.Frame(current_players_frame)
                 row.pack(fill="x", padx=10, pady=pdy)
-                ttk.Label(
-                    row, text=f"{player[1]} {player[2]}"
-                ).pack(side="left")
+                ttk.Label(row, text=f"{player[1]} {player[2]}").pack(
+                    side="left"
+                )
                 # disabled to prevent removing players from a running tournament
                 ttk.Button(
                     row, text="-",
@@ -1014,7 +1017,7 @@ class TournamentsPage(ttk.Frame):
             else:
                 messagebox.showerror(
                     "Incorrect number of players",
-                    f"Number of players should be 16.\nCurrently {len(tournament_players)} players added."
+                    f"Number of players should be 16.\nCurrently {len(tournament_players)} players added.",
                 )
 
         # making frame for the actions buttons
@@ -1024,7 +1027,7 @@ class TournamentsPage(ttk.Frame):
         # back button that shows the previous step
         AnimatedButton(
             bottom_bar, text="Back", command=lambda: show_step(0),
-            width=80, base_colour=FC.base, 
+            width=80, base_colour=FC.base,
             hover_colour=FC.back, frame_colour=FC.base_l
         ).pack(pady=(5, 0), padx=0, side="left")
 
@@ -1037,8 +1040,8 @@ class TournamentsPage(ttk.Frame):
 
         # cancel button which closes the window
         AnimatedButton(
-            bottom_bar, text="Cancel",
-            command=go_back, width=80, base_colour=FC.base,
+            bottom_bar, text="Cancel", command=go_back,
+            width=80, base_colour=FC.base,
             hover_colour=FC.cancel, frame_colour=FC.base_l
         ).pack(pady=(5, 0), padx=10)
 
@@ -1048,9 +1051,7 @@ class TournamentsPage(ttk.Frame):
         )
         step3 = ttk.Frame(step3_frame)
         selected_type = tk.StringVar()
-        current_type_id = (
-            self.controller.db.read_tournament_type(t_id)
-        )
+        current_type_id = self.controller.db.read_tournament_type(t_id)
 
         types_container = ttk.Frame(step3)
         types_container.pack(fill="x")
@@ -1061,8 +1062,7 @@ class TournamentsPage(ttk.Frame):
             # presence check
             if ttype == "":
                 messagebox.showerror(
-                    "Missing Info",
-                    "Please select a tournament type."
+                    "Missing Info", "Please select a tournament type."
                 )
                 return
             else:
@@ -1125,7 +1125,9 @@ class TournamentsPage(ttk.Frame):
             # getting list of players ids in the tournament before change
             original_players = [
                 p[0]
-                for p in self.controller.db.read_tournament_players(t_id)
+                for p in self.controller.db.read_tournament_players(
+                    t_id
+                )
             ]
             # for each player that was added, if they are not already in the tournament then add them (in database)
             for player in added_players:
@@ -1179,12 +1181,10 @@ class TournamentsPage(ttk.Frame):
         ).pack(pady=(5, 0), padx=10)
 
         # adding the frames to the steps view array and then showing step 1
-        steps.extend(
-            [
-                step1, step2, step3, step4,
-                step1_frame, step2_frame, step3_frame, step4_frame
-            ]
-        )
+        steps.extend([
+            step1, step2, step3, step4,
+            step1_frame, step2_frame, step3_frame, step4_frame
+        ])
         show_step(0)
 
     # builds the list of tournament types with radio button selection
@@ -1220,9 +1220,7 @@ class TournamentsPage(ttk.Frame):
 
     # create tournament type subview
     def open_create_ttype(
-        self,
-        parent_frame: ttk.Frame,
-        selected_type: tk.StringVar
+        self, parent_frame: ttk.Frame, selected_type: tk.StringVar
     ):
         # creating a small pop up window for data entry
         # blocking action on other windows, and blocking window closure using red x
@@ -1245,7 +1243,8 @@ class TournamentsPage(ttk.Frame):
 
         # text box for the default number of continuers
         ttk.Label(win, text="Default Continuers:").grid(
-            row=0, column=0, padx=(0, 5), pady=(16, 8), sticky="e",
+            row=0, column=0,
+            padx=(0, 5), pady=(16, 8), sticky="e"
         )
         field1 = ttk.Entry(win, width=10)
         field1.grid(row=0, column=1, padx=(5, 20), pady=(16, 8))
@@ -1265,7 +1264,7 @@ class TournamentsPage(ttk.Frame):
         self.longer_var = tk.BooleanVar()
         self.longer_var.set(False)
         ttk.Checkbutton(
-            win, text="Longer Style", 
+            win, text="Longer Style",
             variable=self.longer_var, padding=(3, 0, 0, 0)
         ).grid(row=2, column=0, columnspan=2, pady=(5, 0))
 
@@ -1319,9 +1318,7 @@ class TournamentsPage(ttk.Frame):
             )
 
             # showing message saying success
-            messagebox.showinfo(
-                "title", "Tournament Type Created!"
-            )
+            messagebox.showinfo("title", "Tournament Type Created!")
 
             win.destroy()
             self.build_tournament_type_section(
@@ -1336,24 +1333,17 @@ class TournamentsPage(ttk.Frame):
         AnimatedButton(
             win, text="Cancel", command=win.destroy,
             width=100, base_colour=FC.base, hover_colour=FC.cancel
-        ).grid(
-            row=3, column=0, padx=(15, 0), pady=15, sticky="w"
-        )
+        ).grid(row=3, column=0, padx=(15, 0), pady=15, sticky="w")
 
         AnimatedButton(
             win, text="Create", command=create_type,
             hover_cursor="mouse", width=100,
             base_colour=FC.green[0], hover_colour=FC.green[1]
-        ).grid(
-            row=3, column=1, padx=(0, 15), pady=15, sticky="e"
-        )
+        ).grid(row=3, column=1, padx=(0, 15), pady=15, sticky="e")
 
     # builds the list of accounts for tournament creator/editor
     def build_accounts_section(
-        self,
-        t_id: str,
-        parent: ttk.Frame,
-        delete_mode: bool = False
+        self, t_id: str, parent: ttk.Frame, delete_mode: bool = False
     ):
         # deleting previous usernames
         for widget in parent.winfo_children():
@@ -1370,11 +1360,11 @@ class TournamentsPage(ttk.Frame):
             )
             if confirmed:
                 # if they say yes then delete the account
-                did_work = self.controller.db.delete_account(account_id)
+                did_work = self.controller.db.delete_account(
+                    account_id
+                )
                 if did_work:
-                    messagebox.showinfo(
-                        "Success", "Account deleted!"
-                    )
+                    messagebox.showinfo("Success", "Account deleted!")
                 else:
                     messagebox.showerror(
                         "Failed",
@@ -1399,9 +1389,9 @@ class TournamentsPage(ttk.Frame):
         header_frame = ttk.Frame(parent)
         header_frame.pack(fill="x", pady=(0, 5))
         # titled Username, with bold font
-        ttk.Label(
-            header_frame, text="Username", font=FS.base_b
-        ).pack(anchor="w", padx=10)
+        ttk.Label(header_frame, text="Username", font=FS.base_b).pack(
+            anchor="w", padx=10
+        )
 
         # getting list of all accounts in the tournament
         accounts = self.controller.db.read_tournament_accounts(t_id)
@@ -1417,8 +1407,7 @@ class TournamentsPage(ttk.Frame):
                 # text colour should be red and underlined
                 # binding button to show confirmation
                 lbl = ttk.Label(
-                    parent, text=username,
-                    font=FS.base_u, 
+                    parent, text=username, font=FS.base_u,
                     foreground=FC.red[1], cursor="hand2"
                 )
                 lbl.bind(
@@ -1451,11 +1440,9 @@ class TournamentsPage(ttk.Frame):
         # if fewer than 5 accounts and not in edit mode then show the add button to create an account
         if len(accounts) < 5 and not delete_mode:
             ttk.Button(
-                btn_frame,
-                text="+",
-                command=lambda: self.open_create_account(
-                    t_id, parent
-                ), cursor="crosshair"
+                btn_frame, text="+",
+                command=lambda: self.open_create_account(t_id, parent), 
+                cursor="crosshair"
             ).pack(side="right", padx=5)
 
     # function to open the create account view
@@ -1473,7 +1460,9 @@ class TournamentsPage(ttk.Frame):
         win.protocol("WM_DELETE_WINDOW", self.block_window_closure)
         win.resizable(False, False)
         # forcing the window to appear on top, using inherited parent if from settings, else if from tournament creation using main view as parent
-        win.transient(parent_frame if parent_frame else self.controller)
+        win.transient(
+            parent_frame if parent_frame else self.controller
+        )
         win.lift()
         win.focus_force()
 
@@ -1505,8 +1494,7 @@ class TournamentsPage(ttk.Frame):
             pady = (16, 8) if i == 0 else (8, 8)
             # textfield title
             ttk.Label(win, text=row_data[0]).grid(
-                row=i, column=0,
-                padx=(20, 10), pady=pady, sticky="e"
+                row=i, column=0, padx=(20, 10), pady=pady, sticky="e"
             )
             # textfield, binding escape and command backspace to clear it
             entry = row_data[1]
@@ -1536,10 +1524,7 @@ class TournamentsPage(ttk.Frame):
                 )
                 return
             # type check on username to ensure only letters
-            if (
-                re.fullmatch(r"[a-zA-Z0-9._-]*", username)
-                is None
-            ):
+            if re.fullmatch(r"[a-zA-Z0-9._-]*", username) is None:
                 messagebox.showerror(
                     "Bad data",
                     "Please make a username using only letters, numbers and ._- with no spaces"
@@ -1547,10 +1532,8 @@ class TournamentsPage(ttk.Frame):
                 return
             # type check on username ensure first and last character is letter or number
             if (
-                re.fullmatch(r"[a-zA-Z0-9]*", username[0])
-                is None
-                or re.fullmatch(r"[a-zA-Z0-9]*", username[-1])
-                is None
+                re.fullmatch(r"[a-zA-Z0-9]*", username[0]) is None
+                or re.fullmatch(r"[a-zA-Z0-9]*", username[-1]) is None
             ):
                 messagebox.showerror(
                     "Bad data",
@@ -1622,18 +1605,15 @@ class TournamentsPage(ttk.Frame):
         if parent_frame:
             AnimatedButton(
                 win, text="Cancel", command=win.destroy,
-                width=100, base_colour=FC.base, hover_colour=FC.cancel
-            ).grid(
-                row=3, column=0, padx=20, pady=(10, 15), sticky="w"
-            )
+                width=100, 
+                base_colour=FC.base, hover_colour=FC.cancel
+            ).grid(row=3, column=0, padx=20, pady=(10, 15), sticky="w")
 
             AnimatedButton(
                 win, text="Create", command=create_account,
                 hover_cursor="mouse", width=100,
                 base_colour=FC.green[0], hover_colour=FC.green[1]
-            ).grid(
-                row=3, column=1, padx=20, pady=(10, 15), sticky="e"
-            )
+            ).grid(row=3, column=1, padx=20, pady=(10, 15), sticky="e")
         else:
             # columnspan 2 and no sticky so that the button is placed centrally
             AnimatedButton(
@@ -1708,19 +1688,22 @@ class TournamentsPage(ttk.Frame):
         def on_option_press(event):
             # if password is currently hidden
             if check_selection.get() == 0:
-                check_selection.set(1)  # change the check box to ticked
+                check_selection.set(1)
+                # change the check box to ticked
                 toggle_pwd()  # show the password
                 win.peeking = True  # mark that we are peeking
             else:
                 # if password is shown
-                check_selection.set(0)  # change the check box to unticked
+                check_selection.set(0)
+                # change the check box to unticked
                 toggle_pwd()  # hide the password
 
         # when option key released
         def on_option_release(event):
             # if we are peeking then hide the password
             if win.peeking:
-                check_selection.set(0)  # change the check box to unticked
+                check_selection.set(0)
+                # change the check box to unticked
                 toggle_pwd()  # hide the password
                 win.peeking = False  # mark that we are not peeking
 
@@ -1741,8 +1724,7 @@ class TournamentsPage(ttk.Frame):
             )
             if successful:
                 messagebox.showinfo(
-                    "Login successful.",
-                    f"Logged in as {username}"
+                    "Login successful.", f"Logged in as {username}"
                 )
                 # if login successful then change dictionary value to show user is logged in, and reopen tournament overview
                 win.destroy()
@@ -1774,9 +1756,7 @@ class TournamentsPage(ttk.Frame):
             win, text="Login",
             command=login, hover_cursor="mouse", width=100,
             base_colour=FC.green[0], hover_colour=FC.green[1]
-        ).grid(
-            row=3, column=1, padx=15, pady=(10, 15), sticky="e"
-        )
+        ).grid(row=3, column=1, padx=15, pady=(10, 15), sticky="e")
 
     # creates tournament overview subview
     def open_tournament_overview(self, t_id: str):
@@ -1819,16 +1799,14 @@ class TournamentsPage(ttk.Frame):
         # if user is logged in
         if login_data[0]:
             # text showing who is logged in
-            ttk.Label(
-                win, text=f"Logged in as {login_data[1]}"
-            ).grid(
+            ttk.Label(win, text=f"Logged in as {login_data[1]}").grid(
                 row=0, column=0, columnspan=2, padx=10, pady=(8, 4)
             )
             # button for user to logout
             AnimatedButton(
-                win, text="Logout", command=logout,
-                base_colour=FC.base, hover_colour=FC.logout,
-                hover_cursor="pirate"
+                win, text="Logout",
+                command=logout, base_colour=FC.base,
+                hover_colour=FC.logout, hover_cursor="pirate"
             ).grid(row=1, column=0, columnspan=2, pady=5)
         else:
             # function that tries to use Touch ID to login, it if fails then open the login view
@@ -1850,17 +1828,17 @@ class TournamentsPage(ttk.Frame):
 
             # if user is logged out then show button to login
             AnimatedButton(
-                win, text="Login", command=route_login,
-                base_colour=FC.red[0], hover_colour=FC.red[1],
-                hover_cursor="mouse"
+                win, text="Login",
+                command=route_login, base_colour=FC.red[0],
+                hover_colour=FC.red[1], hover_cursor="mouse"
             ).grid(row=0, column=0, columnspan=2, pady=(12, 5))
 
         # button to open brackets
         AnimatedButton(
             win, text="Brackets",
             command=lambda: open_brackets(login_data),
-            base_colour=FC.blue[0], hover_colour=FC.blue[1],
-            hover_cursor="mouse"
+            base_colour=FC.blue[0],
+            hover_colour=FC.blue[1], hover_cursor="mouse"
         ).grid(row=2, column=0, columnspan=2, pady=5)
 
         # displaying info about the tournament
@@ -1903,7 +1881,9 @@ class TournamentsPage(ttk.Frame):
             self.controller.make_hoverable(winner_label)
         else:
             # if no winner then displaying other details
-            total_count = self.controller.db.get_player_count_in_tournament(t_id)
+            total_count = (
+                self.controller.db.get_player_count_in_tournament(t_id)
+            )
             eliminated_count = (
                 self.controller.db.get_players_count_eliminated(t_id)
             )
@@ -1915,9 +1895,7 @@ class TournamentsPage(ttk.Frame):
             ttk.Label(
                 win,
                 text=current_round if current_round > 0 else "Final"
-            ).grid(
-                row=5, column=1, padx=(5, 10), pady=8, sticky="w"
-            )
+            ).grid(row=5, column=1, padx=(5, 10), pady=8, sticky="w")
             ttk.Label(win, text="Players competing:").grid(
                 row=6, column=0, padx=(20, 10), pady=8, sticky="e"
             )
@@ -1933,10 +1911,12 @@ class TournamentsPage(ttk.Frame):
 
         # back button to close window
         AnimatedButton(
-            win, text="Back", command=win.destroy,
-            width=80, base_colour=FC.base, hover_colour=FC.back
-        ).grid(row=8, column=0, 
-               pady=(10, 15), padx=(15, 0), sticky="w")
+            win, text="Back",
+            command=win.destroy, width=80,
+            base_colour=FC.base, hover_colour=FC.back
+        ).grid(
+            row=8, column=0, pady=(10, 15), padx=(15, 0), sticky="w"
+        )
 
         # if user is logged in then show settings button
         if login_data[0]:
@@ -1944,13 +1924,16 @@ class TournamentsPage(ttk.Frame):
                 win, text="Settings", command=open_settings,
                 hover_cursor="spraycan", width=100,
                 base_colour=FC.base, hover_colour=FC.dblue[1]
-            ).grid(row=8, column=1, 
-                   pady=(10, 15), padx=(0, 15), sticky="w")
+            ).grid(
+                row=8, column=1,
+                pady=(10, 15), padx=(0, 15), sticky="w"
+            )
         else:
             # otherwise show a spacer
             spacer = tk.Frame(win, width=96, height=1)
-            spacer.grid(row=8, column=1, 
-                        padx=(0, 20), pady=8, sticky="w")
+            spacer.grid(
+                row=8, column=1, padx=(0, 20), pady=8, sticky="w"
+            )
 
     # building brackets container view
     def open_tournament_brackets(
@@ -1958,7 +1941,9 @@ class TournamentsPage(ttk.Frame):
     ):
         # if user is logged in then window title includes the username
         if login_data[0]:
-            title = f"Tournament Brackets - Logged in as {login_data[1]}"
+            title = (
+                f"Tournament Brackets - Logged in as {login_data[1]}"
+            )
         else:
             # otherwise displays guest user
             title = "Tournament Brackets - Guest User"
@@ -1998,10 +1983,7 @@ class TournamentsPage(ttk.Frame):
 
         # sorted array of round numbers, if it is none then replace with 999 - this is the final round
         round_numbers = sorted(
-            [
-                r if r is not None else 999
-                for r in rounds_dict.keys()
-            ]
+            [r if r is not None else 999 for r in rounds_dict.keys()]
         )
         # making a reversed array of this, removing the 999 value
         rounds_reversed = sorted(round_numbers, reverse=True)[1:]
@@ -2013,8 +1995,8 @@ class TournamentsPage(ttk.Frame):
         # function to make a bracket frame
         def make_frame(gp_id: str, round_frame: tk.LabelFrame):
             # reading all players in the grand prix
-            gp_players = (
-                self.controller.db.read_grand_prix_players(gp_id)
+            gp_players = self.controller.db.read_grand_prix_players(
+                gp_id
             )
 
             # creating a border around the frame
@@ -2028,10 +2010,8 @@ class TournamentsPage(ttk.Frame):
                 colour = "Black.TLabel"
                 # only if all 4 races complete
                 if self.controller.db.get_race_count_in_gp(gp_id) == 4:
-                    wins = (
-                        self.controller.db.find_winners_for_gp(
-                            gp_id, False
-                        )
+                    wins = self.controller.db.find_winners_for_gp(
+                        gp_id, False
                     )
                     # fetching winners in the grand prix
                     # if returned type is a tuple then this is the final grand prix so there will only be 1 winner
@@ -2047,7 +2027,9 @@ class TournamentsPage(ttk.Frame):
 
                 # getting the tournament result for a player id
                 # returns None if no result meaning tournament not finished, or if finished then the actual result
-                result = self.controller.db.get_tournament_result(t_id, name[0])
+                result = self.controller.db.get_tournament_result(
+                    t_id, name[0]
+                )
                 # text will show the tournament result if finished otherwise just the name
                 text = f"{name[1]}: {result}" if result else name[1]
                 ttk.Label(
@@ -2061,8 +2043,8 @@ class TournamentsPage(ttk.Frame):
                 )
 
             # fetching current race and player count in the gp
-            current_r_count = (
-                self.controller.db.get_race_count_in_gp(gp_id)
+            current_r_count = self.controller.db.get_race_count_in_gp(
+                gp_id
             )
             current_p_count = (
                 self.controller.db.get_player_count_in_gp(gp_id)
@@ -2133,7 +2115,7 @@ class TournamentsPage(ttk.Frame):
             # binding the name to open statistics view with the player data
             # making the label clickable and showing the underline on hover
             winner_label = ttk.Label(
-                self.brackets_container, 
+                self.brackets_container,
                 text=f"Winner: {winner[1]}", font=FS.base2_b
             )
             winner_label.grid(
@@ -2150,8 +2132,9 @@ class TournamentsPage(ttk.Frame):
 
         # button to go back to tournament overview
         AnimatedButton(
-            self.brackets_container, text="Back", command=go_back,
-            width=80, base_colour=FC.base, hover_colour=FC.back
+            self.brackets_container, text="Back",
+            command=go_back, width=80,
+            base_colour=FC.base, hover_colour=FC.back
         ).grid(row=2, column=0, pady=20, padx=20, sticky="w")
 
     # refreshing the brackets after grand prix result input
@@ -2250,8 +2233,7 @@ class TournamentsPage(ttk.Frame):
                 # creating an array of integers of all results
                 # then converting it into a set to remove duplicates
                 raw_results = [
-                    int(var.get())
-                    for _, var in result_vars.items()
+                    int(var.get()) for _, var in result_vars.items()
                 ]
                 unique_results = set(raw_results)
             except ValueError:
@@ -2283,8 +2265,8 @@ class TournamentsPage(ttk.Frame):
             self.controller.db.create_race(
                 gp_id, c_id, players_results
             )
-            new_race_count = (
-                self.controller.db.get_race_count_in_gp(gp_id)
+            new_race_count = self.controller.db.get_race_count_in_gp(
+                gp_id
             )
             if new_race_count == 4:
                 self.open_input_gp_results(gp_id, t_id)
@@ -2298,8 +2280,9 @@ class TournamentsPage(ttk.Frame):
 
         # cancel button to close input view
         AnimatedButton(
-            bottom_bar, text="Cancel", command=win.destroy,
-            width=90, base_colour=FC.base_l, hover_colour=FC.cancel
+            bottom_bar, text="Cancel",
+            command=win.destroy, width=90,
+            base_colour=FC.base_l, hover_colour=FC.cancel
         ).pack(pady=(5, 10), padx=10, side="left")
 
         # insert results button which first validates the input
@@ -2360,8 +2343,7 @@ class TournamentsPage(ttk.Frame):
                 # creating an array of integers of all results
                 # then converting it into a set to remove duplicates
                 raw_results = [
-                    int(var.get())
-                    for _, var in result_vars.items()
+                    int(var.get()) for _, var in result_vars.items()
                 ]
                 unique_results = set(raw_results)
             except ValueError:
@@ -2384,7 +2366,9 @@ class TournamentsPage(ttk.Frame):
                 (p_id, int(var.get()))
                 for p_id, var in result_vars.items()
             ]
-            self.controller.db.insert_gp_results(gp_id, players_results)
+            self.controller.db.insert_gp_results(
+                gp_id, players_results
+            )
 
             # finding the top players in the gp
             top_players = self.controller.db.find_winners_for_gp(
@@ -2411,16 +2395,14 @@ class TournamentsPage(ttk.Frame):
                 )
 
                 # showing message saying success
-                messagebox.showinfo(
-                    "title", "Grand prix complete!"
-                )
+                messagebox.showinfo("title", "Grand prix complete!")
 
             win.destroy()
             self.refresh_brackets(t_id)
 
         # complete button which first validates the data
         AnimatedButton(
-            win, text="Complete Grand Prix", command=save_gp_results,
-            hover_cursor="mouse", width=200,
+            win, text="Complete Grand Prix",
+            command=save_gp_results, hover_cursor="mouse", width=200, 
             base_colour=FC.green[0], hover_colour=FC.green[1]
         ).pack(pady=(8, 15))

@@ -9,9 +9,7 @@ from Utilities.font_styling import Fonts as FS, Colours as FC
 
 
 # function to create a tip over a widget
-def create_tooltip(
-    widget: AnimatedButton | ttk.Label, text: str
-):
+def create_tooltip(widget: AnimatedButton | ttk.Label, text: str):
     toolTip = ToolTip(widget, text)
     # binding enter and leave hover events to show and hide the tip
     # add="+" allows to use existing bindings to the widget
@@ -36,9 +34,7 @@ class ToolTip:
         # replacing spaces with _ in the circuit name
         filename = "_".join(self.text.split(" "))
         # making file path
-        image_path = (
-            f"Mario Kart Images/{filename}_COVER Small.png"
-        )
+        image_path = f"Mario Kart Images/{filename}_COVER Small.png"
         # trying to create image with the file path
         # fails if no photo at the path and so self.phote set to none
         try:
@@ -49,8 +45,9 @@ class ToolTip:
         # positioning the tip window with offsets from the original button
         x = self.widget.winfo_rootx() + 80
         # if a photo is being shown then increase x by a further 20 because the image is large and don't want to hide rows below
-        if self.photo: x += 20
-        y = (self.widget.winfo_rooty() + self.widget.winfo_height())
+        if self.photo:
+            x += 20
+        y = self.widget.winfo_rooty() + self.widget.winfo_height()
 
         # creating the tip window
         self.tip_window = tw = tk.Toplevel(self.widget)
@@ -63,7 +60,7 @@ class ToolTip:
             # creating the label with custom background and font
             tk.Label(
                 tw, text=self.text, justify=tk.LEFT,
-                background=FC.tip, font=FS.tip,
+                background=FC.tip, font=FS.tip
             ).pack(ipadx=10, ipady=10)
         # else if we are in circuits view shoing tip over the circuit label
         else:

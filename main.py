@@ -11,7 +11,7 @@ from app import App
 # importing our actual App class to run it
 
 # constant for the default database to open when none provided
-DEFAULT_DATABASE = "test_database.db"
+DEFAULT_DATABASE = "database.db"
 
 
 # MARK: Error Handler
@@ -43,7 +43,9 @@ def show_error_message(exc_type, exc_value, exc_traceback):
 # MARK: Main
 if __name__ == "__main__":
     # adding command line parser when run, to catch flags
-    parser = argparse.ArgumentParser(description=f"Mario Kart Tournament App: running without any arguments opens the existing {DEFAULT_DATABASE} database")
+    parser = argparse.ArgumentParser(
+        description=f"Mario Kart Tournament App: running without any arguments opens the existing {DEFAULT_DATABASE} database"
+    )
     parser.add_argument(
         "mode", choices=["new", "run"], nargs="?", default="run",
         help="Mode: 'new' to create a new database, 'run' to use an existing database"
