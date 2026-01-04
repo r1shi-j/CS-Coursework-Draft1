@@ -3,7 +3,8 @@ from tkinter import ttk, messagebox
 import platform
 from storage import Database
 from Pages import tournaments, players, circuits, statistics
-from Utilities.FontStyling import Fonts as FS, Colours as FC
+from Utilities.font_styling import Fonts as FS, Colours as FC
+
 # importing relevant tkinter packages
 # importing platform to configure os specific keyboard shortcuts
 # importing Database class from storage file
@@ -11,11 +12,18 @@ from Utilities.FontStyling import Fonts as FS, Colours as FC
 # importing custom font styling, font as FS and colours as FC
 
 # constant to store navigation titles
-NAVIGATION_TITLES = ["Tournaments", "Players", "Circuits", "Statistics"]
+NAVIGATION_TITLES = [
+    "Tournaments",
+    "Players",
+    "Circuits",
+    "Statistics"
+]
 
 # creating the frame
 class App(tk.Frame):
-    def __init__(self, master: tk.Tk, database: tuple[str, bool]):
+    def __init__(
+        self, master: tk.Tk, database: tuple[str, bool]
+    ):
         super().__init__(master)
         # creating the view
         self.master = master
@@ -25,8 +33,10 @@ class App(tk.Frame):
         self.db = Database(database)
         # setting the keyboard event to listen to clear search field depending on OS (macOS or Windows)
         system = platform.system()
-        if system == "Darwin": self.CLEAR_TEXT_FIELD = "<Command-BackSpace>"
-        else: self.CLEAR_TEXT_FIELD = "<Control-BackSpace>"
+        if system == "Darwin":
+            self.CLEAR_TEXT_FIELD = "<Command-BackSpace>"
+        else:
+            self.CLEAR_TEXT_FIELD = "<Control-BackSpace>"
         # calling functions to create style and basic view
         self.create_styling()
         self.create_layout()
@@ -36,11 +46,13 @@ class App(tk.Frame):
         self.create_navbar()
         self.create_pages()
         self.show_frame(NAVIGATION_TITLES[0])
-    
+
     # function called when window is tried to be closed
     def on_app_close(self):
         # showing confirmation dialogue to check they want to close the system
-        confirmed = messagebox.askokcancel("Help", "Are you sure you want to close the system?")
+        confirmed = messagebox.askokcancel(
+            "Help", "Are you sure you want to close the system?"
+        )
         if confirmed:
             # if they say ok then first close the database and then close the window
             self.db.close()
@@ -56,7 +68,7 @@ class App(tk.Frame):
 
         # making a style called subtitle which uses base2 size (12)
         style.configure("Subtitle.TLabel", font=FS.base2)
-        
+
         # setting the default font size for all ttk widgets to base which is 11
         style.configure("TLabel", font=FS.base)
         style.configure("TButton", font=FS.base)
@@ -67,7 +79,7 @@ class App(tk.Frame):
         self.master.option_add("*Label.font", FS.base)
         self.master.option_add("*Button.font", FS.base)
         self.master.option_add("*Checkbutton.font", FS.base)
-        
+
     # creating the layout
     def create_layout(self):
         # setting name, minimum size and disabling user resizing of the window
@@ -82,7 +94,9 @@ class App(tk.Frame):
         self.header_frame.pack(fill="x", pady=(15, 5))
 
         # creating the separator
-        ttk.Separator(main_frame, orient="horizontal").pack(fill="x", padx=10, pady=5)
+        ttk.Separator(main_frame, orient="horizontal").pack(
+            fill="x", padx=10, pady=5
+        )
 
         # creating the container for view content
         self.container = ttk.Frame(main_frame)
@@ -97,7 +111,7 @@ class App(tk.Frame):
             # creating the title with the header font
             label = ttk.Label(parent, text=view_name, font=FS.header)
             label.pack(side="left", padx=36)
-            
+
             # variable to store whether user is hovering over this nav title
             is_hovering = False
 
@@ -114,7 +128,7 @@ class App(tk.Frame):
                 is_hovering = False
 
             # when label clicked call function to show that view
-            def on_click(k): 
+            def on_click(k):
                 self.show_frame(view_name, k)
 
             # binding mouse actions to these functions
@@ -124,7 +138,7 @@ class App(tk.Frame):
             # in dictionary setting the view title to the actual label variable
             self.nav_labels[view_name] = label
             return label
-        
+
         # making all the headers
         for name in NAVIGATION_TITLES:
             make_nav_label(self.header_frame, name)
@@ -138,14 +152,19 @@ class App(tk.Frame):
         self.container.grid_rowconfigure(0, weight=1)
         self.container.grid_columnconfigure(0, weight=1)
         # for loop for each of the classes (from their respective files)
-        for file in (tournaments.TournamentsPage, players.PlayersPage, circuits.CircuitsPage, statistics.StatisticsPage):
+        for file in (
+            tournaments.TournamentsPage,
+            players.PlayersPage,
+            circuits.CircuitsPage,
+            statistics.StatisticsPage
+        ):
             # getting the view name from the class by removing Page from TournamentsPage etc
             page_name = file.__name__.replace("Page", "")
             # making the class which calls the initialiser function which builds the frame, passing in the container frame and self to use to access the database
             frame = file(self.container, self)
             # adding the frame to the dictionary of view names
             self.frames[page_name] = frame
-            # placing the view in the container sticking to all sides 
+            # placing the view in the container sticking to all sides
             frame.grid(row=0, column=0, sticky="nsew")
 
     # showing the respective frame when navigation button clicked on
@@ -160,9 +179,11 @@ class App(tk.Frame):
             # getting the name and label for all nav titles
             if name == page_name:
                 # if user has hovered over the title and clicked it, then keep font to underline
-                if is_hovering: font = FS.header_u
+                if is_hovering:
+                    font = FS.header_u
                 # else if system has opened the view don't show underline
-                else: font = FS.header
+                else:
+                    font = FS.header
                 # if this is the selected page then set the font colour foreground to blue
                 label.configure(font=font, foreground=FC.blue[1])
             else:
@@ -175,7 +196,8 @@ class App(tk.Frame):
     # function to underline a label on hover
     def make_hoverable(self, label: ttk.Label):
         # only if function recives a ttk.Label otherwise do nothing
-        if type(label) != ttk.Label: return
+        if type(label) != ttk.Label:
+            return
         # fetching the font the label uses
         font = str(label["font"]).split(" ")
         # if no font is specified then use defaults with underline on hover
@@ -185,14 +207,16 @@ class App(tk.Frame):
         else:
             # otherwise change to customised with underline on hover
             base_font = (font[0], int(font[1]), font[2])
-            hover_font = (font[0], int(font[1]), f"{font[2]} underline")
+            hover_font = (font[0], int(font[1]), font[2]+" underline")
 
         # binding enter and leave hover actions over the label to change the font
         label.bind("<Enter>", lambda e: label.config(font=hover_font))
         label.bind("<Leave>", lambda e: label.config(font=base_font))
 
     # function to open statistics view with player data
-    def open_statistics_player(self, player: tuple[str, str, str, int]):
+    def open_statistics_player(
+        self, player: tuple[str, str, str, int]
+    ):
         # calling function to load player stats
         stats_page = self.frames[NAVIGATION_TITLES[3]]
         stats_page.load_player_stats(player)

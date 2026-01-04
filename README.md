@@ -1,4 +1,5 @@
 <h1>Setup</h1>
+<h4>The system works best on macOS</h4>
 <h2>Prerequisites</h2>
 <ul>
   <li>Python 3 must be installed</li>
